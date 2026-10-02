@@ -8,6 +8,7 @@ import {
   StorefrontService,
   ContentService,
   AppsService,
+  OperationsService,
 } from "@africacod/domain";
 import { getDatabase } from "@africacod/db";
 export function commerce() {
@@ -38,4 +39,8 @@ export function site() {
 }
 export function apps() {
   return new AppsService(getDatabase());
+}
+
+export function operations() {
+  return new OperationsService(getDatabase());
 }

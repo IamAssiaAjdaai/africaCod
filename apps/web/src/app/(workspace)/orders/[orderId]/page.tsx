@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { PageHeading, Badge } from "@africacod/ui";
 import { formatMoney } from "@africacod/shared/money";
-import { storefront, requireOrganization } from "@/lib/server";
+import { operations, requireOrganization } from "@/lib/server";
+import { OrderOperations } from "@/components/order-operations";
 import { found } from "@/lib/catalog-pages";
 export default async function OrderDetail({
   params,
@@ -10,9 +11,32 @@ export default async function OrderDetail({
 }) {
   const { session } = await requireOrganization();
   const { orderId } = await params;
-  const { order, items, events, attribution, store } = await found(
-    storefront().getOrder(session.user.id, orderId),
-  );
+  const service = operations();
+  const data = await found(service.getOperations(session.user.id, orderId));
+  const agents = await service.listAgents(session.user.id);
+  const { order, items, attribution, store } = data;
+  const timeline = [
+    ...data.events.map((e) => ({
+      id: e.id,
+      at: e.createdAt,
+      label: `Order event · ${e.message}`,
+    })),
+    ...data.attempts.map(({ attempt: a, agentName }) => ({
+      id: a.id,
+      at: a.attemptedAt,
+      label: `Confirmation event · ${a.outcome} · ${agentName}`,
+    })),
+    ...data.fulfillmentEvents.map((e) => ({
+      id: e.id,
+      at: e.createdAt,
+      label: `Fulfillment event · ${e.fromStatus ?? "none"} → ${e.toStatus}`,
+    })),
+    ...data.shipmentEvents.map((e) => ({
+      id: e.id,
+      at: e.occurredAt,
+      label: `Shipment event · Manual · ${e.fromStatus ?? "none"} → ${e.toStatus}`,
+    })),
+  ].sort((a, b) => a.at.getTime() - b.at.getTime());
   return (
     <>
       <Link className="back-link" href="/orders">
@@ -86,16 +110,15 @@ export default async function OrderDetail({
           </div>
         ))}
       </section>
+      <OrderOperations data={data} agents={agents} />
       <div className="order-summary">
         <section className="panel">
           <h2>Timeline</h2>
-          {events.map((event) => (
+          {timeline.map((event) => (
             <p key={event.id}>
-              <strong>{event.message}</strong>
+              <strong>{event.label}</strong>
               <br />
-              <span className="muted">
-                {event.createdAt.toISOString()} · {event.status}
-              </span>
+              <span className="muted">{event.at.toISOString()}</span>
             </p>
           ))}
         </section>

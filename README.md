@@ -1,8 +1,8 @@
 # AfricaCod
 
-An Africa-first cash-on-delivery commerce workspace. Checkpoint 1 provides **Account → Organization → Store → Add Markets**. Checkpoint 2 adds **Categories → Products → Product Media → Basic Variants → Market Offers**. Checkpoint 3 adds **Published COD product pages → Market-aware checkout → Orders inbox/detail**. Checkpoint 4 adds **CMS Pages → Store branding/navigation → Public store/category browsing → Apps discovery**.
+An Africa-first cash-on-delivery commerce workspace. Checkpoint 1 provides **Account → Organization → Store → Add Markets**. Checkpoint 2 adds **Categories → Products → Product Media → Basic Variants → Market Offers**. Checkpoint 3 adds **Published COD product pages → Market-aware checkout → Orders inbox/detail**. Checkpoint 4 adds **CMS Pages → Store branding/navigation → Public store/category browsing → Apps discovery**. Checkpoint 5 adds **Confirmation → Callbacks → Manual Fulfillment → Shipment lifecycle → Operational metrics**.
 
-A store starts with **zero markets**. Platform country definitions are reference data for a comprehensive country/territory catalog; only an explicit **Add Market** action creates a store market. Confirmation, fulfillment, couriers, analytics, AI, inventory, external integrations, payments and agency workflows remain deferred.
+A store starts with **zero markets**. Platform country definitions are reference data for a comprehensive country/territory catalog; only an explicit **Add Market** action creates a store market. External couriers, separate analytics, AI, inventory, integrations, payments, settlement reconciliation and agency workflows remain deferred.
 
 ## Local setup
 
@@ -91,7 +91,7 @@ Fourteen tables: Better Auth `users`, `sessions`, `accounts`, `verifications`; b
 - A composite market foreign key `(store_id, organization_id)` references the same pair on stores, preventing database-level tenant mismatches.
 - Public store identifiers are **globally unique** lowercase slugs (3–63 characters), with reserved names, validated at the boundary and enforced by PostgreSQL. These are identifiers; no public storefront is built yet.
 - `(store_id, country_code)` is unique, including inactive records; deactivation is a status update, never deletion. Name, currency, locale, and calling code are snapshots from the selected country definition. These market-owned settings can evolve independently of reference data; the schema does not bind them to current catalog defaults.
-- Stable market IDs link product offers and provide a future attachment point for address configuration, shipping, fulfillment and COD rules. Those other future domains have no tables yet.
+- Stable market IDs link product offers and provide a future attachment point for address configuration, shipping, fulfillment and COD rules. Fulfillment and shipments now use independent lifecycle tables; markets remain merchant-selected.
 - Better Auth owns password hashing and session cookies. No custom auth cryptography. Email verification/delivery, password reset, social login and two-factor authentication are outside this checkpoint. Authentication uses Better Auth’s in-process rate limiter; a shared limiter is not introduced for a single-process local checkpoint.
 - English UI strings live in the web presentation layer; ISO codes and BCP 47 locales are data. No country-specific branching in the business service. A full translation catalog is deferred.
 
@@ -168,7 +168,7 @@ Public URLs are `/s/{storeSlug}/p/{productSlug}?market=KE` (or `GH`). Only activ
 
 The anonymous JSON POST `/api/storefront/{storeSlug}/{productSlug}/checkout` requires a client-generated UUID `Idempotency-Key`. The browser retains it across retries and generates a new key for another intentional order. A transaction-scoped advisory lock and unique `(store_id, checkout_idempotency_key)` serialize concurrent retries. Identical normalized commercial details return the original receipt; changed details with that key return 409. Attribution and browser-submitted prices are excluded from the request fingerprint. A successful retry still returns its original receipt after unpublishing; a new order requires current eligibility.
 
-Server lookup determines the Store, Product, StoreMarket, offer, currency, unit price and totals. Client price/currency fields are ignored. Quantities are 1–20; exact integer minor-unit arithmetic is bounded by JavaScript’s safe integer range. Delivery fee is zero for this checkpoint; there is no shipping calculation engine or online payment. Orders have only `new` / `cancelled` status; no cancellation/confirmation/fulfillment action is implemented.
+Server lookup determines the Store, Product, StoreMarket, offer, currency, unit price and totals. Client price/currency fields are ignored. Quantities are 1–20; exact integer minor-unit arithmetic is bounded by JavaScript’s safe integer range. Delivery fee is zero for this checkpoint; there is no shipping calculation engine or online payment. Checkout creates a commercially `new` Order. Checkpoint 5 adds explicit confirmation/cancellation and separate manual fulfillment/shipment workflows.
 
 A single PostgreSQL transaction creates/upserts the store-scoped normalized-phone Customer, Order, one OrderItem, initial OrderEvent and OrderAttribution. Order and item snapshots include customer/address, country/market, currency, product/variant names, SKU, selling price, private cost, quantity and totals. Validation failure persists nothing. Same phone + same Product + same StoreMarket within 24 hours flags a possible repeat, including cancelled orders; it never rejects a new intentional purchase. Customer updates cannot change historical order snapshots.
 
@@ -176,7 +176,7 @@ A single PostgreSQL transaction creates/upserts the store-scoped normalized-phon
 
 Migration `0004_cod_storefront_orders.sql` adds six tables: `product_pages`, `customers`, `orders`, `order_items`, `order_events`, `order_attribution`, plus StoreMarket checkout configuration and supporting identity constraints. Composite tenant/store/market/product/variant/offer/currency FKs protect relationships; checks enforce amounts, normalized phones, template and publication state. Customer uniqueness is `(store_id, normalized_phone)`. Order idempotency is store-scoped. There is no global Product price or automatic market creation.
 
-Public media is served only from the currently published page at `/s/{storeSlug}/p/{productSlug}/media/{mediaId}`. Other media remains authenticated at `/api/media/{mediaId}`. Public DTOs and checkout receipts omit private cost, organization IDs, storage keys and unselected-market prices. Authenticated Orders lists/details include tenant-scoped snapshots, attribution and timeline. Filters cover store, market, status, UTC date range and reference/name/phone search with 20-row pagination. Dashboard adds actual Orders, New Orders and New Order Value grouped by currency; no cross-currency sum, revenue recognition or profit metrics.
+Public media is served only from the currently published page at `/s/{storeSlug}/p/{productSlug}/media/{mediaId}`. Other media remains authenticated at `/api/media/{mediaId}`. Public DTOs and checkout receipts omit private cost, organization IDs, storage keys and unselected-market prices. Authenticated Orders lists/details include tenant-scoped snapshots, attribution and timeline. Filters cover store, market, status, UTC date range and reference/name/phone search with 20-row pagination. Checkpoint 3 initially showed Orders, New Orders and New Order Value. Checkpoint 5 replaces those operational cards with lifecycle counts and snapshot-based Delivered Revenue grouped by currency; no cross-currency sum or profit metrics.
 
 Attribution captures UTM source/medium/campaign/content/term, fbclid, optional fbp/fbc, referrer, landing URL and server user agent. These are informational strings; no advertising API or Purchase event is sent. Same-origin JSON requests are required by the web boundary. Production abuse controls and external storage/media processing remain future deployment work.
 
@@ -229,4 +229,52 @@ Migration `0005_storefront_cms_branding.sql` adds `content_pages`, its independe
 
 New tests cover CMS creation/publication/unpublication, frozen title/address/SEO/navigation snapshots, draft and public address conflicts, independent stores, tenant denials, branding/logo validation, active-market/offer/publication filtering, category hierarchy and public privacy. Parser unit tests cover all supported formatting and unsafe links/HTML. Browser coverage verifies branding/logo, CMS formatting and metadata, navigation, private draft edits, Kenya/Ghana grids, category/product browsing, Apps status and COD-to-Orders regression. Existing Checkpoint 1–3 tests remain in the full quality gate.
 
-Deferred: confirmation, fulfillment, couriers, external app integrations/OAuth/credentials, WhatsApp messaging, advertising APIs/events, AI, profit analytics, inventory, payments and agency mode. Also deferred are an advanced theme/page builder, full Markdown syntax, CMS deletion/search tooling and production storage/abuse controls. Checkpoint 4 stops at an honest storefront/CMS/Apps foundation.
+Deferred beyond the implemented checkpoints: external couriers, external app integrations/OAuth/credentials, WhatsApp messaging, advertising APIs/events, AI, profit analytics, inventory, payments and agency mode. Also deferred are an advanced theme/page builder, full Markdown syntax, CMS deletion/search tooling and production storage/abuse controls. The storefront/CMS/Apps foundation remains independent of manual order operations.
+
+## Checkpoint 5: confirmation and manual logistics
+
+Commercial Order status is **new → confirmed** or **new → cancelled**. Confirmation records `confirmed_at`; cancellation requires a reason (`customer_cancelled`, `invalid_order`, `duplicate`, `merchant_rejected`, `unreachable`, `other`), records `cancelled_at` and retains the reason. Confirmed Orders cannot be cancelled/reversed by this simple workflow. Logistics never overwrite commercial status.
+
+Confirmation attempts record the acting membership, outcome, note, attempt time and optional callback time. Derived confirmation state is calculated from Order status and the latest attempt: terminal commercial state wins; no attempts means **uncontacted**; a due latest callback means **callback_due**; otherwise attempts mean **attempted**. A future callback remains attempted with an upcoming callback time. A later attempt supersedes an old callback. Callback is not a persisted second confirmation status. Times in operator forms and queues are explicitly UTC; overdue is more than a minute late, due now is within the most recent minute, upcoming is in the future. No background notifications exist.
+
+Confirmation locks the Order and atomically inserts the attempt, updates commercial state/timestamps and appends its Order event. Attempt request keys are unique per Order, checked against a payload hash, and rotate after success in the UI. Retrying an identical request or concurrently confirming twice does not duplicate side effects. Other attempts on a terminal Order are rejected. Assignment is optional, restricted to the same organization's persisted memberships, and editable only while the Order is new.
+
+### Screens and operator workflow
+
+- `/orders` preserves search, Store/Market/date filters and 20-order pagination; adds commercial status, derived confirmation state, fulfillment/shipment states, assigned agent and callback filters.
+- `/orders/confirmation` offers all five confirmation views, quick No answer/Confirm actions, and links to callback/cancellation/assignment detail.
+- `/orders/callbacks` shows all scheduled callbacks, ordered by time; filter overdue/due now or upcoming.
+- `/fulfillment` lists confirmed Orders, including those without Fulfillment. Filter Awaiting fulfillment, Ready, Processing, Failed or Fulfilled. Create fulfillment, then create a manual shipment directly or add optional tracking on Order detail.
+- `/orders/{orderId}` keeps customer/items/commercial/attribution snapshots and adds confirmation attempts, assignment, callbacks, fulfillment, manual Shipment and a timeline distinguishing Order/Confirmation/Fulfillment/Shipment events.
+- `/dashboard` reports real Orders, awaiting confirmation, Confirmed, Cancelled, Callback Due/upcoming, Ready for Fulfillment, Shipped, Out for Delivery, Delivered, Refused and Returned counts, plus **Delivered Revenue** grouped by currency. Shipped/Delivered/Refused/Returned counts reflect current Shipment status. Ready includes confirmed Orders without Fulfillment and ready Fulfillments.
+
+One manual Fulfillment is allowed per confirmed Order. Creation starts **ready**. Its normalized statuses are pending/ready/processing/fulfilled/failed/cancelled. Operator transitions: pending → ready/cancelled; ready → processing/cancelled; processing → failed/cancelled; failed → processing/cancelled. Creating a Shipment atomically marks Fulfillment **fulfilled** and records both histories. Fulfilled means a Shipment was produced, never delivered. Failed fulfillment must return to processing before creating a Shipment; fulfilled/cancelled fulfillment is terminal.
+
+A single Shipment belongs to that Order/Fulfillment. `provider_key=manual`; optional HTTP/HTTPS tracking URL and tracking number can be supplied. Creation requires a confirmed Order and eligible Fulfillment. An identical creation retry returns the existing Shipment; conflicting tracking data is rejected. Valid logistics transitions are:
+
+```text
+created → shipped → out_for_delivery → delivered
+created → cancelled
+out_for_delivery → delivery_failed → out_for_delivery
+out_for_delivery → refused → returned
+shipped → returned
+delivery_failed → returned
+```
+
+Delivered, Returned and Cancelled are terminal. Retrying the same current status adds no duplicate event. Every creation/transition appends a manual Shipment event; shipment/fulfillment transitions never change Order status. No arbitrary status dropdown or external courier calls exist.
+
+Delivered Revenue sums the original `orders.total_minor` only for delivered Shipments, once per Order, separately by currency. Submitted, confirmed, shipped, refused and returned Orders contribute no Delivered Revenue. Editing a current ProductMarketOffer cannot change historical Order economics. This is revenue from delivered COD orders, not collected/settled cash or profit.
+
+### Schema, permissions and provider boundary
+
+Migration `0006_order_operations.sql` extends `order_status`, adds assignment/confirmed/cancelled/reason fields and creates `confirmation_attempts`, `fulfillments`, `fulfillment_state_events`, `shipments`, `shipment_events` (26 tables total). Composite membership/Order/Fulfillment/Shipment foreign keys prevent foreign-tenant assignment and mismatched relationships. Unique keys enforce one Fulfillment and Shipment per Order and retry keys per attempt. Database triggers reject fulfillment/shipment writes against unconfirmed Orders and reject updates to attempt/Order/Fulfillment/Shipment history. Operational service APIs only append history; no history update/delete endpoint exists. Explicit database-admin retention/fixture deletion remains possible.
+
+Existing **Owner/Admin** permissions cover assignment, confirmation and manual fulfillment. Both derive authorization from persisted membership on every service/action. No new agent role or invitation/RBAC UI is introduced; a dedicated restricted Confirmation Agent role is deferred until member administration exists. Cross-tenant Order detail, attempts, fulfillment/shipment access, assignment and events are rejected by service boundaries and composite constraints.
+
+`ShipmentProvider` in `packages/domain/src/lifecycle.ts` defines only a future adapter contract: credential validation, create/status lookup, normalized status mapping and webhook verification/parsing. There is no provider implementation, credentials table, OAuth, webhook route or polling job. Apps continue to label all external integrations Coming soon.
+
+### Verification
+
+New unit tests cover derived confirmation state, callback timing and terminal/retryable logistics rules. Integration tests cover attempt idempotency, callbacks and superseding schedules, atomic confirmation/history, reasoned cancellation, assignment isolation, fulfillment preconditions/uniqueness/failure recovery, shipment preconditions and transitions, immutable history updates, tenant constraints and snapshot-based Delivered Revenue. Browser coverage creates a Kenya COD order, records No Answer/Callback, checks its overdue queue, confirms, creates manual fulfillment/shipment, advances to Delivered and verifies original KES 3,990.00 revenue. It changes the current offer to KES 4,490.00, then confirms and returns a second Order through Refused → Returned; both commercial Orders remain confirmed and delivered revenue stays unchanged. All Checkpoint 1–4 tests remain in the quality gate.
+
+Deferred: real couriers/provider connections, webhook/poll handling, WhatsApp automation, advertising/Google integrations, AI, inventory, payments, settlement reconciliation, profit analytics and agency mode. Separate Analytics/breakdowns, dedicated agent RBAC/member administration, fulfillment reversal and confirmation reversal are also deferred. Checkpoint 5 stops at manual operational lifecycle workflows.

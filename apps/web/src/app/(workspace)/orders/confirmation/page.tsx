@@ -1,6 +1,6 @@
 import { OrdersView } from "@/components/orders-view";
-export default function Orders(props: {
+export default function Queue(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  return <OrdersView {...props} />;
+  return <OrdersView {...props} mode="confirmation" />;
 }

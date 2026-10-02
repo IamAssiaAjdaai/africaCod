@@ -24,6 +24,7 @@ const navigation = [
   { href: "/orders", label: "Orders", icon: Package },
   { href: "/stores", label: "Stores", icon: Store },
   { href: "/pages", label: "Pages", icon: FolderTree },
+  { href: "/fulfillment", label: "Fulfillment", icon: Package },
   { href: "/apps", label: "Apps", icon: Package },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -95,6 +96,9 @@ export function Shell({
             <div key={href}>
               {href === "/products" && <p className="nav-caption">COMMERCE</p>}
               {href === "/stores" && <p className="nav-caption">STORE</p>}
+              {href === "/fulfillment" && (
+                <p className="nav-caption">OPERATIONS</p>
+              )}
               {href === "/apps" && <p className="nav-caption">PLATFORM</p>}
               <Link
                 key={href}

@@ -5,7 +5,7 @@ import { PageHeading } from "@africacod/ui";
 import {
   commerce,
   catalog,
-  storefront,
+  operations,
   requireOrganization,
 } from "@/lib/server";
 export default async function Dashboard() {
@@ -26,7 +26,7 @@ export default async function Dashboard() {
           market.id === offer.storeMarketId && market.status === "active",
       ),
   );
-  const metrics = await storefront().orderMetrics(session.user.id);
+  const metrics = await operations().operationalMetrics(session.user.id);
   const active = markets.filter((m) => m.status === "active");
   return (
     <>
@@ -88,28 +88,57 @@ export default async function Dashboard() {
           <small>Active offers in active store markets</small>
         </div>
       </section>
+      <nav className="catalog-filters">
+        <Link className="button button-outline" href="/orders/confirmation">
+          Confirmation queue
+        </Link>
+        <Link className="button button-outline" href="/orders/callbacks">
+          Callbacks
+        </Link>
+        <Link className="button button-outline" href="/fulfillment">
+          Fulfillment queue
+        </Link>
+      </nav>
       <section className="stats-grid">
-        <div className="stat-card">
-          <span>Orders</span>
-          <strong>{metrics.total}</strong>
-        </div>
-        <div className="stat-card">
-          <span>New orders</span>
-          <strong>{metrics.newOrders}</strong>
-        </div>
-        <div className="stat-card">
-          <span>New order value</span>
-          {metrics.values.length ? (
-            metrics.values.map((value) => (
-              <strong key={value.currency} style={{ fontSize: 24 }}>
-                {formatMoney(BigInt(value.totalMinor), value.currency)}
-              </strong>
-            ))
-          ) : (
-            <strong>—</strong>
-          )}
-          <small>Grouped by currency; excludes cancelled orders</small>
-        </div>
+        {[
+          ["Orders", metrics.orders],
+          ["New / awaiting confirmation", metrics.new],
+          ["Confirmed", metrics.confirmed],
+          ["Cancelled", metrics.cancelled],
+          ["Callback Due", metrics.callbackDue],
+          ["Upcoming callbacks", metrics.callbacksUpcoming],
+          ["Ready for Fulfillment", metrics.ready],
+          ["Shipped", metrics.shipped],
+          ["Out for Delivery", metrics.outForDelivery],
+          ["Delivered", metrics.delivered],
+          ["Refused", metrics.refused],
+          ["Returned", metrics.returned],
+        ].map(([label, value]) => (
+          <div
+            className="stat-card"
+            key={label}
+            data-testid={`metric-${String(label).toLowerCase().replaceAll(" ", "-")}`}
+          >
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </div>
+        ))}
+      </section>
+      <section className="panel" data-testid="delivered-revenue">
+        <h2>Delivered Revenue</h2>
+        {metrics.revenue.length ? (
+          metrics.revenue.map((v) => (
+            <p key={v.currency}>
+              <strong>{formatMoney(BigInt(v.totalMinor), v.currency)}</strong>
+            </p>
+          ))
+        ) : (
+          <p>—</p>
+        )}
+        <p className="muted">
+          Original order totals for delivered shipments, grouped by currency.
+          Submitted COD value is not revenue.
+        </p>
       </section>
       <section className="panel">
         <div className="section-heading">
