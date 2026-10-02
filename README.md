@@ -1,8 +1,8 @@
 # AfricaCod
 
-An Africa-first cash-on-delivery commerce workspace. Checkpoint 1 provides **Account → Organization → Store → Add Markets**. Checkpoint 2 adds **Categories → Products → Product Media → Basic Variants → Market Offers**.
+An Africa-first cash-on-delivery commerce workspace. Checkpoint 1 provides **Account → Organization → Store → Add Markets**. Checkpoint 2 adds **Categories → Products → Product Media → Basic Variants → Market Offers**. Checkpoint 3 adds **Published COD product pages → Market-aware checkout → Orders inbox/detail**.
 
-A store starts with **zero markets**. Platform country definitions are reference data for a comprehensive country/territory catalog; only an explicit **Add Market** action creates a store market. No storefront publishing, checkout, Orders, Pages, Apps, fulfillment, analytics, AI, or external integrations are implemented.
+A store starts with **zero markets**. Platform country definitions are reference data for a comprehensive country/territory catalog; only an explicit **Add Market** action creates a store market. Confirmation, fulfillment, Pages CMS, Apps, analytics, AI, inventory, ad integrations and payments remain deferred.
 
 ## Local setup
 
@@ -146,4 +146,38 @@ Only this Store’s actual markets appear in pricing. Zero-market stores show **
 
 Local files require a persistent single-host disk. For production or multiple app instances, implement the same interface with durable S3-compatible storage (e.g. Cloudflare R2), inject it in place of `localMediaStorage`, and keep object keys private. No S3/R2 integration or credentials are introduced now. Failed database uploads clean up their newly written object. Failed physical removal can leave an inaccessible orphan after metadata deletion; an orphan cleanup job is deferred. Product media upload, preview, removal and move-earlier/move-later reordering are implemented.
 
-Deferred: variant-specific market pricing, inventory and option combinations; rich text editing; category deletion; external storage adapters and media processing; storefront publishing, checkout, Orders, Pages, Apps, fulfillment, analytics, AI and external integrations. Variants are descriptive product versions only; every market offer applies to the whole Product.
+Deferred: variant-specific market pricing, inventory and option combinations; rich text editing; category deletion; external storage adapters and media processing; Pages CMS, Apps, fulfillment, analytics, AI and external integrations. Variants are descriptive product versions only; every market offer applies to the whole Product.
+
+## Checkpoint 3: published COD storefronts and Orders
+
+One `cod_v1` ProductPage per Product stores separate draft and published JSON configurations. Save the draft, preview it at `/products/{productId}/preview`, and explicitly publish or unpublish. Publishing snapshots product name/description, configured text and media ordering; later draft or product edits do not modify live content. Published images cannot be removed until excluded by a new publication or the page is unpublished. Prices and active variants remain live catalog data.
+
+Public URLs are `/s/{storeSlug}/p/{productSlug}?market=KE` (or `GH`). Only active same-store markets with active, currency-matching offers are selectable. No catalog country becomes a market automatically. One eligible offer selects automatically; multiple offers require selection. Invalid/inactive/unconfigured market parameters show a selection state with no substitute price or checkout. Custom markets use `market=custom:{customKey}`. Active Store, active Product and published ProductPage are required.
+
+### Manual end-to-end check
+
+1. Sign in, create Glow Beauty, and explicitly add Kenya and Ghana.
+2. Create active Hair Growth Serum. Upload an image and add a descriptive variant if desired.
+3. Save Kenya offer at **3,990 KES** and Ghana offer at **399 GHS**, with any private costs.
+4. Configure headline, subtitle, benefits, trust message, CTA and media ordering. **Save storefront draft**, preview, then **Publish storefront**.
+5. Open the public link with `?market=KE` on a mobile viewport. Fill customer name, valid Kenyan phone (e.g. `0712345678`), County, City / town and Delivery address; submit quantity one.
+6. The receipt shows an order reference and **KES 3,990.00**. `/orders` and `/orders/{orderId}` show the same customer, Kenya market and immutable item/commercial snapshots.
+7. Open `?market=GH`; it shows **GHS 399.00**, Ghana phone rules and Region label. Edit the product or offer and verify the earlier order is unchanged.
+
+### Checkout rules and persistence
+
+The anonymous JSON POST `/api/storefront/{storeSlug}/{productSlug}/checkout` requires a client-generated UUID `Idempotency-Key`. The browser retains it across retries and generates a new key for another intentional order. A transaction-scoped advisory lock and unique `(store_id, checkout_idempotency_key)` serialize concurrent retries. Identical normalized commercial details return the original receipt; changed details with that key return 409. Attribution and browser-submitted prices are excluded from the request fingerprint. A successful retry still returns its original receipt after unpublishing; a new order requires current eligibility.
+
+Server lookup determines the Store, Product, StoreMarket, offer, currency, unit price and totals. Client price/currency fields are ignored. Quantities are 1–20; exact integer minor-unit arithmetic is bounded by JavaScript’s safe integer range. Delivery fee is zero for this checkpoint; there is no shipping calculation engine or online payment. Orders have only `new` / `cancelled` status; no cancellation/confirmation/fulfillment action is implemented.
+
+A single PostgreSQL transaction creates/upserts the store-scoped normalized-phone Customer, Order, one OrderItem, initial OrderEvent and OrderAttribution. Order and item snapshots include customer/address, country/market, currency, product/variant names, SKU, selling price, private cost, quantity and totals. Validation failure persists nothing. Same phone + same Product + same StoreMarket within 24 hours flags a possible repeat, including cancelled orders; it never rejects a new intentional purchase. Customer updates cannot change historical order snapshots.
+
+`checkout-configuration.ts` is the reusable country/market boundary. Pinned `libphonenumber-js/max` metadata normalizes and validates phone numbers. Kenya requires County and Ghana requires Region; both require city and delivery address. Other catalog countries use phone metadata with generic address defaults, and nullable StoreMarket `checkout_config` can override the whole configuration for future market requirements. Custom/unsupported-phone territories require valid international numbers. Detailed country-specific address rules and their merchant settings UI are deferred.
+
+Migration `0004_cod_storefront_orders.sql` adds six tables: `product_pages`, `customers`, `orders`, `order_items`, `order_events`, `order_attribution`, plus StoreMarket checkout configuration and supporting identity constraints. Composite tenant/store/market/product/variant/offer/currency FKs protect relationships; checks enforce amounts, normalized phones, template and publication state. Customer uniqueness is `(store_id, normalized_phone)`. Order idempotency is store-scoped. There is no global Product price or automatic market creation.
+
+Public media is served only from the currently published page at `/s/{storeSlug}/p/{productSlug}/media/{mediaId}`. Other media remains authenticated at `/api/media/{mediaId}`. Public DTOs and checkout receipts omit private cost, organization IDs, storage keys and unselected-market prices. Authenticated Orders lists/details include tenant-scoped snapshots, attribution and timeline. Filters cover store, market, status, UTC date range and reference/name/phone search with 20-row pagination. Dashboard adds actual Orders, New Orders and New Order Value grouped by currency; no cross-currency sum, revenue recognition or profit metrics.
+
+Attribution captures UTM source/medium/campaign/content/term, fbclid, optional fbp/fbc, referrer, landing URL and server user agent. These are informational strings; no advertising API or Purchase event is sent. Same-origin JSON requests are required by the web boundary. Production abuse controls and external storage/media processing remain future deployment work.
+
+Tests cover publication isolation, eligibility, Kenya/Ghana prices, private-field projection, server price authority, concurrent idempotency, legitimate repeats, historical snapshots, rollback on invalid phone/address/variant, composite FKs, tenant denial, search/date/pagination and unpublish/retry behavior. Playwright covers merchant publication, draft preview, anonymous mobile media/selector/phone keyboard/validation/loading/double-submit/success, Kenya Orders snapshots/attribution and Ghana rendering. No later checkpoint is implemented.

@@ -21,6 +21,7 @@ const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/products", label: "Products", icon: Package },
   { href: "/categories", label: "Categories", icon: FolderTree },
+  { href: "/orders", label: "Orders", icon: Package },
   { href: "/stores", label: "Stores", icon: Store },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

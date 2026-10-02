@@ -2,7 +2,11 @@ import "server-only";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAuth } from "@africacod/auth";
-import { CommerceService, CatalogService } from "@africacod/domain";
+import {
+  CommerceService,
+  CatalogService,
+  StorefrontService,
+} from "@africacod/domain";
 import { getDatabase } from "@africacod/db";
 export function commerce() {
   return new CommerceService(getDatabase());
@@ -21,4 +25,8 @@ export async function requireOrganization() {
 
 export function catalog() {
   return new CatalogService(getDatabase());
+}
+
+export function storefront() {
+  return new StorefrontService(getDatabase());
 }

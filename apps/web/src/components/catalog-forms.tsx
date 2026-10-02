@@ -418,7 +418,7 @@ export function ProductEditor({
             </select>
           </label>
           <p className="muted">
-            Organize your catalog. Storefront publishing is not enabled.
+            Organize your catalog. Publish the product storefront below.
           </p>
         </section>
         <section className="panel pricing-panel">

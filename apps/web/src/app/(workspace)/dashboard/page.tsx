@@ -1,7 +1,13 @@
+import { formatMoney } from "@africacod/shared/money";
 import Link from "next/link";
 import { ArrowRight, Globe2, Plus, Store, Package } from "lucide-react";
 import { PageHeading } from "@africacod/ui";
-import { commerce, catalog, requireOrganization } from "@/lib/server";
+import {
+  commerce,
+  catalog,
+  storefront,
+  requireOrganization,
+} from "@/lib/server";
 export default async function Dashboard() {
   const { session } = await requireOrganization();
   const service = commerce();
@@ -20,6 +26,7 @@ export default async function Dashboard() {
           market.id === offer.storeMarketId && market.status === "active",
       ),
   );
+  const metrics = await storefront().orderMetrics(session.user.id);
   const active = markets.filter((m) => m.status === "active");
   return (
     <>
@@ -79,6 +86,29 @@ export default async function Dashboard() {
           </span>
           <strong>{activeOffers.length.toString().padStart(2, "0")}</strong>
           <small>Active offers in active store markets</small>
+        </div>
+      </section>
+      <section className="stats-grid">
+        <div className="stat-card">
+          <span>Orders</span>
+          <strong>{metrics.total}</strong>
+        </div>
+        <div className="stat-card">
+          <span>New orders</span>
+          <strong>{metrics.newOrders}</strong>
+        </div>
+        <div className="stat-card">
+          <span>New order value</span>
+          {metrics.values.length ? (
+            metrics.values.map((value) => (
+              <strong key={value.currency} style={{ fontSize: 24 }}>
+                {formatMoney(BigInt(value.totalMinor), value.currency)}
+              </strong>
+            ))
+          ) : (
+            <strong>—</strong>
+          )}
+          <small>Grouped by currency; excludes cancelled orders</small>
         </div>
       </section>
       <section className="panel">

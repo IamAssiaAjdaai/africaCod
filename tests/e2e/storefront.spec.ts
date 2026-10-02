@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
-const password = "Test-catalog-password-2026!";
-test("Glow Beauty catalog persists Beauty → Hair, image, variants, Kenya and Ghana offers", async ({
+const password = "Test-storefront-password-2026!";
+test("Published mobile COD checkout creates Kenya order and renders Ghana offer", async ({
   page,
   browser,
 }) => {
-  test.setTimeout(240000);
+  test.setTimeout(300000);
   const suffix = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
-  const email = `catalog-${suffix}@example.com`;
+  const email = `storefront-${suffix}@example.com`;
   await page.goto("/sign-up");
   await page.getByLabel("Full name").fill("Catalog Merchant");
   await page.getByLabel("Email address").fill(email);
@@ -56,7 +56,6 @@ test("Glow Beauty catalog persists Beauty → Hair, image, variants, Kenya and G
   await page.getByLabel("Name", { exact: true }).fill("Beauty");
   await page.getByRole("button", { name: "Save category" }).click();
   await expect(page).toHaveURL(/\/categories\/[0-9a-f-]+$/);
-  const categoryUrl = page.url();
   await page.goto(`/categories?storeId=${storeId}`);
   await page
     .getByRole("link", { name: "Add subcategory", exact: true })
@@ -108,7 +107,6 @@ test("Glow Beauty catalog persists Beauty → Hair, image, variants, Kenya and G
       image.evaluate((element) => (element as HTMLImageElement).naturalWidth),
     )
     .toBeGreaterThan(0);
-  const mediaUrl = await image.getAttribute("src");
   const variant = page.getByRole("form", { name: "Add variant", exact: true });
   await variant.getByLabel("Variant name").fill("50 ml");
   await variant.getByLabel("Variant SKU").fill("SERUM-50");
@@ -133,63 +131,144 @@ test("Glow Beauty catalog persists Beauty → Hair, image, variants, Kenya and G
       .click();
     await expect(offer.getByRole("status")).toContainText("Offer saved.");
   }
-  await page.getByRole("button", { name: "Save product", exact: true }).click();
-  await expect(
-    page.getByRole("status").filter({ hasText: "Product saved." }),
-  ).toBeVisible();
+
   await page.reload();
+  await page
+    .getByLabel("Headline", { exact: true })
+    .fill("A little care, every day.");
+  await page
+    .getByRole("textbox", { name: /^Subtitle/ })
+    .fill("Meet your daily hair routine.");
+  await page
+    .getByLabel("Benefit bullets")
+    .fill("Easy daily application\n50 ml bottle");
+  await page
+    .getByRole("checkbox", { name: "Hair serum bottle", exact: true })
+    .check();
+  await page.getByRole("button", { name: "Save storefront draft" }).click();
   await expect(
-    page.getByRole("combobox", { name: "Subcategory", exact: true }),
-  ).not.toHaveValue("");
+    page.getByRole("status").filter({ hasText: "Draft saved." }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Preview draft" }).click();
   await expect(
-    page
-      .getByRole("form", { name: "Kenya offer" })
-      .getByLabel("Price (KES)", { exact: true }),
-  ).toHaveValue("3990.00");
+    page.getByRole("heading", { name: "A little care, every day." }),
+  ).toBeVisible();
   await expect(
-    page
-      .getByRole("form", { name: "Ghana offer" })
-      .getByLabel("Price (GHS)", { exact: true }),
-  ).toHaveValue("399.00");
+    page.getByText("Draft preview · Checkout is disabled"),
+  ).toBeVisible();
+  await page.goto(productUrl);
+  await page
+    .getByRole("button", { name: "Publish storefront", exact: true })
+    .click();
   await expect(
-    page.locator("summary").filter({ hasText: "Rwanda" }),
-  ).toHaveCount(0);
-  await page.screenshot({
-    path: "/tmp/africacod-checkpoint2-product.png",
-    fullPage: true,
+    page.getByRole("status").filter({ hasText: "Storefront published." }),
+  ).toBeVisible();
+  const publicUrl = (await page
+    .getByRole("link", { name: "Open public page" })
+    .getAttribute("href"))!;
+  const customerContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
   });
-  await page.setViewportSize({ width: 390, height: 844 });
+  const customer = await customerContext.newPage();
+  await customer.goto(
+    `${publicUrl}?market=KE&utm_source=e2e&utm_campaign=serum-launch`,
+  );
+  await expect(
+    customer.getByRole("heading", { name: "A little care, every day." }),
+  ).toBeVisible();
+  await expect(customer.locator(".public-price strong")).toHaveText(
+    "KES 3,990.00",
+  );
+  await expect(
+    customer.getByRole("img", { name: "Hair serum bottle" }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      customer
+        .getByRole("img", { name: "Hair serum bottle" })
+        .evaluate((el) => (el as HTMLImageElement).naturalWidth),
+    )
+    .toBeGreaterThan(0);
+  await expect(
+    customer.getByRole("combobox", { name: "Delivery market" }),
+  ).toHaveValue("KE");
+  await expect(customer.locator(".public-sticky")).toBeVisible();
   expect(
-    await page.evaluate(
+    await customer.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto(`/products?storeId=${storeId}`);
-  const row = page.getByRole("row").filter({ hasText: "Hair Growth Serum" });
-  await expect(row).toContainText("Hair");
-  await expect(row).toContainText("Kenya · KES 3,990.00");
-  await expect(row).toContainText("Ghana · GHS 399.00");
-  await page.reload();
-  await expect(row).toContainText("SERUM-001");
-  const otherContext = await browser.newContext();
-  const other = await otherContext.newPage();
-  expect((await other.request.get(mediaUrl!)).status()).toBe(401);
-  await other.goto("/sign-up");
-  await other.getByLabel("Full name").fill("Other Merchant");
-  await other.getByLabel("Email address").fill(`other-${suffix}@example.com`);
-  await other.getByLabel("Password", { exact: true }).fill(password);
-  await other.getByRole("button", { name: "Create account" }).click();
-  await expect(other).toHaveURL(/\/onboarding/);
-  await other.getByLabel("Organization name").fill(`Other ${suffix}`);
-  await other.getByRole("button", { name: "Create organization" }).click();
-  await expect(other).toHaveURL(/\/stores$/);
-  for (const url of [categoryUrl, productUrl]) {
-    await other.goto(url);
-    await expect(
-      other.getByRole("heading", { name: "We couldn’t find that page." }),
-    ).toBeVisible();
-  }
-  expect((await other.request.get(mediaUrl!)).status()).toBe(404);
-  await otherContext.close();
+  const phone = customer.getByRole("textbox", { name: "Phone number" });
+  await expect(phone).toHaveAttribute("type", "tel");
+  await expect(phone).toHaveAttribute("inputmode", "tel");
+  await customer.getByLabel("Full name").fill("Jane Kenyan");
+  await phone.fill("12345");
+  await customer.getByLabel("County").fill("Nairobi");
+  await customer.getByLabel("City / town").fill("Nairobi");
+  await customer.getByLabel("Delivery address").fill("12 Garden Road, Nairobi");
+  await customer
+    .getByRole("combobox", { name: "Variant", exact: true })
+    .selectOption({ label: "50 ml" });
+  await customer.screenshot({
+    path: "/tmp/africacod-checkpoint3-mobile-checkout.png",
+    fullPage: true,
+  });
+  await customer.locator(".public-submit").click();
+  await expect(
+    customer.locator(".public-storefront").getByRole("alert"),
+  ).toContainText("valid phone number");
+  await phone.fill("0712345678");
+  let submissions = 0;
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await customer.route("**/api/storefront/**/checkout", async (route) => {
+    submissions++;
+    await gate;
+    await route.continue();
+  });
+  await customer.locator("#cod-checkout").evaluate((form) => {
+    (form as HTMLFormElement).requestSubmit();
+    (form as HTMLFormElement).requestSubmit();
+  });
+  await expect(customer.locator(".public-submit")).toBeDisabled();
+  await expect(customer.locator(".public-submit")).toHaveText("Placing order…");
+  release();
+  await expect(
+    customer.getByRole("heading", { name: "Thank you for your order." }),
+  ).toBeVisible();
+  expect(submissions).toBe(1);
+  const reference = (await customer
+    .locator(".public-receipt strong")
+    .textContent())!;
+  await customer.screenshot({
+    path: "/tmp/africacod-checkpoint3-mobile-success.png",
+    fullPage: true,
+  });
+  await page.goto("/orders");
+  const row = page.getByRole("row").filter({ hasText: reference });
+  await expect(row).toContainText("Kenya");
+  await expect(row).toContainText("Jane Kenyan");
+  await expect(row).toContainText("KES 3,990.00");
+  await row.getByRole("link", { name: reference }).click();
+  await expect(page.getByRole("heading", { name: reference })).toBeVisible();
+  await expect(page.getByText("50 ml · SKU: SERUM-50")).toBeVisible();
+  await expect(
+    page.getByText("12 Garden Road, Nairobi", { exact: false }),
+  ).toBeVisible();
+  await expect(page.getByText("serum-launch", { exact: true })).toBeVisible();
+  await customer.goto(`${publicUrl}?market=GH`);
+  await expect(customer.locator(".public-price strong")).toHaveText(
+    "GHS 399.00",
+  );
+  await expect(customer.getByLabel("Region", { exact: true })).toBeVisible();
+  await customer.goto(`${publicUrl}?market=RW`);
+  await expect(
+    customer.locator(".public-storefront").getByRole("alert"),
+  ).toContainText("unavailable");
+  await expect(customer.locator(".public-submit")).toHaveCount(0);
+  await customer.goto(publicUrl);
+  await expect(customer.locator(".public-price")).toHaveCount(0);
+  await customerContext.close();
 });

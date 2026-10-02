@@ -1,0 +1,119 @@
+import Link from "next/link";
+import { PageHeading, Badge } from "@africacod/ui";
+import { formatMoney } from "@africacod/shared/money";
+import { storefront, requireOrganization } from "@/lib/server";
+import { found } from "@/lib/catalog-pages";
+export default async function OrderDetail({
+  params,
+}: {
+  params: Promise<{ orderId: string }>;
+}) {
+  const { session } = await requireOrganization();
+  const { orderId } = await params;
+  const { order, items, events, attribution, store } = await found(
+    storefront().getOrder(session.user.id, orderId),
+  );
+  return (
+    <>
+      <Link className="back-link" href="/orders">
+        ← Orders
+      </Link>
+      <PageHeading
+        eyebrow={`${store.name} · ${order.marketName}`}
+        title={order.orderNumber}
+        description={`${order.createdAt.toISOString()} · Cash on delivery`}
+        action={<Badge active={order.status === "new"}>{order.status}</Badge>}
+      />
+      {order.duplicateSignal && (
+        <p className="preview-banner">
+          Possible repeat order: the same phone ordered this product in this
+          market within 24 hours. The order was accepted.
+        </p>
+      )}
+      <div className="order-summary">
+        <section className="panel">
+          <h2>Customer & delivery snapshot</h2>
+          <p>
+            <strong>{order.customerName}</strong>
+            <br />
+            {order.phone}
+          </p>
+          <p>
+            {order.address}
+            <br />
+            {order.city}
+            <br />
+            {order.region}
+            <br />
+            {order.marketName} ({order.countryCode ?? "Custom market"})
+          </p>
+        </section>
+        <section className="panel">
+          <h2>Commercial totals</h2>
+          <p>Subtotal: {formatMoney(order.subtotalMinor, order.currency)}</p>
+          <p>
+            Delivery fee: {formatMoney(order.shippingFeeMinor, order.currency)}
+          </p>
+          <p>
+            <strong>
+              Total: {formatMoney(order.totalMinor, order.currency)}
+            </strong>
+          </p>
+          <p className="muted">
+            Original checkout values, preserved when products or offers change.
+          </p>
+        </section>
+      </div>
+      <section className="panel">
+        <h2>Items</h2>
+        {items.map((item) => (
+          <div key={item.id}>
+            <h3>{item.productName}</h3>
+            <p>
+              {item.variantName ?? "No variant"} · SKU: {item.sku ?? "—"}
+            </p>
+            <p>
+              {item.quantity} ×{" "}
+              {formatMoney(item.unitPriceMinor, item.currency)} ={" "}
+              <strong>{formatMoney(item.lineTotalMinor, item.currency)}</strong>
+            </p>
+            <p className="muted">
+              Unit cost snapshot:{" "}
+              {item.unitCostMinor === null
+                ? "Not configured"
+                : formatMoney(item.unitCostMinor, item.currency)}
+            </p>
+          </div>
+        ))}
+      </section>
+      <div className="order-summary">
+        <section className="panel">
+          <h2>Timeline</h2>
+          {events.map((event) => (
+            <p key={event.id}>
+              <strong>{event.message}</strong>
+              <br />
+              <span className="muted">
+                {event.createdAt.toISOString()} · {event.status}
+              </span>
+            </p>
+          ))}
+        </section>
+        <section className="panel order-attribution">
+          <h2>Attribution</h2>
+          <dl>
+            {attribution &&
+              Object.entries(attribution)
+                .filter(([key]) => !["orderId", "organizationId"].includes(key))
+                .map(([key, value]) => (
+                  <div key={key}>
+                    <dt>{key}</dt>
+                    <dd>{value ?? "—"}</dd>
+                  </div>
+                ))}
+          </dl>
+        </section>
+      </div>
+    </>
+  );
+}

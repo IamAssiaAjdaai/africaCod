@@ -1,6 +1,8 @@
+import { defaultPageConfig } from "@africacod/domain";
+import { PageEditor } from "@/components/page-editor";
 import Link from "next/link";
 import { PageHeading } from "@africacod/ui";
-import { catalog, requireOrganization } from "@/lib/server";
+import { catalog, storefront, requireOrganization } from "@/lib/server";
 import { found } from "@/lib/catalog-pages";
 import { ProductEditor } from "@/components/catalog-forms";
 export default async function ProductDetail({
@@ -21,6 +23,7 @@ export default async function ProductDetail({
       service.listOffers(session.user.id, product.id),
       service.getStore(session.user.id, product.storeId),
     ]);
+  const page = await storefront().getProductPage(session.user.id, product.id);
   return (
     <>
       <Link className="back-link" href={`/products?storeId=${store.id}`}>
@@ -39,6 +42,13 @@ export default async function ProductDetail({
         media={media}
         variants={variants}
         offers={offers}
+      />
+      <PageEditor
+        productId={product.id}
+        config={page?.draftConfig ?? defaultPageConfig(product, media)}
+        media={media}
+        published={page?.status === "published"}
+        publicUrl={`/s/${store.slug}/p/${product.slug}`}
       />
     </>
   );
