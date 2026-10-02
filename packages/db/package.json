@@ -16,7 +16,8 @@
     "@africacod/shared": "workspace:*",
     "@africacod/markets": "workspace:*",
     "drizzle-orm": "^0.45.1",
-    "postgres": "^3.4.8"
+    "postgres": "^3.4.8",
+    "@africacod/validation": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

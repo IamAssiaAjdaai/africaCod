@@ -4,6 +4,7 @@ import {
   categories,
   products,
   productMedia,
+  productPages,
   productVariants,
   productMarketOffers,
   storeMarkets,
@@ -489,14 +490,43 @@ export class CatalogService extends CommerceService {
     storage: MediaStorage,
   ) {
     const media = await this.getMedia(userId, mediaId);
-    await this.db
-      .delete(productMedia)
-      .where(
-        and(
-          eq(productMedia.id, media.id),
-          eq(productMedia.organizationId, media.organizationId),
-        ),
-      );
+    await this.db.transaction(async (tx) => {
+      await tx
+        .select({ id: products.id })
+        .from(products)
+        .where(
+          and(
+            eq(products.id, media.productId),
+            eq(products.organizationId, media.organizationId),
+          ),
+        )
+        .for("update");
+      const [page] = await tx
+        .select()
+        .from(productPages)
+        .where(
+          and(
+            eq(productPages.productId, media.productId),
+            eq(productPages.organizationId, media.organizationId),
+          ),
+        );
+      if (
+        page?.status === "published" &&
+        page.publishedConfig?.media.some((image) => image.id === media.id)
+      )
+        throw new DomainError(
+          "CONFLICT",
+          "This image is published. Publish a draft without it, or unpublish the page before removing it.",
+        );
+      await tx
+        .delete(productMedia)
+        .where(
+          and(
+            eq(productMedia.id, media.id),
+            eq(productMedia.organizationId, media.organizationId),
+          ),
+        );
+    });
     // A failed physical cleanup leaves an inaccessible orphan, never a broken visible record.
     try {
       await storage.remove(media.storageKey);

@@ -22,15 +22,15 @@ export function parseMoney(value: string, currency: string): number {
     throw new Error("Amount is too large.");
   return Number(minor);
 }
-export function moneyInput(minor: number, currency: string): string {
-  if (!Number.isSafeInteger(minor) || minor < 0)
+export function moneyInput(minor: number | bigint, currency: string): string {
+  if ((typeof minor === "number" && !Number.isSafeInteger(minor)) || minor < 0)
     throw new Error("Invalid minor-unit amount.");
   const digits = currencyDecimals(currency);
   const text = String(minor).padStart(digits + 1, "0");
   return digits ? `${text.slice(0, -digits)}.${text.slice(-digits)}` : text;
 }
 export function formatMoney(
-  minor: number,
+  minor: number | bigint,
   currency: string,
   locale = "en",
 ): string {

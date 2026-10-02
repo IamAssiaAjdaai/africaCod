@@ -115,3 +115,95 @@ export const reorderInput = z.object({
   productId: z.uuid(),
   ids: z.array(z.uuid()).max(100),
 });
+
+export const pageConfigInput = z.object({
+  headline: z.string().trim().min(2).max(200),
+  subtitle: z.string().trim().max(500).default(""),
+  benefits: z.array(z.string().trim().min(1).max(200)).max(8).default([]),
+  trustMessage: z
+    .string()
+    .trim()
+    .max(300)
+    .default("Pay when your order arrives."),
+  ctaLabel: z
+    .string()
+    .trim()
+    .min(2)
+    .max(60)
+    .default("Order with cash on delivery"),
+  mediaIds: z.array(z.uuid()).max(100).default([]),
+});
+export type PageConfig = z.infer<typeof pageConfigInput>;
+export const checkoutConfigurationInput = z.object({
+  locale: z.string().min(2).max(50),
+  callingCode: z.string().nullable(),
+  phoneCountry: z
+    .string()
+    .regex(/^[A-Z]{2}$/)
+    .nullable(),
+  regionRequired: z.boolean(),
+  cityRequired: z.boolean(),
+  addressRequired: z.boolean(),
+  regionLabel: z.string().min(1).max(60),
+  cityLabel: z.string().min(1).max(60),
+  addressLabel: z.string().min(1).max(60),
+  phoneLabel: z.string().min(1).max(60),
+});
+export type CheckoutConfiguration = z.infer<typeof checkoutConfigurationInput>;
+const trackingValue = z.string().trim().max(500).nullable().default(null);
+const trackingUrl = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine((value) => {
+    try {
+      return ["http:", "https:"].includes(new URL(value).protocol);
+    } catch {
+      return false;
+    }
+  })
+  .nullable()
+  .default(null);
+export const attributionInput = z.object({
+  utmSource: trackingValue,
+  utmMedium: trackingValue,
+  utmCampaign: trackingValue,
+  utmContent: trackingValue,
+  utmTerm: trackingValue,
+  fbclid: trackingValue,
+  fbp: trackingValue,
+  fbc: trackingValue,
+  referrer: trackingUrl,
+  landingUrl: trackingUrl,
+});
+export const checkoutInput = z.object({
+  market: z.string().min(2).max(150),
+  name: z.string().trim().min(2).max(150),
+  phone: z.string().trim().min(5).max(40),
+  region: z.string().trim().max(150).default(""),
+  city: z.string().trim().max(150).default(""),
+  address: z.string().trim().max(500).default(""),
+  variantId: z.uuid().nullable().default(null),
+  quantity: z.number().int().min(1).max(20),
+  attribution: attributionInput.default({
+    utmSource: null,
+    utmMedium: null,
+    utmCampaign: null,
+    utmContent: null,
+    utmTerm: null,
+    fbclid: null,
+    fbp: null,
+    fbc: null,
+    referrer: null,
+    landingUrl: null,
+  }),
+});
+export const orderFiltersInput = z.object({
+  storeId: z.uuid().optional(),
+  marketId: z.uuid().optional(),
+  status: z.enum(["new", "cancelled"]).optional(),
+  search: z.string().trim().max(150).default(""),
+  dateFrom: z.iso.date().optional(),
+  dateTo: z.iso.date().optional(),
+  page: z.number().int().min(1).max(100000).default(1),
+});

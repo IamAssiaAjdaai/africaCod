@@ -135,6 +135,8 @@ export class CommerceService {
         organizationId: storeMarkets.organizationId,
         storeId: storeMarkets.storeId,
         countryCode: storeMarkets.countryCode,
+        customKey: storeMarkets.customKey,
+        checkoutConfig: storeMarkets.checkoutConfig,
         countryName: storeMarkets.name,
         callingCode: storeMarkets.callingCode,
         currency: storeMarkets.currency,

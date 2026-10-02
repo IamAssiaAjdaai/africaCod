@@ -1,8 +1,10 @@
+import type { PageConfig, CheckoutConfiguration } from "@africacod/validation";
 import { sql } from "drizzle-orm";
 import {
   boolean,
   integer,
   bigint,
+  jsonb,
   foreignKey,
   check,
   index,
@@ -150,6 +152,7 @@ export const storeMarkets = pgTable(
     name: text("name").notNull(),
     customKey: text("custom_key"),
     callingCode: text("calling_code"),
+    checkoutConfig: jsonb("checkout_config").$type<CheckoutConfiguration>(),
     currency: varchar("currency", { length: 3 }).notNull(),
     locale: text("locale").notNull(),
     status: marketStatus("status").default("active").notNull(),
@@ -327,6 +330,11 @@ export const productVariants = pgTable(
       columns: [t.productId, t.organizationId],
       foreignColumns: [products.id, products.organizationId],
     }),
+    unique("variant_id_product_org_unique").on(
+      t.id,
+      t.productId,
+      t.organizationId,
+    ),
     unique("variant_product_sku_unique").on(t.productId, t.sku),
     index("variants_org_product_idx").on(t.organizationId, t.productId),
   ],
@@ -347,6 +355,13 @@ export const productMarketOffers = pgTable(
     ...dates(),
   },
   (t) => [
+    unique("offer_identity_unique").on(
+      t.id,
+      t.productId,
+      t.storeMarketId,
+      t.storeId,
+      t.organizationId,
+    ),
     unique("offer_product_market_unique").on(t.productId, t.storeMarketId),
     foreignKey({
       name: "offer_product_store_tenant_fk",
@@ -367,5 +382,251 @@ export const productMarketOffers = pgTable(
       sql`${t.priceMinor} > 0 AND ${t.priceMinor} <= 9007199254740991 AND (${t.compareAtPriceMinor} IS NULL OR (${t.compareAtPriceMinor} >= ${t.priceMinor} AND ${t.compareAtPriceMinor} <= 9007199254740991)) AND (${t.costMinor} IS NULL OR (${t.costMinor} >= 0 AND ${t.costMinor} <= 9007199254740991))`,
     ),
     index("offers_org_product_idx").on(t.organizationId, t.productId),
+  ],
+);
+
+export type PublishedPageConfig = PageConfig & {
+  productName: string;
+  description: string | null;
+  media: {
+    id: string;
+    storageKey: string;
+    mimeType: string;
+    altText: string | null;
+  }[];
+};
+export const pageStatus = pgEnum("product_page_status", ["draft", "published"]);
+export const orderStatus = pgEnum("order_status", ["new", "cancelled"]);
+export const productPages = pgTable(
+  "product_pages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    productId: uuid("product_id").notNull().unique(),
+    templateKey: text("template_key").default("cod_v1").notNull(),
+    status: pageStatus("status").default("draft").notNull(),
+    draftConfig: jsonb("draft_config").$type<PageConfig>().notNull(),
+    publishedConfig: jsonb("published_config").$type<PublishedPageConfig>(),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    ...dates(),
+  },
+  (t) => [
+    foreignKey({
+      name: "page_product_tenant_fk",
+      columns: [t.productId, t.organizationId],
+      foreignColumns: [products.id, products.organizationId],
+    }),
+    check("page_template_valid", sql`${t.templateKey} = 'cod_v1'`),
+    check(
+      "published_page_has_content",
+      sql`${t.status} <> 'published' OR (${t.publishedConfig} IS NOT NULL AND ${t.publishedAt} IS NOT NULL)`,
+    ),
+  ],
+);
+export const customers = pgTable(
+  "customers",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    storeId: uuid("store_id").notNull(),
+    name: varchar("name", { length: 150 }).notNull(),
+    normalizedPhone: varchar("normalized_phone", { length: 20 }).notNull(),
+    ...dates(),
+  },
+  (t) => [
+    foreignKey({
+      name: "customer_store_tenant_fk",
+      columns: [t.storeId, t.organizationId],
+      foreignColumns: [stores.id, stores.organizationId],
+    }),
+    unique("customer_store_phone_unique").on(t.storeId, t.normalizedPhone),
+    unique("customer_identity_unique").on(t.id, t.storeId, t.organizationId),
+    check("customer_e164", sql`${t.normalizedPhone} ~ '^[+][1-9][0-9]{6,14}$'`),
+  ],
+);
+export const orders = pgTable(
+  "orders",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    storeId: uuid("store_id").notNull(),
+    storeMarketId: uuid("store_market_id").notNull(),
+    customerId: uuid("customer_id").notNull(),
+    orderNumber: varchar("order_number", { length: 40 }).notNull().unique(),
+    checkoutIdempotencyKey: uuid("checkout_idempotency_key").notNull(),
+    requestHash: text("request_hash").notNull(),
+    countryCode: varchar("country_code", { length: 2 }),
+    marketName: text("market_name").notNull(),
+    currency: varchar("currency", { length: 3 }).notNull(),
+    customerName: text("customer_name").notNull(),
+    phone: text("phone").notNull(),
+    region: text("region").notNull(),
+    city: text("city").notNull(),
+    address: text("address").notNull(),
+    subtotalMinor: bigint("subtotal_minor", { mode: "number" }).notNull(),
+    shippingFeeMinor: bigint("shipping_fee_minor", { mode: "number" })
+      .default(0)
+      .notNull(),
+    totalMinor: bigint("total_minor", { mode: "number" }).notNull(),
+    status: orderStatus("order_status").default("new").notNull(),
+    duplicateSignal: boolean("duplicate_signal").default(false).notNull(),
+    ...dates(),
+  },
+  (t) => [
+    unique("order_store_idempotency_unique").on(
+      t.storeId,
+      t.checkoutIdempotencyKey,
+    ),
+    unique("order_id_org_unique").on(t.id, t.organizationId),
+    unique("order_identity_unique").on(
+      t.id,
+      t.storeId,
+      t.storeMarketId,
+      t.organizationId,
+      t.currency,
+    ),
+    foreignKey({
+      name: "order_market_store_tenant_fk",
+      columns: [t.storeMarketId, t.storeId, t.organizationId],
+      foreignColumns: [
+        storeMarkets.id,
+        storeMarkets.storeId,
+        storeMarkets.organizationId,
+      ],
+    }),
+    foreignKey({
+      name: "order_customer_store_tenant_fk",
+      columns: [t.customerId, t.storeId, t.organizationId],
+      foreignColumns: [
+        customers.id,
+        customers.storeId,
+        customers.organizationId,
+      ],
+    }),
+    check(
+      "order_money_valid",
+      sql`${t.subtotalMinor} > 0 AND ${t.shippingFeeMinor} >= 0 AND ${t.totalMinor} = ${t.subtotalMinor} + ${t.shippingFeeMinor} AND ${t.totalMinor} <= 9007199254740991`,
+    ),
+    index("orders_org_date_idx").on(t.organizationId, t.createdAt),
+  ],
+);
+export const orderItems = pgTable(
+  "order_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    orderId: uuid("order_id").notNull(),
+    storeId: uuid("store_id").notNull(),
+    storeMarketId: uuid("store_market_id").notNull(),
+    productId: uuid("product_id").notNull(),
+    variantId: uuid("variant_id"),
+    offerId: uuid("offer_id").notNull(),
+    productName: text("product_name").notNull(),
+    variantName: text("variant_name"),
+    sku: text("sku"),
+    currency: varchar("currency", { length: 3 }).notNull(),
+    unitPriceMinor: bigint("unit_price_minor", { mode: "number" }).notNull(),
+    unitCostMinor: bigint("unit_cost_minor", { mode: "number" }),
+    quantity: integer("quantity").notNull(),
+    lineTotalMinor: bigint("line_total_minor", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    foreignKey({
+      name: "item_order_identity_fk",
+      columns: [
+        t.orderId,
+        t.storeId,
+        t.storeMarketId,
+        t.organizationId,
+        t.currency,
+      ],
+      foreignColumns: [
+        orders.id,
+        orders.storeId,
+        orders.storeMarketId,
+        orders.organizationId,
+        orders.currency,
+      ],
+    }),
+    foreignKey({
+      name: "item_product_store_fk",
+      columns: [t.productId, t.storeId, t.organizationId],
+      foreignColumns: [products.id, products.storeId, products.organizationId],
+    }),
+    foreignKey({
+      name: "item_variant_product_fk",
+      columns: [t.variantId, t.productId, t.organizationId],
+      foreignColumns: [
+        productVariants.id,
+        productVariants.productId,
+        productVariants.organizationId,
+      ],
+    }),
+    foreignKey({
+      name: "item_offer_identity_fk",
+      columns: [
+        t.offerId,
+        t.productId,
+        t.storeMarketId,
+        t.storeId,
+        t.organizationId,
+      ],
+      foreignColumns: [
+        productMarketOffers.id,
+        productMarketOffers.productId,
+        productMarketOffers.storeMarketId,
+        productMarketOffers.storeId,
+        productMarketOffers.organizationId,
+      ],
+    }),
+    check(
+      "item_money_valid",
+      sql`${t.quantity} BETWEEN 1 AND 20 AND ${t.unitPriceMinor} > 0 AND (${t.unitCostMinor} IS NULL OR ${t.unitCostMinor} >= 0) AND ${t.lineTotalMinor} = ${t.unitPriceMinor} * ${t.quantity} AND ${t.lineTotalMinor} <= 9007199254740991`,
+    ),
+  ],
+);
+export const orderEvents = pgTable(
+  "order_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    orderId: uuid("order_id").notNull(),
+    status: orderStatus("status").notNull(),
+    message: text("message").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    foreignKey({
+      name: "event_order_tenant_fk",
+      columns: [t.orderId, t.organizationId],
+      foreignColumns: [orders.id, orders.organizationId],
+    }),
+  ],
+);
+export const orderAttribution = pgTable(
+  "order_attribution",
+  {
+    orderId: uuid("order_id").primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    utmSource: text("utm_source"),
+    utmMedium: text("utm_medium"),
+    utmCampaign: text("utm_campaign"),
+    utmContent: text("utm_content"),
+    utmTerm: text("utm_term"),
+    fbclid: text("fbclid"),
+    fbp: text("fbp"),
+    fbc: text("fbc"),
+    referrer: text("referrer"),
+    landingUrl: text("landing_url"),
+    userAgent: text("user_agent"),
+  },
+  (t) => [
+    foreignKey({
+      name: "attribution_order_tenant_fk",
+      columns: [t.orderId, t.organizationId],
+      foreignColumns: [orders.id, orders.organizationId],
+    }),
   ],
 );

@@ -29,6 +29,13 @@
       "when": 1790941605656,
       "tag": "0003_product_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790944363507,
+      "tag": "0004_cod_storefront_orders",
+      "breakpoints": true
     }
   ]
 }

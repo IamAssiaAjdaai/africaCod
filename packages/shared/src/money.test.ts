@@ -21,3 +21,8 @@ it("rejects negatives, fractional zero-decimal money, rounding, unsupported curr
   expect(parseMoney(moneyInput(amount, "KWD"), "KWD")).toBe(amount);
   expect(formatMoney(amount, "KWD")).toContain("9,007,199,254,740.991");
 });
+it("formats aggregated order values beyond the number range without rounding", () => {
+  expect(formatMoney(18014398509481983n, "KES").replace(/\s/g, " ")).toBe(
+    "KES 180,143,985,094,819.83",
+  );
+});
