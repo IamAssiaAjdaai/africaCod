@@ -1,0 +1,1 @@
+ALTER TABLE "tracking_connections" ADD COLUMN "last_failure" timestamp with time zone;

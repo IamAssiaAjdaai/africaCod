@@ -1138,3 +1138,151 @@ export const providerTestShipments = pgTable("provider_test_shipments", {
   calls: integer("calls").default(0).notNull(),
   ...dates(),
 });
+
+// Tracking is explicitly enabled per Store; browser projections never include ciphertext.
+export const trackingConnections = pgTable(
+  "tracking_connections",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    storeId: uuid("store_id").notNull(),
+    provider: text("provider").notNull(),
+    enabled: boolean("enabled").default(false).notNull(),
+    mode: text("mode").notNull(),
+    settings: jsonb("settings").$type<Record<string, string>>().notNull(),
+    secretEncrypted: text("secret_encrypted"),
+    revision: integer("revision").default(1).notNull(),
+    enabledAt: timestamp("enabled_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    lastSuccess: timestamp("last_success", { withTimezone: true }),
+    lastFailure: timestamp("last_failure", { withTimezone: true }),
+    lastError: text("last_error"),
+    ...dates(),
+  },
+  (t) => [
+    unique("tracking_store_provider_unique").on(t.storeId, t.provider),
+    unique("tracking_identity_unique").on(t.id, t.storeId, t.organizationId),
+    foreignKey({
+      columns: [t.storeId, t.organizationId],
+      foreignColumns: [stores.id, stores.organizationId],
+    }),
+    check(
+      "tracking_provider_valid",
+      sql`${t.provider} IN ('meta','tiktok','google-ads','google-sheets') AND ${t.mode} IN ('mock','browser','blocked','production')`,
+    ),
+  ],
+);
+export const commerceEvents = pgTable(
+  "commerce_events",
+  {
+    id: text("id").primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    storeId: uuid("store_id").notNull(),
+    orderId: uuid("order_id"),
+    type: text("type").notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    unique("commerce_event_identity").on(t.id, t.storeId, t.organizationId),
+    foreignKey({
+      columns: [t.storeId, t.organizationId],
+      foreignColumns: [stores.id, stores.organizationId],
+    }),
+    foreignKey({
+      columns: [t.orderId, t.organizationId],
+      foreignColumns: [orders.id, orders.organizationId],
+    }).onDelete("cascade"),
+    check(
+      "commerce_event_type",
+      sql`${t.type} IN ('product_viewed','checkout_submitted','order_created','order_confirmed','shipment_created','shipment_shipped','shipment_out_for_delivery','shipment_delivered','shipment_refused','shipment_returned','shipment_changed')`,
+    ),
+  ],
+);
+export const trackingJobs = pgTable(
+  "tracking_jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    storeId: uuid("store_id").notNull(),
+    connectionId: uuid("connection_id").notNull(),
+    eventId: text("event_id").notNull(),
+    revision: integer("revision").notNull(),
+    status: text("status").default("pending").notNull(),
+    availableAt: timestamp("available_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    attempts: integer("attempts").default(0).notNull(),
+    safeError: text("safe_error"),
+  },
+  (t) => [
+    unique("tracking_job_dedupe").on(t.connectionId, t.eventId),
+    foreignKey({
+      columns: [t.connectionId, t.storeId, t.organizationId],
+      foreignColumns: [
+        trackingConnections.id,
+        trackingConnections.storeId,
+        trackingConnections.organizationId,
+      ],
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [t.eventId, t.storeId, t.organizationId],
+      foreignColumns: [
+        commerceEvents.id,
+        commerceEvents.storeId,
+        commerceEvents.organizationId,
+      ],
+    }).onDelete("cascade"),
+    check(
+      "tracking_job_status",
+      sql`${t.status} IN ('pending','processing','done','failed','skipped')`,
+    ),
+    index("tracking_job_due").on(t.status, t.availableAt),
+  ],
+);
+export const trackingAttempts = pgTable("tracking_attempts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  jobId: uuid("job_id")
+    .notNull()
+    .references(() => trackingJobs.id, { onDelete: "cascade" }),
+  startedAt: timestamp("started_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+  success: boolean("success"),
+  safeError: text("safe_error"),
+});
+// Deterministic adapter receipts only. Never used as a production delivery claim.
+export const trackingTestReceipts = pgTable(
+  "tracking_test_receipts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    connectionId: uuid("connection_id")
+      .notNull()
+      .references(() => trackingConnections.id, { onDelete: "cascade" }),
+    eventId: text("event_id").notNull(),
+    eventName: text("event_name").notNull(),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [unique("tracking_receipt_dedupe").on(t.connectionId, t.eventId)],
+);
+export const sheetsTestRows = pgTable(
+  "sheets_test_rows",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    connectionId: uuid("connection_id")
+      .notNull()
+      .references(() => trackingConnections.id, { onDelete: "cascade" }),
+    orderNumber: text("order_number").notNull(),
+    columns: jsonb("columns")
+      .$type<Record<string, string | number>>()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [unique("sheets_row_mapping").on(t.connectionId, t.orderNumber)],
+);

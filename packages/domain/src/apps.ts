@@ -17,28 +17,32 @@ export const appCatalog: ReadonlyArray<
       id: "meta",
       name: "Meta",
       category: "Marketing",
-      description: "Advertising integration is planned. No events are sent.",
+      description:
+        "Opt-in Pixel and asynchronous CAPI: checkout Lead; optional delivered Purchase.",
       status: "Coming soon",
     },
     {
       id: "tiktok",
       name: "TikTok",
       category: "Marketing",
-      description: "Pixel and conversion integrations are planned.",
+      description:
+        "Opt-in browser Pixel foundation; server Events API deferred.",
       status: "Coming soon",
     },
     {
       id: "google-ads",
       name: "Google Ads",
       category: "Marketing",
-      description: "Advertising configuration is planned.",
+      description:
+        "Browser lead conversion foundation; delivered server conversion activation deferred.",
       status: "Coming soon",
     },
     {
       id: "google-sheets",
       name: "Google Sheets",
       category: "Data",
-      description: "Order exports to spreadsheets are planned.",
+      description:
+        "Idempotent order export test adapter; production Google OAuth deferred.",
       status: "Coming soon",
     },
     {
