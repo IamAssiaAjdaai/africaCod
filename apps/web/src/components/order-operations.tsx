@@ -16,7 +16,7 @@ export function OrderOperations({
   const { order, fulfillment, shipment } = data;
   return (
     <>
-      <section className="panel">
+      <section id="confirmation" className="panel">
         <h2>Confirmation</h2>
         <p>
           Confirmation state:{" "}
@@ -70,6 +70,7 @@ export function OrderOperations({
               <OperationForm
                 orderId={order.id}
                 intent="attempt"
+                anchor="callback"
                 label="Set callback"
               >
                 <input type="hidden" name="outcome" value="callback" />
@@ -77,6 +78,10 @@ export function OrderOperations({
                   Callback date and time (UTC)
                   <input type="datetime-local" name="nextCallbackAt" required />
                 </label>
+                <p className="muted">
+                  Enter UTC time. The queue marks this callback due at that
+                  time.
+                </p>
                 <label>
                   Callback note
                   <input name="note" maxLength={2000} />
@@ -93,6 +98,7 @@ export function OrderOperations({
               <OperationForm
                 orderId={order.id}
                 intent="attempt"
+                anchor="cancel-order"
                 label="Cancel order"
               >
                 <input type="hidden" name="outcome" value="cancelled" />
@@ -142,7 +148,7 @@ export function OrderOperations({
         )}
       </section>
       <div className="order-summary">
-        <section className="panel">
+        <section id="fulfillment" className="panel">
           <h2>Fulfillment</h2>
           <p>
             Mode: {fulfillment?.mode === "provider" ? "ShipCOD" : "Manual"} ·{" "}
@@ -177,7 +183,7 @@ export function OrderOperations({
             Fulfilled means a Shipment was created. It does not mean delivered.
           </p>
         </section>
-        <section className="panel">
+        <section id="shipment" className="panel">
           <h2>Shipment</h2>
           {shipment ? (
             <>

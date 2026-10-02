@@ -1,10 +1,20 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 const password = "Test-storefront-password-2026!";
-test("Manual lifecycle keeps Order confirmed through delivered and refused/returned shipments", async ({
+async function noOverflow(page: Page) {
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+    ),
+  ).toBe(true);
+}
+test("coherent merchant navigation and mobile customer checkout", async ({
   page,
   browser,
 }) => {
   test.setTimeout(300000);
+  page.setDefaultTimeout(20000);
+  const clientErrors: string[] = [];
+  page.on("pageerror", (error) => clientErrors.push(error.message));
   const suffix = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
   const email = `storefront-${suffix}@example.com`;
   await page.goto("/sign-up");
@@ -166,129 +176,161 @@ test("Manual lifecycle keeps Order confirmed through delivered and refused/retur
   const publicUrl = (await page
     .getByRole("link", { name: "Open public page" })
     .getAttribute("href"))!;
-  const customerContext = await browser.newContext({
-    viewport: { width: 390, height: 844 },
+
+  const context = await browser.newContext({
+    viewport: { width: 375, height: 812 },
   });
-  const customer = await customerContext.newPage();
-  async function submitOrder(name: string) {
-    await customer.goto(`${publicUrl}?market=KE`);
-    await customer.getByLabel("Full name").fill(name);
-    await customer
-      .getByRole("textbox", { name: "Phone number" })
-      .fill("0712345678");
-    await customer.getByLabel("County").fill("Nairobi");
-    await customer.getByLabel("City / town").fill("Nairobi");
-    await customer
-      .getByLabel("Delivery address")
-      .fill("24 Garden Road, Nairobi");
-    await customer.locator(".public-submit").click();
+  const customer = await context.newPage();
+  customer.setDefaultTimeout(20000);
+  const observationResponses: number[] = [];
+  customer.on("pageerror", (error) => clientErrors.push(error.message));
+  customer.on("response", (response) => {
+    if (
+      response.request().method() === "POST" &&
+      /\/(events|view)$/.test(response.url())
+    )
+      observationResponses.push(response.status());
+  });
+  const observationRequests: { type: string }[] = [];
+  customer.on("request", (request) => {
+    if (request.url().endsWith("/events") && request.method() === "POST")
+      observationRequests.push(request.postDataJSON());
+    if (request.url().endsWith("/view") && request.method() === "POST")
+      observationRequests.push({ type: "product_view" });
+  });
+  for (const width of [375, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const route of [
+      "/",
+      "/dashboard",
+      "/products",
+      "/categories",
+      storeUrl,
+      productUrl,
+      "/orders",
+      "/orders/confirmation",
+      "/fulfillment",
+      "/analytics",
+      "/apps",
+      "/pages",
+      "/settings",
+    ]) {
+      await page.goto(route);
+      await expect(page.locator("h1").first()).toBeVisible();
+      await noOverflow(page);
+    }
+    await page.goto("/dashboard");
+    const nav = page.getByRole("navigation", { name: "Main navigation" });
+    if (width === 375) {
+      await page
+        .getByRole("button", { name: "Open menu", exact: true })
+        .click();
+      await expect(
+        page.getByRole("button", { name: "Close menu", exact: true }),
+      ).toBeFocused();
+      await page.keyboard.press("Escape");
+      await expect(
+        page.getByRole("button", { name: "Open menu", exact: true }),
+      ).toBeFocused();
+      await page
+        .getByRole("button", { name: "Open menu", exact: true })
+        .click();
+    }
+    await nav.getByRole("link", { name: "Confirmation", exact: true }).click();
+    await expect(page).toHaveURL(/\/orders\/confirmation$/);
+    if (width === 375)
+      await page
+        .getByRole("button", { name: "Open menu", exact: true })
+        .click();
     await expect(
-      customer.getByRole("heading", { name: "Thank you for your order." }),
-    ).toBeVisible();
-    return (await customer.locator(".public-receipt strong").textContent())!;
+      nav.getByRole("link", { name: "Confirmation", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
+    await expect(
+      nav.getByRole("link", { name: "Orders", exact: true }),
+    ).not.toHaveAttribute("aria-current", "page");
+    if (width === 375) await page.keyboard.press("Escape");
   }
-  async function openOrder(reference: string) {
-    await page.goto("/orders");
-    await page
-      .getByRole("row")
-      .filter({ hasText: reference })
-      .getByRole("link", { name: reference, exact: true })
-      .click();
-    await expect(page.getByTestId("order-commercial-status")).toHaveText("new");
-    return page.url();
-  }
-  async function fulfill() {
-    await page
-      .getByRole("button", { name: "Confirm order", exact: true })
-      .click();
-    await expect(page.getByTestId("order-commercial-status")).toHaveText(
-      "confirmed",
+  await customer.goto(`/s/catalog-${suffix}?market=KE`);
+  await expect(customer.getByText("Kenya · KES")).toBeVisible();
+  await noOverflow(customer);
+  await customer.getByRole("link", { name: /Hair Growth Serum/ }).click();
+  await expect.poll(() => customer.url()).toContain(publicUrl);
+  await expect(
+    customer.getByRole("heading", { name: "A little care, every day." }),
+  ).toBeVisible();
+  await expect(customer.locator(".public-price")).toContainText("3,990");
+  await customer.getByLabel("Full name").fill("Jane Kenyan");
+  await customer.getByLabel("Phone number", { exact: true }).fill("0712345678");
+  await customer.getByLabel("County", { exact: true }).fill("Nairobi");
+  await customer.getByLabel("City / town", { exact: true }).fill("Nairobi");
+  await customer
+    .getByLabel("Delivery address", { exact: true })
+    .fill("12 Garden Road");
+  await customer
+    .getByRole("button", { name: "Order with cash on delivery", exact: true })
+    .click();
+  await expect(
+    customer.getByRole("heading", { name: "Thank you for your order." }),
+  ).toBeFocused();
+  await noOverflow(customer);
+  await expect
+    .poll(() => observationRequests.map((r) => r.type))
+    .toEqual(
+      expect.arrayContaining([
+        "store_view",
+        "product_view",
+        "checkout_started",
+      ]),
     );
-    await page
-      .getByRole("button", { name: "Create fulfillment", exact: true })
-      .click();
-    await expect(page.getByTestId("fulfillment-state")).toHaveText("ready");
-    await page
-      .getByRole("button", { name: "Create manual shipment", exact: true })
-      .click();
-    await expect(page.getByTestId("fulfillment-state")).toHaveText("fulfilled");
-    await expect(page.getByTestId("shipment-state")).toHaveText("created");
-  }
-  async function transition(label: string, status: string) {
-    await page.getByRole("button", { name: label, exact: true }).click();
-    await expect(page.getByTestId("shipment-state")).toHaveText(status);
-    await expect(page.getByTestId("order-commercial-status")).toHaveText(
-      "confirmed",
-    );
-  }
-  const first = await submitOrder("Lifecycle Kenyan Customer");
-  const firstUrl = await openOrder(first);
-  await expect(page.getByTestId("confirmation-state")).toHaveText(
-    "uncontacted",
-  );
-  await page.getByRole("button", { name: "No answer", exact: true }).click();
-  await expect(page.getByTestId("confirmation-state")).toHaveText("attempted");
+  await expect.poll(() => observationResponses.length).toBe(3);
+  expect(observationResponses).toEqual([200, 200, 200]);
+  expect(
+    observationRequests.filter((r) => r.type === "checkout_started"),
+  ).toHaveLength(1);
+  await page.goto("/orders");
   await page
-    .getByLabel("Callback date and time (UTC)")
-    .fill(new Date(Date.now() - 3600000).toISOString().slice(0, 16));
-  await page.getByRole("button", { name: "Set callback", exact: true }).click();
-  await expect(page.getByTestId("confirmation-state")).toHaveText(
-    "callback_due",
-  );
-  await page.goto("/orders/callbacks");
-  await expect(page.getByRole("row").filter({ hasText: first })).toContainText(
-    "overdue",
-  );
-  await page.goto(firstUrl);
-  await fulfill();
-  await transition("Mark shipped", "shipped");
-  await transition("Mark out for delivery", "out_for_delivery");
-  await transition("Mark delivered", "delivered");
+    .getByRole("link", { name: "Open order", exact: true })
+    .first()
+    .click();
+  await expect(page.getByTestId("order-commercial-status")).toHaveText("new");
+  await expect(
+    page.getByRole("heading", { name: "Customer & delivery snapshot" }),
+  ).toBeVisible();
+  for (const width of [375, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await noOverflow(page);
+  }
   await page.screenshot({
-    path: "/tmp/africacod-checkpoint5-order.png",
+    path: "test-results/checkpoint-8-order-detail.png",
     fullPage: true,
   });
-  await page.goto("/dashboard");
-  await expect(
-    page.getByTestId("metric-delivered").locator("strong"),
-  ).toHaveText("1");
-  await expect(page.getByTestId("delivered-revenue")).toContainText(
-    "KES 3,990.00",
-  );
-  // The old delivered order retains its snapshot after current offer edits.
-  await page.goto(productUrl);
-  const kenyaOffer = page.getByRole("form", {
-    name: "Kenya offer",
-    exact: true,
+  await customer.screenshot({
+    path: "test-results/checkpoint-8-mobile-success.png",
+    fullPage: true,
   });
-  await kenyaOffer.getByLabel(/^Price \(/).fill("4490");
-  await kenyaOffer
-    .getByRole("button", { name: "Save Kenya offer", exact: true })
-    .click();
-  await expect(kenyaOffer.getByRole("status")).toContainText("Offer saved.");
-  const second = await submitOrder("Returned Kenyan Customer");
-  await openOrder(second);
-  await fulfill();
-  await transition("Mark shipped", "shipped");
-  await transition("Mark out for delivery", "out_for_delivery");
-  await transition("Mark refused", "refused");
-  await transition("Mark returned", "returned");
-  await page.goto("/fulfillment?fulfillment=fulfilled");
-  await expect(page.getByRole("row").filter({ hasText: second })).toContainText(
-    "returned",
+  const badOrigin = await customer.request.post(
+    `/api/storefront/catalog-${suffix}/events`,
+    {
+      headers: { Origin: "https://unrelated.example" },
+      data: { eventId: crypto.randomUUID(), type: "store_view" },
+    },
   );
-  await page.goto("/dashboard");
-  await expect(
-    page.getByTestId("metric-delivered").locator("strong"),
-  ).toHaveText("1");
-  await expect(
-    page.getByTestId("metric-returned").locator("strong"),
-  ).toHaveText("1");
-  await expect(page.getByTestId("delivered-revenue")).toContainText(
-    "KES 3,990.00",
+  expect(badOrigin.status()).toBe(403);
+  const dntContext = await browser.newContext();
+  await dntContext.addInitScript(() =>
+    Object.defineProperty(navigator, "doNotTrack", { value: "1" }),
   );
-  await expect(page.getByTestId("delivered-revenue")).not.toContainText(
-    "4,490",
-  );
-  await customerContext.close();
+  const dntPage = await dntContext.newPage();
+  const dntRequests: string[] = [];
+  dntPage.on("request", (request) => {
+    if (request.method() === "POST" && /\/(view|events)$/.test(request.url()))
+      dntRequests.push(request.url());
+  });
+  await dntPage.goto(`${publicUrl}?market=KE`);
+  await dntPage.getByLabel("Full name").fill("DNT Customer");
+  await dntPage.getByLabel("Phone number", { exact: true }).fill("0712345678");
+  expect(dntRequests).toHaveLength(0);
+  await dntContext.close();
+  expect(clientErrors).toEqual([]);
+  await context.close();
 });

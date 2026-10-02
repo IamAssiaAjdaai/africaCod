@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState, useEffect } from "react";
 import { type BrowserConnection } from "@africacod/domain/tracking-policy";
+import { captureVisitor } from "@/lib/visitor-capture";
 import { emitBrowserTracking } from "@/lib/browser-tracking";
 import Image from "next/image";
 import type { PublicProduct } from "@africacod/domain";
@@ -23,14 +24,20 @@ export function PublicProductView({
     currency: string;
     totalMinor: number;
   } | null>(null);
+  const receiptHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (receipt) receiptHeading.current?.focus();
+  }, [receipt]);
   const key = useRef<string | null>(null),
     busy = useRef(false);
   const config = selected?.checkout;
   const viewed = useRef(false);
+  const checkoutStarted = useRef(false);
   useEffect(() => {
     if (preview || viewed.current || !selected) return;
     viewed.current = true;
     emitBrowserTracking(tracking, "view");
+    if (navigator.doNotTrack === "1") return;
     void fetch(
       `/api/storefront/${product.storeSlug}/${product.productSlug}/view`,
       {
@@ -125,6 +132,7 @@ export function PublicProductView({
                 height={800}
                 unoptimized
                 priority={index === 0}
+                sizes="(max-width: 760px) 100vw, 50vw"
               />
             ))
           ) : (
@@ -206,7 +214,9 @@ export function PublicProductView({
               {receipt ? (
                 <section className="public-receipt" role="status">
                   <span className="eyebrow">ORDER RECEIVED</span>
-                  <h2>Thank you for your order.</h2>
+                  <h2 ref={receiptHeading} tabIndex={-1}>
+                    Thank you for your order.
+                  </h2>
                   <p>
                     Your reference: <strong>{receipt.orderNumber}</strong>
                   </p>
@@ -217,6 +227,10 @@ export function PublicProductView({
                       config.locale,
                     )}{" "}
                     · Cash on delivery
+                  </p>
+                  <p>
+                    We’ll contact you to confirm delivery details. Payment is
+                    due on delivery.
                   </p>
                   <button
                     className="button button-green"
@@ -232,14 +246,25 @@ export function PublicProductView({
                 <form
                   id="cod-checkout"
                   className="catalog-form public-checkout"
+                  onFocus={() => {
+                    if (preview || checkoutStarted.current) return;
+                    checkoutStarted.current = true;
+                    captureVisitor(
+                      product.storeSlug,
+                      "checkout_started",
+                      selected.token,
+                      product.productSlug,
+                    );
+                  }}
                   onSubmit={submit}
+                  aria-describedby={error ? "checkout-error" : undefined}
                 >
                   <h2>Your delivery details</h2>
                   <p className="muted">{product.trustMessage}</p>
                   {product.variants.length > 0 && (
                     <label>
                       Variant
-                      <select name="variantId">
+                      <select name="variantId" disabled={pending}>
                         <option value="">No preference</option>
                         {product.variants.map((variant) => (
                           <option key={variant.id} value={variant.id}>
@@ -252,6 +277,7 @@ export function PublicProductView({
                   <label>
                     Quantity
                     <input
+                      disabled={pending}
                       name="quantity"
                       type="number"
                       min={1}
@@ -267,6 +293,7 @@ export function PublicProductView({
                       name="name"
                       autoComplete="name"
                       required
+                      disabled={pending}
                       minLength={2}
                       maxLength={150}
                     />
@@ -275,6 +302,7 @@ export function PublicProductView({
                     {config.phoneLabel}
                     <input
                       name="phone"
+                      disabled={pending}
                       type="tel"
                       inputMode="tel"
                       autoComplete="tel"
@@ -291,6 +319,7 @@ export function PublicProductView({
                     <label>
                       {config.regionLabel}
                       <input
+                        disabled={pending}
                         name="region"
                         autoComplete="address-level1"
                         required={config.regionRequired}
@@ -301,6 +330,7 @@ export function PublicProductView({
                     <label>
                       {config.cityLabel}
                       <input
+                        disabled={pending}
                         name="city"
                         autoComplete="address-level2"
                         required={config.cityRequired}
@@ -312,6 +342,7 @@ export function PublicProductView({
                   <label>
                     {config.addressLabel}
                     <textarea
+                      disabled={pending}
                       name="address"
                       autoComplete="street-address"
                       required={config.addressRequired}
@@ -337,7 +368,7 @@ export function PublicProductView({
                     </strong>
                   </div>
                   {error && (
-                    <p className="form-error" role="alert">
+                    <p className="form-error" role="alert" id="checkout-error">
                       {error}
                     </p>
                   )}

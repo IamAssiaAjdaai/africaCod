@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { site } from "./server";
+import { site, storefront } from "./server";
 import { found } from "./catalog-pages";
 export const publicStore = cache((slug: string) =>
   found(site().getPublicStore(slug)),
@@ -16,3 +16,8 @@ export function pageParam(value: string | string[] | undefined) {
     ? parsed
     : 1;
 }
+
+export const publicProduct = cache(
+  (storeSlug: string, productSlug: string, market: string | undefined) =>
+    found(storefront().getPublicProduct(storeSlug, productSlug, market)),
+);

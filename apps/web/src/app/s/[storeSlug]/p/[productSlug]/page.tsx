@@ -1,5 +1,5 @@
-import { storefront, tracking } from "@/lib/server";
-import { found } from "@/lib/catalog-pages";
+import { tracking } from "@/lib/server";
+import { publicProduct, marketParam } from "@/lib/store-pages";
 import { PublicProductView } from "@/components/public-product";
 export default async function PublicPage({
   params,
@@ -10,12 +10,10 @@ export default async function PublicPage({
 }) {
   const { storeSlug, productSlug } = await params;
   const query = await searchParams;
-  const product = await found(
-    storefront().getPublicProduct(
-      storeSlug,
-      productSlug,
-      Array.isArray(query.market) ? "" : query.market,
-    ),
+  const product = await publicProduct(
+    storeSlug,
+    productSlug,
+    marketParam(query.market),
   );
   return (
     <PublicProductView
@@ -35,12 +33,10 @@ export async function generateMetadata({
 }) {
   const { storeSlug, productSlug } = await params;
   const query = await searchParams;
-  const product = await found(
-    storefront().getPublicProduct(
-      storeSlug,
-      productSlug,
-      Array.isArray(query.market) ? "" : query.market,
-    ),
+  const product = await publicProduct(
+    storeSlug,
+    productSlug,
+    marketParam(query.market),
   );
   return {
     title: product.productName,

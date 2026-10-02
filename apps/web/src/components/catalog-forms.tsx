@@ -351,6 +351,7 @@ export function ProductEditor({
   offers = [],
   media = [],
   variants = [],
+  published = false,
 }: {
   storeId: string;
   product?: Product;
@@ -359,6 +360,7 @@ export function ProductEditor({
   offers?: Offer[];
   media?: Media[];
   variants?: Variant[];
+  published?: boolean;
 }) {
   return (
     <div className="product-editor">
@@ -403,6 +405,24 @@ export function ProductEditor({
         )}
       </div>
       <aside className="catalog-stack">
+        <section className="panel">
+          <h2>Product Page status</h2>
+          <p>
+            <strong>{published ? "Published" : "Draft"}</strong>
+          </p>
+          <p className="muted">
+            Only published pages with an active market offer accept COD orders.
+          </p>
+          {product ? (
+            <a className="text-link" href="#product-storefront">
+              Edit storefront and publication →
+            </a>
+          ) : (
+            <p className="muted">
+              Create the product to configure its storefront.
+            </p>
+          )}
+        </section>
         <section className="panel catalog-form">
           <h2>Status</h2>
           <label>
@@ -502,7 +522,7 @@ function OfferForm({
           </strong>
           <small>
             {offer
-              ? `${offer.status === "active" ? "Active" : "Inactive"} offer`
+              ? `${market.currency} ${moneyInput(offer.priceMinor, offer.currency)} · ${offer.status === "active" ? "Active" : "Inactive"} offer`
               : "Configure offer"}
             {market.status === "inactive" ? " · Market inactive" : ""}
           </small>

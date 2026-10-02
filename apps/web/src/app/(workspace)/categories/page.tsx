@@ -17,11 +17,16 @@ export default async function Categories({
   const rows = storeId
     ? await found(service.listCategories(session.user.id, storeId))
     : [];
+  const products = storeId
+    ? await service.listProducts(session.user.id, storeId)
+    : [];
+  const status = scalar(query.status);
   const subcategories = scalar(query.tab) === "subcategories";
   const q = scalar(query.q);
   const filtered = rows.filter(
     (row) =>
       Boolean(row.parentId) === subcategories &&
+      (!status || row.status === status) &&
       row.name.toLowerCase().includes(q.toLowerCase()),
   );
   return (
@@ -96,6 +101,14 @@ export default async function Categories({
                   placeholder="Search categories"
                 />
               </label>
+              <label>
+                Status
+                <select name="status" defaultValue={status}>
+                  <option value="">All statuses</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </label>
               <button className="button button-outline button-small">
                 Search
               </button>
@@ -109,6 +122,7 @@ export default async function Categories({
                       <th>
                         {subcategories ? "Parent category" : "Subcategories"}
                       </th>
+                      <th>Products</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
@@ -133,6 +147,15 @@ export default async function Categories({
                                 .filter((sub) => sub.parentId === row.id)
                                 .map((sub) => sub.name)
                                 .join(", ") || "—"}
+                        </td>
+                        <td>
+                          {
+                            products.filter(
+                              (p) =>
+                                p.categoryId === row.id ||
+                                p.subcategoryId === row.id,
+                            ).length
+                          }
                         </td>
                         <td>
                           <Badge active={row.status === "active"}>

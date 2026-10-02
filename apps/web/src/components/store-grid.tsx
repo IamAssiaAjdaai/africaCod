@@ -75,10 +75,15 @@ export function StoreGrid({
       )}
       {!data.selected ? (
         <section className="empty-state">
-          <h2>Choose a delivery market</h2>
+          <h2>
+            {data.store.markets.length
+              ? "Choose a delivery market"
+              : "This Store is preparing to open"}
+          </h2>
           <p>
-            Use the market selector above to see available products and local
-            prices.
+            {data.store.markets.length
+              ? "Use the market selector above to see available products and local prices."
+              : "There are no active delivery markets yet. Please check back later."}
           </p>
         </section>
       ) : (

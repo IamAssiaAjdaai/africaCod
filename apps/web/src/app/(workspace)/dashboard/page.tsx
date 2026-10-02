@@ -6,6 +6,7 @@ import {
   commerce,
   catalog,
   operations,
+  analytics,
   requireOrganization,
 } from "@/lib/server";
 export default async function Dashboard() {
@@ -26,34 +27,38 @@ export default async function Dashboard() {
           market.id === offer.storeMarketId && market.status === "active",
       ),
   );
-  const metrics = await operations().operationalMetrics(session.user.id);
+  const ops = operations();
+  const [
+    metrics,
+    recent,
+    confirmation,
+    callbacks,
+    ready,
+    awaitingFulfillment,
+    performance,
+  ] = await Promise.all([
+    ops.operationalMetrics(session.user.id),
+    ops.listOperationalOrders(session.user.id),
+    ops.listOperationalOrders(session.user.id, { status: "new" }),
+    ops.listOperationalOrders(session.user.id, { callbacks: "due" }),
+    ops.listOperationalOrders(session.user.id, {
+      status: "confirmed",
+      fulfillment: "ready",
+    }),
+    ops.listOperationalOrders(session.user.id, {
+      status: "confirmed",
+      fulfillment: "none",
+    }),
+    analytics().analytics(session.user.id, { range: "30d" }),
+  ]);
   const active = markets.filter((m) => m.status === "active");
   return (
     <>
       <PageHeading
         eyebrow="YOUR WORKSPACE AT A GLANCE"
         title={`Welcome, ${session.user.name.split(" ")[0]}.`}
-        description="A little perspective for your next big move."
+        description="Today’s work across your stores: confirm orders, follow up and prepare fulfillment."
       />
-      <section className="dashboard-banner">
-        <div>
-          <span className="eyebrow">BUILT FOR YOUR AMBITION</span>
-          <h2>
-            Local roots.
-            <br />
-            <em>Room to grow.</em>
-          </h2>
-          <p>Bring your stores together. Choose where you go next.</p>
-          <Link className="button button-lime" href="/stores/new">
-            Create a store <ArrowRight size={17} />
-          </Link>
-        </div>
-        <div className="banner-art" aria-hidden="true">
-          <div />
-          <Globe2 size={175} strokeWidth={0.65} />
-          <span>THE NEXT CHAPTER IS YOURS</span>
-        </div>
-      </section>
       <section className="stats-grid">
         <div className="stat-card">
           <span>
@@ -142,6 +147,110 @@ export default async function Dashboard() {
           Original order totals for delivered shipments, grouped by currency.
           Submitted COD value is not revenue.
         </p>
+      </section>
+      <div className="dashboard-work-grid">
+        {[
+          {
+            title: "Recent Orders",
+            href: "/orders",
+            rows: recent.rows,
+            empty: "Publish a product and start receiving COD orders.",
+          },
+          {
+            title: "Confirmation Queue",
+            href: "/orders/confirmation",
+            rows: confirmation.rows,
+            empty: "No orders awaiting confirmation.",
+          },
+          {
+            title: "Callbacks Due",
+            href: "/orders/callbacks?callbacks=due",
+            rows: callbacks.rows,
+            empty:
+              "No callbacks due. Scheduled follow-ups appear here when due.",
+          },
+          {
+            title: "Fulfillment Ready",
+            href: "/fulfillment",
+            rows: [...awaitingFulfillment.rows, ...ready.rows],
+            empty: "Confirm an order to prepare its fulfillment.",
+          },
+        ].map((queue) => (
+          <section className="panel" key={queue.title}>
+            <div className="section-heading">
+              <h2>{queue.title}</h2>
+              <Link className="text-link" href={queue.href}>
+                View queue →
+              </Link>
+            </div>
+            {queue.rows.length ? (
+              <ul className="work-list">
+                {queue.rows.slice(0, 5).map(({ order }) => (
+                  <li key={order.id}>
+                    <Link href={`/orders/${order.id}`}>
+                      <strong>{order.orderNumber}</strong>
+                      <span>
+                        {order.customerName} · {order.marketName}
+                      </span>
+                      <small>
+                        {formatMoney(order.totalMinor, order.currency)}
+                      </small>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted">{queue.empty}</p>
+            )}
+          </section>
+        ))}
+      </div>
+      <section className="panel">
+        <div className="section-heading">
+          <h2>Market Performance</h2>
+          <Link className="text-link" href="/analytics?range=30d">
+            View Analytics →
+          </Link>
+        </div>
+        <p className="muted">
+          Last 30 UTC days · Order creation cohort, current shipment outcomes.
+        </p>
+        {performance.byMarket.length ? (
+          <div className="table-scroll">
+            <table className="markets-table">
+              <thead>
+                <tr>
+                  <th>Market</th>
+                  <th>Orders</th>
+                  <th>Delivered</th>
+                  <th>Delivery Rate</th>
+                  <th>Delivered Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {performance.byMarket.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.name}</td>
+                    <td>{row.metrics.orders}</td>
+                    <td>{row.metrics.delivered}</td>
+                    <td>{(row.metrics.deliveryRate * 100).toFixed(1)}%</td>
+                    <td>
+                      {Object.entries(row.metrics.revenue)
+                        .map(([currency, total]) =>
+                          formatMoney(total, currency),
+                        )
+                        .join(" · ") || "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="muted">
+            Market results appear after your first COD order.
+          </p>
+        )}
       </section>
       <section className="panel">
         <div className="section-heading">

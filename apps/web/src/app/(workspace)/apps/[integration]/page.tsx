@@ -43,6 +43,9 @@ export default async function Integration({
     mock = trackingTestMode();
   return (
     <>
+      <Link className="back-link" href={`/apps?storeId=${storeId}`}>
+        ← Apps
+      </Link>
       <PageHeading
         eyebrow="APPS"
         title={names[provider]}
@@ -193,6 +196,14 @@ export default async function Integration({
               </tr>
             </thead>
             <tbody>
+              {!health.events.length && (
+                <tr>
+                  <td colSpan={4}>
+                    No integration events yet. Enable this connection, then
+                    complete a relevant COD workflow.
+                  </td>
+                </tr>
+              )}
               {health.events.map((e) => (
                 <tr key={e.id}>
                   <td>{e.type}</td>

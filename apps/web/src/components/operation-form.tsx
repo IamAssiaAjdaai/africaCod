@@ -6,16 +6,23 @@ export function OperationForm({
   intent,
   label,
   children,
+  anchor,
 }: {
   orderId: string;
   intent: string;
   label: string;
   children?: React.ReactNode;
+  anchor?: string;
 }) {
   const [state, action, pending] = useActionState(operationAction, {});
   const [initialKey] = useState(() => crypto.randomUUID());
   return (
-    <form action={action} aria-label={label} className="operation-form">
+    <form
+      id={anchor}
+      action={action}
+      aria-label={label}
+      className="operation-form"
+    >
       <input type="hidden" name="orderId" value={orderId} />
       <input type="hidden" name="intent" value={intent} />
       <input

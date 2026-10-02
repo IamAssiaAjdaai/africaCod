@@ -77,6 +77,31 @@ export default async function Apps({
         title="Apps"
         description="Configure store tracking, order exports and fulfillment."
       />
+      <section className="panel integration-guidance">
+        <h2>Choose what your Store connects</h2>
+        <p>
+          Marketing and data integrations are PARTIAL. Configuration
+          availability does not mean verified production delivery. ShipCOD
+          offers a test adapter; production API access remains blocked.
+        </p>
+        {!trackingConnections.some((c) => c?.enabled) && (
+          <p className="muted">
+            No tracking Apps enabled for this Store. Browse Apps below to
+            configure an integration explicitly.
+          </p>
+        )}
+      </section>
+      {!stores.length && (
+        <section className="panel empty-state">
+          <h2>Create a Store first</h2>
+          <p>
+            Connections belong to a Store and are never enabled automatically.
+          </p>
+          <Link className="button button-green" href="/stores/new">
+            Create store
+          </Link>
+        </section>
+      )}
       {stores.length > 0 && (
         <form method="get" className="panel">
           <label>
@@ -106,6 +131,18 @@ export default async function Apps({
                       {connectionStatus(app.id)}
                     </span>
                   </div>
+                  {["meta", "tiktok", "google-ads", "google-sheets"].includes(
+                    app.id,
+                  ) && (
+                    <p className="integration-readiness">
+                      <strong>PARTIAL</strong> · configuration available
+                    </p>
+                  )}
+                  {app.id === "shipcod" && (
+                    <p className="integration-readiness">
+                      <strong>TEST ADAPTER</strong> · production API blocked
+                    </p>
+                  )}
                   <p className="muted">{app.description}</p>
                   {app.id === "shipcod" ? (
                     <Link

@@ -42,7 +42,14 @@ export default async function StoreDetail({
           </Badge>
         }
       />
-      <section className="panel store-info">
+      <nav className="section-nav" aria-label="Store sections">
+        <a href="#store-overview">Overview</a>
+        <a href="#store-markets">Markets</a>
+        <a href="#store-branding">Branding</a>
+        <a href="#storefront">Storefront</a>
+        <a href="#store-apps">Apps</a>
+      </nav>
+      <section id="store-overview" className="panel store-info">
         <div className="store-identity">
           <span className="store-avatar store-avatar-large">
             <Store size={30} />
@@ -90,8 +97,43 @@ export default async function StoreDetail({
           Categories
         </Link>
       </div>
-      <BrandingEditor store={store} />
-      <Markets storeId={store.id} markets={markets} countries={countries} />
+      <div id="store-markets">
+        <Markets storeId={store.id} markets={markets} countries={countries} />
+      </div>
+      <div id="store-branding">
+        <BrandingEditor store={store} />
+      </div>
+      <section id="storefront" className="panel">
+        <h2>Storefront</h2>
+        <p className="muted">
+          Publish products with active market offers to make them available to
+          customers.
+        </p>
+        <div className="form-actions">
+          <Link className="button button-green" href={`/s/${store.slug}`}>
+            Visit Store
+          </Link>
+          <Link
+            className="button button-outline"
+            href={`/pages?storeId=${store.id}`}
+          >
+            Manage pages
+          </Link>
+        </div>
+      </section>
+      <section id="store-apps" className="panel">
+        <h2>Apps</h2>
+        <p className="muted">
+          Tracking and exports require explicit opt-in. Check each integration’s
+          readiness before enabling it.
+        </p>
+        <Link
+          className="button button-outline"
+          href={`/apps?storeId=${store.id}`}
+        >
+          Browse Store Apps
+        </Link>
+      </section>
     </>
   );
 }

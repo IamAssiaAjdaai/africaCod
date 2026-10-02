@@ -50,13 +50,15 @@ export default async function Pages({
         </form>
         {pages.length ? (
           <div className="table-scroll">
-            <table>
+            <table className="markets-table">
               <thead>
                 <tr>
                   <th>Page</th>
                   <th>Store</th>
                   <th>Address</th>
                   <th>Status</th>
+                  <th>Navigation</th>
+                  <th>Updated (UTC)</th>
                 </tr>
               </thead>
               <tbody>
@@ -76,6 +78,20 @@ export default async function Pages({
                         {page.status}
                       </Badge>
                     </td>
+                    <td>
+                      {page.showInNavigation
+                        ? page.navigationLabel || page.title
+                        : "Hidden"}
+                      {page.status === "draft" && page.showInNavigation
+                        ? " · after publication"
+                        : ""}
+                    </td>
+                    <td>
+                      {page.updatedAt
+                        .toISOString()
+                        .slice(0, 16)
+                        .replace("T", " ")}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -89,6 +105,14 @@ export default async function Pages({
                 ? "Create an About, Contact, FAQ or another informational page."
                 : "Create a store before adding pages."}
             </p>
+            {stores.length && (
+              <Link
+                className="button button-green"
+                href={`/pages/new${storeId ? `?storeId=${storeId}` : ""}`}
+              >
+                Add your first page
+              </Link>
+            )}
             {!stores.length && (
               <Link className="button button-green" href="/stores/new">
                 Create a store

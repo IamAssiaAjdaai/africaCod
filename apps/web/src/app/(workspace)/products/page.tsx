@@ -88,6 +88,7 @@ export default async function Products({
                   <th>Category</th>
                   <th>Status</th>
                   <th>Configured market offers</th>
+                  <th>Product Page</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -167,13 +168,30 @@ export default async function Products({
                                 {formatMoney(offer.priceMinor, offer.currency)}
                                 {offer.status === "inactive"
                                   ? " · Inactive"
-                                  : ""}
+                                  : " · Active"}
                               </span>
                             ))}
                           </div>
                         ) : (
                           <span className="muted">No offers yet</span>
                         )}
+                      </td>
+                      <td>
+                        <Badge
+                          active={data.pages.some(
+                            (page) =>
+                              page.productId === product.id &&
+                              page.status === "published",
+                          )}
+                        >
+                          {data.pages.some(
+                            (page) =>
+                              page.productId === product.id &&
+                              page.status === "published",
+                          )
+                            ? "Published"
+                            : "Draft"}
+                        </Badge>
                       </td>
                       <td>
                         <Link

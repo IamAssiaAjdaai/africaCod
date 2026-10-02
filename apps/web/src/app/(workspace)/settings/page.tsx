@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Building2, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { PageHeading } from "@africacod/ui";
 import { requireOrganization } from "@/lib/server";
@@ -42,12 +43,29 @@ export default async function Settings() {
             <dt>
               <ShieldCheck size={16} /> Your role
             </dt>
-            <dd>{organization.role === "owner" ? "Owner" : "Admin"}</dd>
+            <dd>
+              {organization.role[0].toUpperCase() + organization.role.slice(1)}
+            </dd>
           </div>
         </dl>
         <p className="settings-note">
           Only members of your organization can access its stores and markets.
         </p>
+      </section>
+      <section className="panel">
+        <h2>Store configuration</h2>
+        <p className="muted">
+          Branding, markets and storefronts are configured per Store. Tracking
+          and export connections live in Apps.
+        </p>
+        <div className="form-actions">
+          <Link href="/stores" className="button button-outline">
+            Manage Stores
+          </Link>
+          <Link href="/apps" className="button button-outline">
+            Configure Apps
+          </Link>
+        </div>
       </section>
     </>
   );

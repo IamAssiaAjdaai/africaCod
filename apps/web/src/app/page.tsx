@@ -37,11 +37,12 @@ export default function Home() {
           </h1>
           <p className="hero-description">
             Build your cash-on-delivery business across Africa. Bring your
-            stores together and choose the markets you want to reach.
+            stores together, choose your markets and manage COD orders from
+            confirmation to delivery.
           </p>
           <div className="hero-actions">
             <Link className="button button-green" href="/sign-up">
-              Start your journey <ArrowRight size={18} />
+              Get started <ArrowRight size={18} />
             </Link>
             <span>Built for independent merchants.</span>
           </div>
@@ -56,14 +57,14 @@ export default function Home() {
           <div className="art-grid" />
           <div className="art-orbit orbit-one" />
           <div className="art-orbit orbit-two" />
-          <span className="art-label">A CONTINENT OF POSSIBILITY</span>
+          <span className="art-label">ILLUSTRATIVE MARKET SETUP</span>
           <div className="continent" />
           <div className="art-store">
             <div className="art-store-icon">
               <Layers3 size={24} />
             </div>
             <div>
-              <strong>Glow Beauty</strong>
+              <strong>Example Store</strong>
               <span>One store, many possibilities</span>
             </div>
             <span className="art-store-check">
@@ -120,6 +121,38 @@ export default function Home() {
           <h2>Africa at the center</h2>
           <p>Local currencies and languages, built into each market.</p>
         </div>
+      </section>
+      <section className="landing-product" aria-label="COD commerce workflow">
+        <p className="eyebrow">FROM STOREFRONT TO DELIVERY</p>
+        <h2>A clear workflow for cash on delivery.</h2>
+        <div className="landing-product-grid">
+          {[
+            [
+              "Multi-market storefronts",
+              "Publish products with local prices and currencies. You choose every market.",
+            ],
+            [
+              "Orders and confirmation",
+              "Review customer details, record calls and schedule callbacks in one workspace.",
+            ],
+            [
+              "Fulfillment and delivery",
+              "Manage manual shipments through delivery or return. ShipCOD production access is still pending.",
+            ],
+            [
+              "Tracking and Analytics",
+              "Measure operations from your own order and shipment records. Marketing configuration is available; provider setup and verification are required.",
+            ],
+          ].map(([title, description]) => (
+            <article key={title}>
+              <h3>{title}</h3>
+              <p>{description}</p>
+            </article>
+          ))}
+        </div>
+        <Link href="/sign-up" className="button button-green">
+          Get started <ArrowRight size={18} />
+        </Link>
       </section>
       <footer className="landing-footer">
         <Brand />

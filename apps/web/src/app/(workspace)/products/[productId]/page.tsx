@@ -42,6 +42,7 @@ export default async function ProductDetail({
         media={media}
         variants={variants}
         offers={offers}
+        published={page?.status === "published"}
       />
       <PageEditor
         productId={product.id}

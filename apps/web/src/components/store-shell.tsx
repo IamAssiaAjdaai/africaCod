@@ -1,4 +1,6 @@
 "use client";
+import { useEffect, useRef } from "react";
+import { captureVisitor } from "@/lib/visitor-capture";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
@@ -19,10 +21,21 @@ export function StoreShell({
     (market === null && store.markets.length === 1
       ? store.markets[0]
       : undefined);
+  const observed = useRef("");
+  useEffect(() => {
+    const identity = `${pathname}:${selected?.token ?? ""}`;
+    if (observed.current === identity || pathname !== `/s/${store.slug}`)
+      return;
+    observed.current = identity;
+    captureVisitor(store.slug, "store_view", selected?.token);
+  }, [pathname, selected?.token, store.slug]);
   const link = (path: string) =>
     path + (market !== null ? `?market=${encodeURIComponent(market)}` : "");
   return (
     <div className="storefront-shell">
+      <a className="skip-link" href="#store-content">
+        Skip to Store content
+      </a>
       <header className="store-header">
         <div className="store-header-top">
           <Link className="store-logo-name" href={link(`/s/${store.slug}`)}>
@@ -62,10 +75,31 @@ export function StoreShell({
             </select>
           </label>
         </div>
+        {selected && (
+          <p className="store-market-context">
+            Delivery to {selected.name} · Prices in {selected.currency} · Cash
+            on delivery
+          </p>
+        )}
         <nav aria-label="Store navigation">
-          <Link href={link(`/s/${store.slug}`)}>Home</Link>
-          <Link href={link(`/s/${store.slug}/products`)}>Products</Link>
-          <Link href={link(`/s/${store.slug}/categories`)}>Categories</Link>
+          <Link
+            aria-current={pathname === `/s/${store.slug}` ? "page" : undefined}
+            href={link(`/s/${store.slug}`)}
+          >
+            Home
+          </Link>
+          <Link
+            aria-current={pathname.endsWith("/products") ? "page" : undefined}
+            href={link(`/s/${store.slug}/products`)}
+          >
+            Products
+          </Link>
+          <Link
+            aria-current={pathname.includes("/categor") ? "page" : undefined}
+            href={link(`/s/${store.slug}/categories`)}
+          >
+            Categories
+          </Link>
           {store.pages.map((page) => (
             <Link
               key={page.slug}
@@ -76,7 +110,9 @@ export function StoreShell({
           ))}
         </nav>
       </header>
-      {children}
+      <div id="store-content" tabIndex={-1}>
+        {children}
+      </div>
       <footer className="store-footer">
         <strong>{store.name}</strong>
         {store.tagline && <p>{store.tagline}</p>}

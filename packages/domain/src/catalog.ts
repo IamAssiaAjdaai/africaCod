@@ -586,6 +586,13 @@ export class CatalogService extends CommerceService {
       this.listMedia(userId),
     ]);
     const org = await this.tenant(userId);
+    const pages = await this.db
+      .select({
+        productId: productPages.productId,
+        status: productPages.status,
+      })
+      .from(productPages)
+      .where(eq(productPages.organizationId, org.id));
     const markets = await this.db
       .select()
       .from(storeMarkets)
@@ -596,6 +603,7 @@ export class CatalogService extends CommerceService {
       offers,
       media,
       markets,
+      pages,
     };
   }
 }

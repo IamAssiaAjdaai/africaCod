@@ -130,6 +130,7 @@ export function ContentEditor({
             </small>
           </label>
         </div>
+        <h3>Content</h3>
         <label htmlFor="page-content">Content</label>
         <div
           className="content-toolbar"
@@ -178,6 +179,7 @@ export function ContentEditor({
           {preview ? "Hide formatting preview" : "Show formatting preview"}
         </button>
         {preview && <ContentBody content={content} />}
+        <h3>SEO</h3>
         <div className="form-row">
           <label>
             Meta title
@@ -241,7 +243,8 @@ export function ContentEditor({
         </div>
       </form>
       {page && (
-        <form action={action} className="form-actions">
+        <form action={action} className="form-actions" aria-label="Publication">
+          <h3>Publication</h3>
           <input type="hidden" name="pageId" value={page.id} />
           <button
             className="button button-green"

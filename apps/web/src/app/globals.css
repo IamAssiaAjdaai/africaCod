@@ -2,7 +2,7 @@
 @source "../../../../../packages/ui/src";
 :root {
   --ink: #202a26;
-  --muted: #7c837e;
+  --muted: #536256;
   --green: #194e3c;
   --green-hover: #24634d;
   --lime: #ddedb3;
@@ -2801,6 +2801,7 @@ textarea:focus-visible {
   }
 }
 .operation-form {
+  align-content: start;
   display: grid;
   gap: 12px;
   margin: 16px 0;
@@ -2816,7 +2817,7 @@ textarea:focus-visible {
 }
 .operation-grid .operation-form {
   padding: 18px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 12px;
 }
 @media (max-width: 700px) {
@@ -2846,4 +2847,317 @@ textarea:focus-visible {
 .analytics-table th,
 .analytics-table td {
   white-space: nowrap;
+}
+
+/* Checkpoint 8: shared operational presentation and contained responsive layouts. */
+.app-main,
+.workspace-content,
+.panel,
+.catalog-stack,
+.store-info-grid > div,
+.public-copy {
+  min-width: 0;
+}
+.store-info-grid strong,
+.order-attribution dd,
+.settings-rows dd,
+.work-list strong {
+  overflow-wrap: anywhere;
+}
+.table-scroll {
+  position: relative;
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+}
+.orders-table {
+  min-width: 1250px;
+}
+.orders-table td {
+  vertical-align: top;
+}
+.orders-table .operation-form {
+  min-width: 145px;
+}
+.section-nav,
+.queue-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 24px;
+}
+.section-nav a,
+.queue-tabs a {
+  display: inline-flex;
+  padding: 10px 15px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 600;
+}
+.queue-tabs a[aria-current="page"],
+.store-header a[aria-current="page"] {
+  background: #eaf0df;
+  color: #174d3d;
+}
+[id] {
+  scroll-margin-top: 90px;
+}
+.order-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.order-timeline > p {
+  border-left: 2px solid #dce6d8;
+  padding: 8px 0 8px 16px;
+  overflow-wrap: anywhere;
+}
+.dashboard-work-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.work-list {
+  list-style: none;
+  padding: 0;
+}
+.work-list li + li {
+  border-top: 1px solid var(--line);
+}
+.work-list a {
+  display: grid;
+  gap: 5px;
+  padding: 14px 0;
+}
+.work-list span,
+.work-list small {
+  color: #536256;
+}
+.user-menu {
+  min-width: 0;
+  flex: 1;
+}
+.user-menu summary {
+  cursor: pointer;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.user-menu summary small {
+  display: block;
+  font-weight: 400;
+}
+.user-menu p {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.user-menu a {
+  font-size: 13px;
+  text-decoration: underline;
+}
+.sidebar-user {
+  align-items: flex-start;
+}
+.sidebar nav {
+  flex-shrink: 0;
+}
+.sidebar-link {
+  min-height: 42px;
+}
+.skip-link {
+  position: fixed;
+  left: 16px;
+  top: 12px;
+  transform: translateY(-200%);
+  padding: 14px 20px;
+  background: #174d3d;
+  color: white;
+  z-index: 100;
+  border-radius: 8px;
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+:focus-visible {
+  outline: 3px solid #397854;
+  outline-offset: 3px;
+}
+button,
+a.button,
+select,
+summary {
+  touch-action: manipulation;
+}
+.mobile-menu,
+.mobile-close {
+  min-width: 36px;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+}
+.funnel-steps {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.funnel-steps li {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  background: #f5f8ef;
+  border: 1px solid #dce6d8;
+  border-radius: 10px;
+}
+.funnel-steps strong {
+  font-size: 28px;
+  color: #174d3d;
+}
+.funnel-steps small {
+  color: #536256;
+}
+.empty-inline {
+  padding: 20px 0;
+  color: #536256;
+}
+.integration-guidance p {
+  line-height: 1.65;
+}
+.integration-readiness {
+  font-size: 12px;
+  color: #42513e;
+}
+.app-card .badge {
+  white-space: normal;
+}
+.store-market-context {
+  font-size: 13px;
+  color: #536256;
+  margin: 16px 0;
+}
+.route-loading {
+  padding: 28px;
+}
+.loading-bar {
+  height: 18px;
+  margin: 20px 0;
+  width: 80%;
+  background: #e8ede3;
+  border-radius: 8px;
+}
+.loading-bar.short {
+  width: 45%;
+}
+.loading-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.loading-cards span {
+  height: 110px;
+  border-radius: 10px;
+  background: #f1f4ed;
+}
+.landing-product {
+  max-width: 1240px;
+  margin: 40px auto 80px;
+  padding: 30px 55px;
+}
+.landing-product > h2 {
+  font-size: clamp(28px, 4vw, 42px);
+  max-width: 700px;
+}
+.landing-product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin: 30px 0;
+}
+.landing-product-grid article {
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: white;
+}
+.landing-product-grid p {
+  color: #536256;
+  line-height: 1.7;
+}
+@media (max-width: 760px) {
+  .dashboard-work-grid,
+  .landing-product-grid {
+    grid-template-columns: 1fr;
+  }
+  .funnel-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .landing-product {
+    margin: 20px 0 40px;
+    padding: 20px;
+  }
+  .section-heading,
+  .page-heading {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .section-nav a,
+  .queue-tabs a {
+    padding: 10px 12px;
+  }
+  .catalog-filters > label {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .catalog-filters input,
+  .catalog-filters select {
+    width: 100%;
+    min-width: 0;
+  }
+  .store-info-grid {
+    grid-template-columns: 1fr;
+  }
+  .store-header nav a {
+    padding: 8px;
+    border-radius: 6px;
+  }
+}
+@media (max-width: 420px) {
+  .form-actions {
+    flex-wrap: wrap;
+  }
+  .public-total {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .public-market {
+    flex-wrap: wrap;
+  }
+  .public-market label {
+    width: 100%;
+  }
+}
+
+.markets-table th {
+  color: #536256;
+  font-size: 11px;
+  font-weight: 600;
+}
+.nav-caption {
+  color: #536256;
+}
+.field-label,
+.dialog-header button,
+.sidebar-link {
+  color: #536256;
+}
+@media (max-width: 760px) {
+  .sidebar {
+    visibility: hidden;
+  }
+  .sidebar.sidebar-open {
+    visibility: visible;
+  }
 }

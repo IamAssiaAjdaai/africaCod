@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowUpRight,
-  ChevronDown,
+  ClipboardCheck,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -24,6 +24,7 @@ const navigation = [
   { href: "/orders", label: "Orders", icon: Package },
   { href: "/stores", label: "Stores", icon: Store },
   { href: "/pages", label: "Pages", icon: FolderTree },
+  { href: "/orders/confirmation", label: "Confirmation", icon: ClipboardCheck },
   { href: "/fulfillment", label: "Fulfillment", icon: Package },
   { href: "/analytics", label: "Analytics", icon: LayoutDashboard },
   { href: "/apps", label: "Apps", icon: Package },
@@ -41,6 +42,53 @@ export function Shell({
   const path = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const sidebar = useRef<HTMLElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const activeHref =
+    path.startsWith("/orders/confirmation") ||
+    path.startsWith("/orders/callbacks")
+      ? "/orders/confirmation"
+      : navigation.find((item) => path.startsWith(item.href))?.href;
+  useEffect(() => {
+    if (!open) return;
+    const opener = menuButton.current;
+    const media = window.matchMedia("(max-width: 760px)");
+    const main = document.querySelector<HTMLElement>(".app-main");
+    if (media.matches && main) main.inert = true;
+    const previousOverflow = document.body.style.overflow;
+    if (media.matches) document.body.style.overflow = "hidden";
+    sidebar.current?.querySelector<HTMLButtonElement>(".mobile-close")?.focus();
+    function keydown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+      if (event.key !== "Tab" || !media.matches) return;
+      const elements = Array.from(
+        sidebar.current?.querySelectorAll<HTMLElement>(
+          "a[href], button:not(:disabled), summary",
+        ) ?? [],
+      ).filter((element) => element.getClientRects().length);
+      const first = elements[0],
+        last = elements.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    }
+    function resize() {
+      if (!media.matches) setOpen(false);
+    }
+    window.addEventListener("keydown", keydown);
+    media.addEventListener("change", resize);
+    return () => {
+      if (main) main.inert = false;
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", keydown);
+      media.removeEventListener("change", resize);
+      opener?.focus();
+    };
+  }, [open]);
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState("");
   async function signOut() {
@@ -62,6 +110,9 @@ export function Shell({
   }
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#workspace-main">
+        Skip to content
+      </a>
       {open && (
         <button
           className="sidebar-backdrop"
@@ -69,7 +120,14 @@ export function Shell({
           aria-label="Close navigation"
         />
       )}
-      <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
+      <aside
+        ref={sidebar}
+        role={open ? "dialog" : undefined}
+        aria-modal={open ? true : undefined}
+        id="workspace-navigation"
+        aria-label="Workspace navigation"
+        className={`sidebar ${open ? "sidebar-open" : ""}`}
+      >
         <div className="sidebar-brand">
           <Link href="/dashboard">
             <Brand />
@@ -90,27 +148,26 @@ export function Shell({
             <strong>{organization.name}</strong>
             <small>Organization workspace</small>
           </div>
-          <ChevronDown size={15} />
         </div>
-        <nav>
+        <nav aria-label="Main navigation">
           {navigation.map(({ href, label, icon: Icon }) => (
             <div key={href}>
               {href === "/products" && <p className="nav-caption">COMMERCE</p>}
               {href === "/stores" && <p className="nav-caption">STORE</p>}
-              {href === "/fulfillment" && (
+              {href === "/orders/confirmation" && (
                 <p className="nav-caption">OPERATIONS</p>
               )}
               {href === "/apps" && <p className="nav-caption">PLATFORM</p>}
               <Link
                 key={href}
                 href={href}
-                className={`sidebar-link ${path.startsWith(href) ? "selected" : ""}`}
+                className={`sidebar-link ${activeHref === href ? "selected" : ""}`}
                 onClick={() => setOpen(false)}
-                aria-current={path.startsWith(href) ? "page" : undefined}
+                aria-current={activeHref === href ? "page" : undefined}
               >
                 <Icon size={19} />
                 {label}
-                {path.startsWith(href) && <span className="nav-dot" />}
+                {activeHref === href && <span className="nav-dot" />}
               </Link>
             </div>
           ))}
@@ -130,10 +187,19 @@ export function Shell({
           <span className="user-avatar">
             {user.name.slice(0, 1).toUpperCase()}
           </span>
-          <div>
-            <strong>{user.name}</strong>
-            <small>{organization.role === "owner" ? "Owner" : "Admin"}</small>
-          </div>
+          <details className="user-menu">
+            <summary>
+              {user.name}
+              <small>
+                {organization.role[0].toUpperCase() +
+                  organization.role.slice(1)}
+              </small>
+            </summary>
+            <p>{user.email}</p>
+            <Link href="/settings" onClick={() => setOpen(false)}>
+              Account settings
+            </Link>
+          </details>
           <button
             onClick={signOut}
             disabled={signingOut}
@@ -153,6 +219,9 @@ export function Shell({
         <header className="topbar">
           <div className="breadcrumb">
             <button
+              ref={menuButton}
+              aria-expanded={open}
+              aria-controls="workspace-navigation"
               className="mobile-menu"
               aria-label="Open menu"
               onClick={() => setOpen(true)}
@@ -162,7 +231,7 @@ export function Shell({
             <span>Workspace</span>
             <span>/</span>
             <strong>
-              {navigation.find((item) => path.startsWith(item.href))?.label ??
+              {navigation.find((item) => item.href === activeHref)?.label ??
                 "Stores"}
             </strong>
           </div>
@@ -178,7 +247,9 @@ export function Shell({
             </Link>
           </div>
         </header>
-        <main className="workspace-content">{children}</main>
+        <main id="workspace-main" tabIndex={-1} className="workspace-content">
+          {children}
+        </main>
         <footer className="workspace-footer">
           <span>AfricaCod · Local roots. Limitless reach.</span>
           <span>

@@ -43,6 +43,8 @@ export async function OrdersView({
         : `/orders/${mode}`;
   const filter = parsed.success ? parsed.data : orderFiltersInput.parse({});
   if (mode === "fulfillment") filter.status = "confirmed";
+  if (mode === "confirmation" && !filter.confirmation && !filter.status)
+    filter.status = "new";
   const [result, stores] = await Promise.all([
     service.listOperationalOrders(session.user.id, filter),
     service.listStores(session.user.id),
@@ -93,6 +95,50 @@ export async function OrdersView({
           Fulfillment
         </Link>
       </nav>
+      {(mode === "confirmation" || mode === "callbacks") && (
+        <nav className="queue-tabs" aria-label="Confirmation states">
+          {[
+            ["Uncontacted", "uncontacted"],
+            ["Attempted", "attempted"],
+            ["Callbacks Due", "callback_due"],
+            ["Confirmed", "confirmed"],
+            ["Cancelled", "cancelled"],
+          ].map(([label, value]) => (
+            <Link
+              key={value}
+              aria-current={filter.confirmation === value ? "page" : undefined}
+              href={`/orders/confirmation?confirmation=${value}`}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+      )}
+      {mode === "fulfillment" && (
+        <>
+          <p className="preview-banner">
+            Manual fulfillment is available. ShipCOD is a deterministic test
+            adapter only; production API access is blocked.
+          </p>
+          <nav className="queue-tabs" aria-label="Fulfillment states">
+            {[
+              ["Awaiting setup", "none"],
+              ["Ready", "ready"],
+              ["Processing", "processing"],
+              ["Failed", "failed"],
+              ["Fulfilled", "fulfilled"],
+            ].map(([label, value]) => (
+              <Link
+                key={value}
+                aria-current={filter.fulfillment === value ? "page" : undefined}
+                href={`/fulfillment?fulfillment=${value}`}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </>
+      )}
       <section className="panel">
         <form className="catalog-filters" method="get">
           <label>
@@ -226,10 +272,13 @@ export async function OrdersView({
             <input name="dateTo" type="date" defaultValue={filter.dateTo} />
           </label>
           <button className="button button-green">Filter orders</button>
+          <Link className="button button-outline" href={route}>
+            Reset filters
+          </Link>
         </form>
         {result.rows.length ? (
           <div className="table-scroll">
-            <table>
+            <table className="markets-table orders-table">
               <thead>
                 <tr>
                   {[
@@ -351,6 +400,18 @@ export async function OrdersView({
                                 value="confirmed"
                               />
                             </OperationForm>
+                            <Link
+                              href={`/orders/${order.id}#callback`}
+                              className="button button-outline button-small"
+                            >
+                              Callback
+                            </Link>
+                            <Link
+                              href={`/orders/${order.id}#cancel-order`}
+                              className="button button-outline button-small"
+                            >
+                              Cancel
+                            </Link>
                           </>
                         )}
                         {mode === "fulfillment" && !fulfillmentStatus && (
@@ -381,8 +442,26 @@ export async function OrdersView({
           </div>
         ) : (
           <div className="empty-state">
-            <h3>No orders yet.</h3>
-            <p>Orders from your published product pages will appear here.</p>
+            <h3>
+              {mode === "orders"
+                ? "No orders match this view."
+                : mode === "confirmation"
+                  ? "Confirmation queue is clear."
+                  : mode === "callbacks"
+                    ? "No scheduled callbacks match."
+                    : "No fulfillment work matches."}
+            </h3>
+            <p>
+              {mode === "orders"
+                ? "Publish a product to receive COD orders, or try different filters."
+                : "Try another state or date range. New work will appear here when it is ready."}
+            </p>
+            <Link
+              className="button button-outline"
+              href={mode === "orders" ? "/products" : "/orders"}
+            >
+              {mode === "orders" ? "Manage products" : "View all orders"}
+            </Link>
           </div>
         )}
         <div className="form-actions">

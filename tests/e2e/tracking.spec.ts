@@ -235,14 +235,16 @@ test("Tracking exports and lifecycle analytics preserve Kenya and Ghana COD trut
       .filter({ hasText: reference })
       .getByRole("link", { name: reference, exact: true })
       .click();
-    await expect(page.locator(".page-heading .badge")).toHaveText("new");
+    await expect(page.getByTestId("order-commercial-status")).toHaveText("new");
     return page.url();
   }
   async function prepareFulfillment() {
     await page
       .getByRole("button", { name: "Confirm order", exact: true })
       .click();
-    await expect(page.locator(".page-heading .badge")).toHaveText("confirmed");
+    await expect(page.getByTestId("order-commercial-status")).toHaveText(
+      "confirmed",
+    );
     await page
       .getByRole("button", { name: "Create fulfillment", exact: true })
       .click();

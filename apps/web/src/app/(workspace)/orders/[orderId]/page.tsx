@@ -50,7 +50,33 @@ export default async function OrderDetail({
         eyebrow={`${store.name} · ${order.marketName}`}
         title={order.orderNumber}
         description={`${order.createdAt.toISOString()} · Cash on delivery`}
-        action={<Badge active={order.status === "new"}>{order.status}</Badge>}
+        action={
+          <div className="order-header-actions">
+            <span data-testid="order-commercial-status">
+              <Badge active={order.status === "new"}>{order.status}</Badge>
+            </span>
+            <Badge active={data.shipment?.status === "delivered"}>
+              Shipment:{" "}
+              {data.shipment?.status.replaceAll("_", " ") ?? "Not created"}
+            </Badge>
+            <a
+              className="button button-green"
+              href={
+                order.status === "new"
+                  ? "#confirmation"
+                  : !data.fulfillment
+                    ? "#fulfillment"
+                    : "#shipment"
+              }
+            >
+              {order.status === "new"
+                ? "Review confirmation"
+                : !data.fulfillment
+                  ? "Prepare fulfillment"
+                  : "Review shipment"}
+            </a>
+          </div>
+        }
       />
       {order.duplicateSignal && (
         <p className="preview-banner">
@@ -58,8 +84,18 @@ export default async function OrderDetail({
           market within 24 hours. The order was accepted.
         </p>
       )}
+      <nav className="section-nav" aria-label="Order sections">
+        <a href="#customer">Customer & Address</a>
+        <a href="#items">Items</a>
+        <a href="#confirmation">Confirmation</a>
+        <a href="#fulfillment">Fulfillment</a>
+        <a href="#shipment">Shipment</a>
+        <a href="#timeline">Timeline</a>
+        <a href="#attribution">Attribution</a>
+        <a href="#internal">Internal information</a>
+      </nav>
       <div className="order-summary">
-        <section className="panel">
+        <section id="customer" className="panel">
           <h2>Customer & delivery snapshot</h2>
           <p>
             <strong>{order.customerName}</strong>
@@ -92,7 +128,7 @@ export default async function OrderDetail({
           </p>
         </section>
       </div>
-      <section className="panel">
+      <section id="items" className="panel">
         <h2>Items</h2>
         {items.map((item) => (
           <div key={item.id}>
@@ -105,19 +141,13 @@ export default async function OrderDetail({
               {formatMoney(item.unitPriceMinor, item.currency)} ={" "}
               <strong>{formatMoney(item.lineTotalMinor, item.currency)}</strong>
             </p>
-            <p className="muted">
-              Unit cost snapshot:{" "}
-              {item.unitCostMinor === null
-                ? "Not configured"
-                : formatMoney(item.unitCostMinor, item.currency)}
-            </p>
           </div>
         ))}
       </section>
       <OrderOperations data={data} agents={agents} />
       <ProviderOperations info={integration} testMode={providerTestMode()} />
       <div className="order-summary">
-        <section className="panel">
+        <section id="timeline" className="panel order-timeline">
           <h2>Timeline</h2>
           {timeline.map((event) => (
             <p key={event.id}>
@@ -127,7 +157,7 @@ export default async function OrderDetail({
             </p>
           ))}
         </section>
-        <section className="panel order-attribution">
+        <section id="attribution" className="panel order-attribution">
           <h2>Attribution</h2>
           <dl>
             {attribution &&
@@ -142,6 +172,21 @@ export default async function OrderDetail({
           </dl>
         </section>
       </div>
+      <section id="internal" className="panel">
+        <h2>Internal information</h2>
+        <p className="muted">
+          Private commercial snapshots for your operations. These values are not
+          profit calculations.
+        </p>
+        {items.map((item) => (
+          <p key={item.id}>
+            {item.productName} · Unit cost snapshot:{" "}
+            {item.unitCostMinor === null
+              ? "Not configured"
+              : formatMoney(item.unitCostMinor, item.currency)}
+          </p>
+        ))}
+      </section>
     </>
   );
 }

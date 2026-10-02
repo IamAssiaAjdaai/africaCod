@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { ZodError } from "zod";
+import { DomainError } from "@africacod/domain";
 import { PageHeading } from "@africacod/ui";
 import { type AnalyticsMetrics } from "@africacod/domain";
 import { formatMoney } from "@africacod/shared/money";
@@ -54,6 +57,11 @@ function Breakdown({
           </tbody>
         </table>
       </div>
+      {!rows.length && (
+        <p className="empty-inline">
+          No orders in this breakdown. Choose another date range or filter.
+        </p>
+      )}
     </section>
   );
 }
@@ -70,14 +78,21 @@ export default async function Analytics({
   let result;
   try {
     result = await analytics().analytics(session.user.id, filter);
-  } catch {
+  } catch (error) {
+    if (!(error instanceof ZodError) && !(error instanceof DomainError))
+      throw error;
     return (
       <>
         <PageHeading
           title="Analytics"
           description="Choose a valid date range and authorized filters."
         />
-        <a href="/analytics">Reset filters</a>
+        <p role="alert" className="form-error">
+          The date range or filters could not be used.
+        </p>
+        <Link className="button button-outline" href="/analytics">
+          Reset filters
+        </Link>
       </>
     );
   }
@@ -139,6 +154,18 @@ export default async function Analytics({
         {new Date(result.range.to.getTime() - 1).toISOString().slice(0, 10)}.
         Outcomes reflect current lifecycle state.
       </p>
+      {!m.orders && (
+        <section className="panel empty-state">
+          <h2>No orders in this period</h2>
+          <p>
+            Publish a product and receive COD orders, or choose a different
+            range. Metrics below reflect actual data.
+          </p>
+          <Link href="/products" className="button button-outline">
+            Manage Products
+          </Link>
+        </section>
+      )}
       <section className="panel" data-testid="analytics-metrics">
         <h2>Lifecycle</h2>
         <dl className="stats-grid">
@@ -163,20 +190,30 @@ export default async function Analytics({
       </section>
       <section className="panel">
         <h2>Operational funnel</h2>
-        <p>
-          Created {m.orders} → Confirmed {m.confirmed} (
-          {m.orders ? ((m.confirmed / m.orders) * 100).toFixed(1) : 0}%) →
-          Shipped {m.shipped} (
-          {m.confirmed ? ((m.shipped / m.confirmed) * 100).toFixed(1) : 0}%) →
-          Delivered {m.delivered} (
-          {m.shipped ? ((m.delivered / m.shipped) * 100).toFixed(1) : 0}%)
-        </p>
+        <ol className="funnel-steps">
+          {[
+            ["Created", m.orders, null],
+            ["Confirmed", m.confirmed, m.orders],
+            ["Shipped", m.shipped, m.confirmed],
+            ["Delivered", m.delivered, m.shipped],
+          ].map(([label, count, previous]) => (
+            <li key={String(label)}>
+              <span>{label}</span>
+              <strong>{count}</strong>
+              <small>
+                {previous === null
+                  ? "Order creation cohort"
+                  : `${previous ? ((Number(count) / Number(previous)) * 100).toFixed(1) : "0.0"}% of previous step`}
+              </small>
+            </li>
+          ))}
+        </ol>
         <p>
           Refused {m.refused} · Returned {m.returned}
         </p>
       </section>
-      <Breakdown title="Stores" rows={result.byStore} />
       <Breakdown title="Markets" rows={result.byMarket} />
+      <Breakdown title="Stores" rows={result.byStore} />
       <Breakdown title="Products" rows={result.byProduct} />
       <section className="panel">
         <h2>Definitions</h2>

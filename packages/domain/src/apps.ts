@@ -68,6 +68,13 @@ export const appCatalog: ReadonlyArray<
       status: "Coming soon",
     },
     {
+      id: "shipsen",
+      name: "Shipsen",
+      category: "Fulfillment",
+      description: "Provider integration is planned.",
+      status: "Coming soon",
+    },
+    {
       id: "wegoo",
       name: "WeGoo",
       category: "Fulfillment",

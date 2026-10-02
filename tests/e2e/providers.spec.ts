@@ -224,14 +224,16 @@ test("ShipCOD test adapter hands off confirmed orders asynchronously, delivers o
       .filter({ hasText: reference })
       .getByRole("link", { name: reference, exact: true })
       .click();
-    await expect(page.locator(".page-heading .badge")).toHaveText("new");
+    await expect(page.getByTestId("order-commercial-status")).toHaveText("new");
     return page.url();
   }
   async function prepareFulfillment() {
     await page
       .getByRole("button", { name: "Confirm order", exact: true })
       .click();
-    await expect(page.locator(".page-heading .badge")).toHaveText("confirmed");
+    await expect(page.getByTestId("order-commercial-status")).toHaveText(
+      "confirmed",
+    );
     await page
       .getByRole("button", { name: "Create fulfillment", exact: true })
       .click();
@@ -340,7 +342,9 @@ test("ShipCOD test adapter hands off confirmed orders asynchronously, delivers o
     await page.getByRole("button", { name: label, exact: true }).click();
     await waitOperation(label);
     await waitShipment(status);
-    await expect(page.locator(".page-heading .badge")).toHaveText("confirmed");
+    await expect(page.getByTestId("order-commercial-status")).toHaveText(
+      "confirmed",
+    );
   }
   await expect(
     page.getByText("Normalized status: delivered", { exact: false }),
@@ -350,7 +354,9 @@ test("ShipCOD test adapter hands off confirmed orders asynchronously, delivers o
     fullPage: true,
   });
   await page.goto("/dashboard");
-  await expect(page.getByText(/KES.*3,990/)).toBeVisible();
+  await expect(
+    page.getByTestId("delivered-revenue").getByText(/KES.*3,990/),
+  ).toBeVisible();
   // A separate confirmed Order fails safely and can use the existing manual workflow.
   await page.goto(`/apps/shipcod?storeId=${storeId}`);
   await page
@@ -408,6 +414,8 @@ test("ShipCOD test adapter hands off confirmed orders asynchronously, delivers o
     .getByRole("button", { name: "Create manual shipment", exact: true })
     .click();
   await expect(page.getByTestId("shipment-state")).toHaveText("created");
-  await expect(page.locator(".page-heading .badge")).toHaveText("confirmed");
+  await expect(page.getByTestId("order-commercial-status")).toHaveText(
+    "confirmed",
+  );
   await customerContext.close();
 });
