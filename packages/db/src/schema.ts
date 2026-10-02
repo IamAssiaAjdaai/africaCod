@@ -1,4 +1,8 @@
-import type { PageConfig, CheckoutConfiguration } from "@africacod/validation";
+import type {
+  PageConfig,
+  CheckoutConfiguration,
+  PublishedContent,
+} from "@africacod/validation";
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -130,6 +134,9 @@ export const stores = pgTable(
     name: varchar("name", { length: 100 }).notNull(),
     slug: varchar("slug", { length: 63 }).notNull().unique(),
     logo: text("logo"),
+    tagline: varchar("tagline", { length: 200 }),
+    contactEmail: varchar("contact_email", { length: 200 }),
+    contactPhone: varchar("contact_phone", { length: 40 }),
     status: storeStatus("status").default("active").notNull(),
     ...dates(),
   },
@@ -628,5 +635,51 @@ export const orderAttribution = pgTable(
       columns: [t.orderId, t.organizationId],
       foreignColumns: [orders.id, orders.organizationId],
     }),
+  ],
+);
+
+export const contentPageStatus = pgEnum("content_page_status", [
+  "draft",
+  "published",
+]);
+export const contentPages = pgTable(
+  "content_pages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+    storeId: uuid("store_id").notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    slug: varchar("slug", { length: 100 }).notNull(),
+    status: contentPageStatus("status").default("draft").notNull(),
+    draftContent: text("draft_content").default("").notNull(),
+    publishedContent: jsonb("published_content").$type<PublishedContent>(),
+    publishedSlug: varchar("published_slug", { length: 100 }),
+    metaTitle: varchar("meta_title", { length: 200 }),
+    metaDescription: varchar("meta_description", { length: 500 }),
+    showInNavigation: boolean("show_in_navigation").default(false).notNull(),
+    navigationLabel: varchar("navigation_label", { length: 60 }),
+    navigationOrder: integer("navigation_order").default(0).notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    ...dates(),
+  },
+  (t) => [
+    unique("content_page_store_slug_unique").on(t.storeId, t.slug),
+    unique("content_page_published_slug_unique").on(t.storeId, t.publishedSlug),
+    foreignKey({
+      columns: [t.storeId, t.organizationId],
+      foreignColumns: [stores.id, stores.organizationId],
+      name: "content_page_store_org_fk",
+    }),
+    check(
+      "content_page_published_snapshot_check",
+      sql`${t.status} <> 'published' OR (${t.publishedContent} IS NOT NULL AND ${t.publishedSlug} IS NOT NULL AND ${t.publishedAt} IS NOT NULL)`,
+    ),
+    check(
+      "content_page_navigation_order_check",
+      sql`${t.navigationOrder} BETWEEN 0 AND 1000`,
+    ),
+    index("content_page_org_idx").on(t.organizationId, t.storeId),
   ],
 );

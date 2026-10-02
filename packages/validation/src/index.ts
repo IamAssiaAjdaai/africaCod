@@ -207,3 +207,30 @@ export const orderFiltersInput = z.object({
   dateTo: z.iso.date().optional(),
   page: z.number().int().min(1).max(100000).default(1),
 });
+
+export const contentPageInput = z.object({
+  storeId: z.uuid(),
+  title: z.string().trim().min(2).max(200),
+  slug,
+  content: z.string().max(50000).default(""),
+  metaTitle: z.string().trim().max(200).nullable().default(null),
+  metaDescription: z.string().trim().max(500).nullable().default(null),
+  showInNavigation: z.boolean().default(false),
+  navigationLabel: z.string().trim().max(60).nullable().default(null),
+  navigationOrder: z.number().int().min(0).max(1000).default(0),
+});
+export type ContentPageDraft = z.infer<typeof contentPageInput>;
+export type PublishedContent = Omit<ContentPageDraft, "storeId">;
+export const brandingInput = z.object({
+  name: storeInput.shape.name,
+  tagline: z.string().trim().max(200).nullable().default(null),
+  contactEmail: z.email().max(200).nullable().default(null),
+  contactPhone: z
+    .string()
+    .trim()
+    .min(5)
+    .max(40)
+    .regex(/^[+0-9 ()-]+$/, "Use a phone number.")
+    .nullable()
+    .default(null),
+});
