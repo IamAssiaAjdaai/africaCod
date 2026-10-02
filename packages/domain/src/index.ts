@@ -5,3 +5,5 @@ export * from "./storefront";
 export * from "./checkout-configuration";
 export * from "./content";
 export * from "./apps";
+export * from "./operations";
+export * from "./lifecycle";

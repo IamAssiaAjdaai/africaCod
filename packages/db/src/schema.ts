@@ -113,6 +113,7 @@ export const memberships = pgTable(
   },
   (t) => [
     unique("membership_org_user_unique").on(t.organizationId, t.userId),
+    unique("membership_id_org_unique").on(t.id, t.organizationId),
     index("memberships_user_idx").on(t.userId),
   ],
 );
@@ -403,7 +404,11 @@ export type PublishedPageConfig = PageConfig & {
   }[];
 };
 export const pageStatus = pgEnum("product_page_status", ["draft", "published"]);
-export const orderStatus = pgEnum("order_status", ["new", "cancelled"]);
+export const orderStatus = pgEnum("order_status", [
+  "new",
+  "confirmed",
+  "cancelled",
+]);
 export const productPages = pgTable(
   "product_pages",
   {
@@ -476,6 +481,10 @@ export const orders = pgTable(
       .notNull(),
     totalMinor: bigint("total_minor", { mode: "number" }).notNull(),
     status: orderStatus("order_status").default("new").notNull(),
+    assignedMembershipId: uuid("assigned_membership_id"),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    cancellationReason: text("cancellation_reason"),
     duplicateSignal: boolean("duplicate_signal").default(false).notNull(),
     ...dates(),
   },
@@ -485,6 +494,11 @@ export const orders = pgTable(
       t.checkoutIdempotencyKey,
     ),
     unique("order_id_org_unique").on(t.id, t.organizationId),
+    foreignKey({
+      name: "order_assignment_tenant_fk",
+      columns: [t.assignedMembershipId, t.organizationId],
+      foreignColumns: [memberships.id, memberships.organizationId],
+    }),
     unique("order_identity_unique").on(
       t.id,
       t.storeId,
@@ -681,5 +695,175 @@ export const contentPages = pgTable(
       sql`${t.navigationOrder} BETWEEN 0 AND 1000`,
     ),
     index("content_page_org_idx").on(t.organizationId, t.storeId),
+  ],
+);
+
+export const confirmationOutcome = pgEnum("confirmation_outcome", [
+  "no_answer",
+  "callback",
+  "confirmed",
+  "cancelled",
+  "invalid_order",
+]);
+export const fulfillmentStatus = pgEnum("fulfillment_status", [
+  "pending",
+  "ready",
+  "processing",
+  "fulfilled",
+  "failed",
+  "cancelled",
+]);
+export const shipmentStatus = pgEnum("shipment_status", [
+  "created",
+  "shipped",
+  "out_for_delivery",
+  "delivery_failed",
+  "delivered",
+  "refused",
+  "returned",
+  "cancelled",
+]);
+export const confirmationAttempts = pgTable(
+  "confirmation_attempts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    orderId: uuid("order_id").notNull(),
+    agentMembershipId: uuid("agent_membership_id").notNull(),
+    requestKey: uuid("request_key").notNull(),
+    requestHash: text("request_hash").notNull(),
+    outcome: confirmationOutcome("outcome").notNull(),
+    note: text("note"),
+    nextCallbackAt: timestamp("next_callback_at", { withTimezone: true }),
+    attemptedAt: timestamp("attempted_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    unique("attempt_order_request_unique").on(t.orderId, t.requestKey),
+    foreignKey({
+      name: "attempt_order_tenant_fk",
+      columns: [t.orderId, t.organizationId],
+      foreignColumns: [orders.id, orders.organizationId],
+    }),
+    foreignKey({
+      name: "attempt_agent_tenant_fk",
+      columns: [t.agentMembershipId, t.organizationId],
+      foreignColumns: [memberships.id, memberships.organizationId],
+    }),
+    check(
+      "callback_requires_time",
+      sql`${t.outcome} <> 'callback' OR ${t.nextCallbackAt} IS NOT NULL`,
+    ),
+    index("attempt_order_time_idx").on(t.orderId, t.attemptedAt),
+  ],
+);
+export const fulfillments = pgTable(
+  "fulfillments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    orderId: uuid("order_id").notNull().unique(),
+    status: fulfillmentStatus("status").default("pending").notNull(),
+    mode: text("mode").default("manual").notNull(),
+    ...dates(),
+  },
+  (t) => [
+    unique("fulfillment_identity_unique").on(t.id, t.orderId, t.organizationId),
+    foreignKey({
+      name: "fulfillment_order_tenant_fk",
+      columns: [t.orderId, t.organizationId],
+      foreignColumns: [orders.id, orders.organizationId],
+    }),
+    check("fulfillment_manual_mode", sql`${t.mode} = 'manual'`),
+  ],
+);
+export const fulfillmentStateEvents = pgTable(
+  "fulfillment_state_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    orderId: uuid("order_id").notNull(),
+    fulfillmentId: uuid("fulfillment_id").notNull(),
+    fromStatus: fulfillmentStatus("from_status"),
+    toStatus: fulfillmentStatus("to_status").notNull(),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    foreignKey({
+      name: "fulfillment_event_identity_fk",
+      columns: [t.fulfillmentId, t.orderId, t.organizationId],
+      foreignColumns: [
+        fulfillments.id,
+        fulfillments.orderId,
+        fulfillments.organizationId,
+      ],
+    }),
+  ],
+);
+export const shipments = pgTable(
+  "shipments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    orderId: uuid("order_id").notNull().unique(),
+    fulfillmentId: uuid("fulfillment_id").notNull().unique(),
+    providerKey: text("provider_key").default("manual").notNull(),
+    providerShipmentId: text("provider_shipment_id"),
+    trackingNumber: text("tracking_number"),
+    trackingUrl: text("tracking_url"),
+    status: shipmentStatus("shipment_status").default("created").notNull(),
+    shippedAt: timestamp("shipped_at", { withTimezone: true }),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    returnedAt: timestamp("returned_at", { withTimezone: true }),
+    ...dates(),
+  },
+  (t) => [
+    unique("shipment_id_org_unique").on(t.id, t.organizationId),
+    foreignKey({
+      name: "shipment_fulfillment_order_tenant_fk",
+      columns: [t.fulfillmentId, t.orderId, t.organizationId],
+      foreignColumns: [
+        fulfillments.id,
+        fulfillments.orderId,
+        fulfillments.organizationId,
+      ],
+    }),
+    check(
+      "manual_shipment_provider",
+      sql`${t.providerKey} = 'manual' AND ${t.providerShipmentId} IS NULL`,
+    ),
+  ],
+);
+export const shipmentEvents = pgTable(
+  "shipment_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    shipmentId: uuid("shipment_id").notNull(),
+    source: text("source").default("manual").notNull(),
+    fromStatus: shipmentStatus("from_status"),
+    toStatus: shipmentStatus("to_status").notNull(),
+    providerStatusRaw: text("provider_status_raw"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    foreignKey({
+      name: "shipment_event_tenant_fk",
+      columns: [t.shipmentId, t.organizationId],
+      foreignColumns: [shipments.id, shipments.organizationId],
+    }),
+    check("shipment_event_manual_source", sql`${t.source} = 'manual'`),
   ],
 );

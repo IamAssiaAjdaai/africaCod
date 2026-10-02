@@ -43,6 +43,13 @@
       "when": 1790948947828,
       "tag": "0005_storefront_cms_branding",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790951169066,
+      "tag": "0006_order_operations",
+      "breakpoints": true
     }
   ]
 }

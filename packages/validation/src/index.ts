@@ -201,7 +201,7 @@ export const checkoutInput = z.object({
 export const orderFiltersInput = z.object({
   storeId: z.uuid().optional(),
   marketId: z.uuid().optional(),
-  status: z.enum(["new", "cancelled"]).optional(),
+  status: z.enum(["new", "confirmed", "cancelled"]).optional(),
   search: z.string().trim().max(150).default(""),
   dateFrom: z.iso.date().optional(),
   dateTo: z.iso.date().optional(),
