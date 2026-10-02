@@ -53,7 +53,7 @@ export class CommerceService {
         eq(organizations.id, memberships.organizationId),
       )
       .where(eq(memberships.userId, id))
-      .orderBy(asc(memberships.createdAt))
+      .orderBy(asc(memberships.createdAt), asc(memberships.id))
       .limit(1);
     return row ?? null;
   }
@@ -72,28 +72,20 @@ export class CommerceService {
   async createOrganization(userId: string | null, input: unknown) {
     const id = requireUser(userId);
     const value = organizationInput.parse(input);
-    try {
-      return await this.db.transaction(async (tx) => {
-        const [organization] = await tx
-          .insert(organizations)
-          .values(value)
-          .returning();
-        await tx.insert(memberships).values({
-          organizationId: organization.id,
-          userId: id,
-          role: "owner",
-        });
-        return organization;
+    return this.db.transaction(async (tx) => {
+      const [organization] = await tx
+        .insert(organizations)
+        .values(value)
+        .returning();
+      await tx.insert(memberships).values({
+        organizationId: organization.id,
+        userId: id,
+        role: "owner",
       });
-    } catch (error) {
-      if (isUniqueViolation(error))
-        throw new DomainError(
-          "CONFLICT",
-          "You already belong to an organization.",
-        );
-      throw error;
-    }
+      return organization;
+    });
   }
+
   async listStores(userId: string | null) {
     const org = await this.tenant(userId);
     return this.db

@@ -25,6 +25,7 @@ const a = crypto.randomUUID();
 const b = crypto.randomUUID();
 const newcomer = crypto.randomUUID();
 let orgA: Awaited<ReturnType<typeof service.createOrganization>>;
+let additionalOrganizationId: string | undefined;
 let orgB: Awaited<ReturnType<typeof service.createOrganization>>;
 let storeA: Awaited<ReturnType<typeof service.createStore>>;
 let storeB: Awaited<ReturnType<typeof service.createStore>>;
@@ -64,7 +65,9 @@ beforeAll(async () => {
 });
 afterAll(async () => {
   // Only remove records created by this suite; do not truncate shared test data.
-  for (const id of [orgA?.id, orgB?.id].filter((id): id is string => !!id)) {
+  for (const id of [orgA?.id, orgB?.id, additionalOrganizationId].filter(
+    (id): id is string => !!id,
+  )) {
     await db.delete(storeMarkets).where(eq(storeMarkets.organizationId, id));
     await db.delete(stores).where(eq(stores.organizationId, id));
     await db.delete(memberships).where(eq(memberships.organizationId, id));
@@ -104,11 +107,52 @@ describe.sequential(
         name: "Organization A",
       });
     });
-    it("rolls back duplicate organization creation", async () => {
+    it("allows one user to own multiple organizations without changing the current workspace", async () => {
+      const second = await service.createOrganization(a, {
+        name: "Second organization",
+      });
+      additionalOrganizationId = second.id;
+      const rows = await db
+        .select()
+        .from(memberships)
+        .where(eq(memberships.userId, a));
+      expect(rows).toHaveLength(2);
+      expect(rows.find((m) => m.organizationId === second.id)?.role).toBe(
+        "owner",
+      );
+      expect(await service.organizationFor(a)).toMatchObject({
+        id: orgA.id,
+        role: "owner",
+      });
+      expect((await service.listStores(a)).map((s) => s.id)).toEqual([
+        storeA.id,
+      ]);
+    });
+    it("rejects duplicate membership in the same organization", async () => {
+      await expect(
+        db
+          .insert(memberships)
+          .values({ organizationId: orgA.id, userId: a, role: "admin" }),
+      ).rejects.toMatchObject({ cause: { code: "23505" } });
+      const rows = await db
+        .select()
+        .from(memberships)
+        .where(
+          and(
+            eq(memberships.organizationId, orgA.id),
+            eq(memberships.userId, a),
+          ),
+        );
+      expect(rows).toHaveLength(1);
+      expect(rows[0].role).toBe("owner");
+    });
+    it("rolls back organization creation if owner membership cannot be inserted", async () => {
       const [before] = await db.select({ n: count() }).from(organizations);
       await expect(
-        service.createOrganization(a, { name: "Duplicate" }),
-      ).rejects.toMatchObject({ code: "CONFLICT" });
+        service.createOrganization(crypto.randomUUID(), {
+          name: "Invalid owner",
+        }),
+      ).rejects.toThrow();
       const [after] = await db.select({ n: count() }).from(organizations);
       expect(after.n).toBe(before.n);
     });
@@ -230,7 +274,12 @@ describe.sequential(
       await db
         .update(memberships)
         .set({ role: "admin" })
-        .where(eq(memberships.userId, a));
+        .where(
+          and(
+            eq(memberships.userId, a),
+            eq(memberships.organizationId, orgA.id),
+          ),
+        );
       expect((await service.listStores(a))[0].id).toBe(storeA.id);
     });
     it("does not offer inactive or unsupported platform countries", async () => {

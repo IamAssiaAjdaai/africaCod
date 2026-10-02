@@ -103,7 +103,7 @@ export const memberships = pgTable(
   },
   (t) => [
     unique("membership_org_user_unique").on(t.organizationId, t.userId),
-    unique("membership_user_unique").on(t.userId),
+    index("memberships_user_idx").on(t.userId),
   ],
 );
 export const countryDefinitions = pgTable("country_definitions", {

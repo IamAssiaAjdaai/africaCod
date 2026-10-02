@@ -85,7 +85,7 @@ Generate a new migration after schema edits using `pnpm db:generate`. Apply migr
 Nine tables: Better Auth `users`, `sessions`, `accounts`, `verifications`; business `organizations`, `organization_memberships`, `country_definitions`, `stores`, `store_markets`.
 
 - Membership roles: **Owner**, **Admin**. Organization creation and owner membership run in one transaction.
-- This checkpoint deliberately supports one organization membership per account, enforced by a unique constraint. Each organization can have many stores and memberships. Invitations, organization switching, and role-management UI are outside this checkpoint.
+- A user can belong to multiple organizations. Only `(organization_id, user_id)` is unique, preventing duplicate membership within the same organization. The current UI continues to use the earliest membership (ordered by creation time, then membership ID) as its workspace; onboarding still creates the first organization for users without memberships. Invitations, organization switching, agency mode, and role-management UI are outside this checkpoint.
 - All tenant-owned stores and markets carry `organization_id`. Server operations derive the organization from the authenticated user’s persisted membership. Browser IDs are resource selectors, never authorization evidence.
 - Every store lookup and market read/update includes organization scope. Cross-tenant reads return a generic not-found result. Server actions authenticate separately from the route layout.
 - A composite market foreign key `(store_id, organization_id)` references the same pair on stores, preventing database-level tenant mismatches.
