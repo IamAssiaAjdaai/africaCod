@@ -681,4 +681,31 @@ describe.sequential("COD tracking, exports and analytics", () => {
     expect(JSON.stringify(connection)).not.toContain("local-fake-token");
     expect(await production.publicTracking(slug)).toEqual([]);
   });
+  it("concurrent worker instances preserve unique receipts and historical commercial references", async () => {
+    const connection = await setup("google-sheets");
+    const o = await newOrder();
+    const secondWorker = new TrackingService(db, runtime);
+    await Promise.all([service.runOne(orgA), secondWorker.runOne(orgA)]);
+    await drain();
+    const exported = await db
+      .select()
+      .from(sheetsTestRows)
+      .where(eq(sheetsTestRows.connectionId, connection.id));
+    expect(
+      exported.filter((row) => row.orderNumber === o.orderNumber),
+    ).toHaveLength(1);
+    await expect(
+      db.delete(products).where(eq(products.id, productId)),
+    ).rejects.toThrow();
+    await expect(
+      db.delete(storeMarkets).where(eq(storeMarkets.id, kenya)),
+    ).rejects.toThrow();
+    await expect(
+      db.delete(productMarketOffers).where(eq(productMarketOffers.id, offerId)),
+    ).rejects.toThrow();
+    expect(
+      (await db.select().from(orders).where(eq(orders.id, o.id)))[0]
+        .orderNumber,
+    ).toBe(o.orderNumber);
+  });
 });

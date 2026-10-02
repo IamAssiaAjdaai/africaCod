@@ -586,11 +586,27 @@ export class StorefrontService extends CatalogService {
         status: "new",
         message: "COD order placed",
       });
+      const attribution = structuredClone(value.attribution);
+      const marketingAllowed =
+        process.env.CONSENT_MODE !== "required" || attribution.marketingConsent;
+      if (!marketingAllowed) {
+        attribution.fbclid = null;
+        attribution.fbp = null;
+        attribution.fbc = null;
+      }
+      for (const field of ["landingUrl", "referrer"] as const) {
+        if (attribution[field]) {
+          const u = new URL(attribution[field]!);
+          attribution[field] = u.origin + u.pathname;
+        }
+      }
       await tx.insert(orderAttribution).values({
-        ...value.attribution,
+        ...attribution,
         organizationId: store.organizationId,
         orderId: order.id,
-        userAgent: userAgent?.slice(0, 1000) ?? null,
+        userAgent: marketingAllowed
+          ? (userAgent?.slice(0, 1000) ?? null)
+          : null,
       });
       return receipt(order);
     });

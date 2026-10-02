@@ -87,7 +87,7 @@ test("Storefront CMS navigation, branding, Apps discovery and COD remain market-
   await expect(page).toHaveURL(/\/products\/[0-9a-f-]+$/);
   const productUrl = page.url();
   const bytes = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=",
+    "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAGUlEQVQokWOomLWHJMQwqmHWaChVDNekAQBYfc4QCt8PtQAAAABJRU5ErkJggg==",
     "base64",
   );
   await page

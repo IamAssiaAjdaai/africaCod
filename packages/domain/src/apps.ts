@@ -42,7 +42,7 @@ export const appCatalog: ReadonlyArray<
       name: "Google Sheets",
       category: "Data",
       description:
-        "Idempotent order export test adapter; production Google OAuth deferred.",
+        "Encrypted Google OAuth and idempotent order export; deployment credentials and live authorization required.",
       status: "Coming soon",
     },
     {

@@ -529,6 +529,27 @@ export const orders = pgTable(
       sql`${t.subtotalMinor} > 0 AND ${t.shippingFeeMinor} >= 0 AND ${t.totalMinor} = ${t.subtotalMinor} + ${t.shippingFeeMinor} AND ${t.totalMinor} <= 9007199254740991`,
     ),
     index("orders_org_date_idx").on(t.organizationId, t.createdAt),
+    index("orders_org_store_date_idx").on(
+      t.organizationId,
+      t.storeId,
+      t.createdAt,
+    ),
+    index("orders_org_market_date_idx").on(
+      t.organizationId,
+      t.storeMarketId,
+      t.createdAt,
+    ),
+    index("orders_org_status_date_idx").on(
+      t.organizationId,
+      t.status,
+      t.createdAt,
+    ),
+    index("orders_store_phone_date_idx").on(t.storeId, t.phone, t.createdAt),
+    index("orders_org_agent_date_idx").on(
+      t.organizationId,
+      t.assignedMembershipId,
+      t.createdAt,
+    ),
   ],
 );
 export const orderItems = pgTable(
@@ -604,6 +625,12 @@ export const orderItems = pgTable(
       "item_money_valid",
       sql`${t.quantity} BETWEEN 1 AND 20 AND ${t.unitPriceMinor} > 0 AND (${t.unitCostMinor} IS NULL OR ${t.unitCostMinor} >= 0) AND ${t.lineTotalMinor} = ${t.unitPriceMinor} * ${t.quantity} AND ${t.lineTotalMinor} <= 9007199254740991`,
     ),
+    index("items_order_idx").on(t.orderId),
+    index("items_org_product_order_idx").on(
+      t.organizationId,
+      t.productId,
+      t.orderId,
+    ),
   ],
 );
 export const orderEvents = pgTable(
@@ -642,6 +669,7 @@ export const orderAttribution = pgTable(
     referrer: text("referrer"),
     landingUrl: text("landing_url"),
     userAgent: text("user_agent"),
+    marketingConsent: boolean("marketing_consent").default(false).notNull(),
   },
   (t) => [
     foreignKey({
@@ -759,6 +787,9 @@ export const confirmationAttempts = pgTable(
       sql`${t.outcome} <> 'callback' OR ${t.nextCallbackAt} IS NOT NULL`,
     ),
     index("attempt_order_time_idx").on(t.orderId, t.attemptedAt),
+    index("attempt_callback_due_idx")
+      .on(t.organizationId, t.nextCallbackAt)
+      .where(sql`${t.nextCallbackAt} IS NOT NULL`),
   ],
 );
 export const fulfillments = pgTable(
@@ -1035,6 +1066,11 @@ export const providerJobs = pgTable(
     ...dates(),
   },
   (t) => [
+    unique("provider_job_identity_unique").on(
+      t.id,
+      t.connectionId,
+      t.organizationId,
+    ),
     foreignKey({
       name: "job_connection_tenant_fk",
       columns: [t.connectionId, t.organizationId],
@@ -1042,6 +1078,11 @@ export const providerJobs = pgTable(
         providerConnections.id,
         providerConnections.organizationId,
       ],
+    }),
+    foreignKey({
+      name: "job_order_tenant_fk",
+      columns: [t.orderId, t.organizationId],
+      foreignColumns: [orders.id, orders.organizationId],
     }),
     foreignKey({
       name: "job_fulfillment_identity_fk",
@@ -1083,6 +1124,16 @@ export const providerAttempts = pgTable(
     responseIdentifier: text("response_identifier"),
   },
   (t) => [
+    foreignKey({
+      name: "attempt_job_tenant_fk",
+      columns: [t.jobId, t.connectionId, t.organizationId],
+      foreignColumns: [
+        providerJobs.id,
+        providerJobs.connectionId,
+        providerJobs.organizationId,
+      ],
+    }),
+    index("provider_attempt_job_idx").on(t.jobId),
     foreignKey({
       name: "attempt_provider_connection_fk",
       columns: [t.connectionId, t.organizationId],
@@ -1185,6 +1236,10 @@ export const commerceEvents = pgTable(
   },
   (t) => [
     unique("commerce_event_identity").on(t.id, t.storeId, t.organizationId),
+    index("commerce_event_store_time_idx").on(t.storeId, t.occurredAt),
+    index("commerce_view_retention_idx")
+      .on(t.occurredAt)
+      .where(sql`${t.type} = 'product_viewed'`),
     foreignKey({
       columns: [t.storeId, t.organizationId],
       foreignColumns: [stores.id, stores.organizationId],
@@ -1238,6 +1293,7 @@ export const trackingJobs = pgTable(
       sql`${t.status} IN ('pending','processing','done','failed','skipped')`,
     ),
     index("tracking_job_due").on(t.status, t.availableAt),
+    index("tracking_job_connection_idx").on(t.connectionId),
   ],
 );
 export const trackingAttempts = pgTable("tracking_attempts", {
@@ -1320,10 +1376,46 @@ export const visitorEvents = pgTable(
       "visitor_product_required",
       sql`${t.type} = 'store_view' OR ${t.productId} IS NOT NULL`,
     ),
+    index("visitor_retention_idx").on(t.occurredAt),
     index("visitor_store_time_idx").on(
       t.organizationId,
       t.storeId,
       t.occurredAt,
     ),
+  ],
+);
+
+// Shared fixed-window abuse counters contain keyed hashes, never raw client IPs.
+export const rateLimitBuckets = pgTable(
+  "rate_limit_buckets",
+  {
+    key: text("key").primaryKey(),
+    count: integer("count").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    index("rate_limit_expiry_idx").on(t.expiresAt),
+    check("rate_limit_positive", sql`${t.count} > 0`),
+  ],
+);
+export const oauthStates = pgTable(
+  "oauth_states",
+  {
+    stateHash: text("state_hash").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+    organizationId: uuid("organization_id").notNull(),
+    storeId: uuid("store_id").notNull(),
+    verifierEncrypted: text("verifier_encrypted").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    foreignKey({
+      name: "oauth_store_tenant_fk",
+      columns: [t.storeId, t.organizationId],
+      foreignColumns: [stores.id, stores.organizationId],
+    }),
+    index("oauth_expiry_idx").on(t.expiresAt),
   ],
 );

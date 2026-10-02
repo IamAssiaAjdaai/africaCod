@@ -1,3 +1,4 @@
+import { assertAdapterRuntime } from "@africacod/shared";
 import { and, eq, asc, desc, inArray, sql, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -63,6 +64,7 @@ export class ProviderService extends OperationsService {
     private runtime: ProviderRuntime,
   ) {
     super(db);
+    assertAdapterRuntime(runtime.testMode);
   }
   private adapter(connectionId: string, failOnce = false) {
     return providerRegistry(

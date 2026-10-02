@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState, useEffect } from "react";
 import { type BrowserConnection } from "@africacod/domain/tracking-policy";
+import { useTrackingConsent } from "./tracking-consent";
 import { captureVisitor } from "@/lib/visitor-capture";
 import { emitBrowserTracking } from "@/lib/browser-tracking";
 import Image from "next/image";
@@ -31,12 +32,18 @@ export function PublicProductView({
   const key = useRef<string | null>(null),
     busy = useRef(false);
   const config = selected?.checkout;
+  const consent = useTrackingConsent();
+  const marketingViewed = useRef(false);
   const viewed = useRef(false);
   const checkoutStarted = useRef(false);
   useEffect(() => {
-    if (preview || viewed.current || !selected) return;
+    if (preview || !selected) return;
+    if (consent.marketing && !marketingViewed.current) {
+      marketingViewed.current = true;
+      emitBrowserTracking(tracking, "view");
+    }
+    if (!consent.analytics || viewed.current) return;
     viewed.current = true;
-    emitBrowserTracking(tracking, "view");
     if (navigator.doNotTrack === "1") return;
     void fetch(
       `/api/storefront/${product.storeSlug}/${product.productSlug}/view`,
@@ -49,7 +56,15 @@ export function PublicProductView({
         }),
       },
     ).catch(() => {});
-  }, [preview, selected, tracking, product.storeSlug, product.productSlug]);
+  }, [
+    preview,
+    selected,
+    tracking,
+    product.storeSlug,
+    product.productSlug,
+    consent.analytics,
+    consent.marketing,
+  ]);
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy.current || !selected || preview) return;
@@ -98,7 +113,8 @@ export function PublicProductView({
       if (!response.ok)
         throw new Error(body.error || "Could not place your order.");
       setReceipt(body);
-      emitBrowserTracking(tracking, "checkout", body.orderNumber);
+      if (consent.marketing)
+        emitBrowserTracking(tracking, "checkout", body.orderNumber);
     } catch (error) {
       setError(
         error instanceof Error
@@ -124,16 +140,25 @@ export function PublicProductView({
         <section className="public-gallery" aria-label="Product media">
           {product.media.length ? (
             product.media.map((image, index) => (
-              <Image
-                key={image.url}
-                src={image.url}
-                alt={image.altText}
-                width={800}
-                height={800}
-                unoptimized
-                priority={index === 0}
-                sizes="(max-width: 760px) 100vw, 50vw"
-              />
+              <picture key={image.url}>
+                {!preview && (
+                  <source
+                    srcSet={[320, 640, 960, 1600]
+                      .map((w) => `${image.url}?w=${w} ${w}w`)
+                      .join(", ")}
+                    sizes="(max-width: 760px) 100vw, 50vw"
+                  />
+                )}
+                <Image
+                  src={preview ? image.url : `${image.url}?w=960`}
+                  alt={image.altText}
+                  width={800}
+                  height={800}
+                  unoptimized
+                  priority={index === 0}
+                  sizes="(max-width: 760px) 100vw, 50vw"
+                />
+              </picture>
             ))
           ) : (
             <div className="public-no-image">{product.productName}</div>
@@ -247,7 +272,12 @@ export function PublicProductView({
                   id="cod-checkout"
                   className="catalog-form public-checkout"
                   onFocus={() => {
-                    if (preview || checkoutStarted.current) return;
+                    if (
+                      preview ||
+                      !consent.analytics ||
+                      checkoutStarted.current
+                    )
+                      return;
                     checkoutStarted.current = true;
                     captureVisitor(
                       product.storeSlug,

@@ -1,3 +1,6 @@
+import { boundedText } from "@/lib/request-body";
+import { readConsent, consentCookieName } from "@/lib/consent";
+import { logEvent } from "@africacod/shared";
 import { DomainError } from "@africacod/domain";
 import { cookies } from "next/headers";
 import { ZodError } from "zod";
@@ -14,12 +17,21 @@ export async function POST(
       { error: "Use JSON checkout details." },
       { status: 415 },
     );
-  const raw = await request.text();
+  let raw: string;
+  try {
+    raw = await boundedText(request, 16384);
+  } catch {
+    return Response.json(
+      { error: "Checkout details are too long." },
+      { status: 413 },
+    );
+  }
   if (raw.length > 16384)
     return Response.json(
       { error: "Checkout details are too long." },
       { status: 413 },
     );
+  const { storeSlug, productSlug } = await params;
   let input;
   try {
     input = JSON.parse(raw);
@@ -39,11 +51,14 @@ export async function POST(
         : {};
     input.attribution = {
       ...attribution,
+      marketingConsent: readConsent(
+        storeSlug,
+        cookieStore.get(consentCookieName(storeSlug))?.value,
+      ).marketing,
       fbp: cookieStore.get("_fbp")?.value ?? attribution.fbp ?? null,
       fbc: cookieStore.get("_fbc")?.value ?? attribution.fbc ?? null,
     };
   }
-  const { storeSlug, productSlug } = await params;
   try {
     const result = await storefront().checkout(
       storeSlug,
@@ -71,7 +86,7 @@ export async function POST(
                 : 400,
         },
       );
-    console.error("Checkout failed", error);
+    logEvent("error", "checkout_failed");
     return Response.json(
       { error: "Could not place your order. Retry with the same details." },
       { status: 500 },

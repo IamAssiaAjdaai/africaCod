@@ -9,7 +9,14 @@
     "PROVIDER_TEST_MODE",
     "PROVIDER_CREDENTIALS_KEY",
     "TRACKING_TEST_MODE",
-    "INTEGRATION_CREDENTIALS_KEY"
+    "INTEGRATION_CREDENTIALS_KEY",
+    "APP_ENV",
+    "RATE_LIMIT_KEY",
+    "CLIENT_IP_HEADER",
+    "MEDIA_STORAGE",
+    "S3_*",
+    "GOOGLE_*",
+    "CONSENT_MODE"
   ],
   "tasks": {
     "build": {

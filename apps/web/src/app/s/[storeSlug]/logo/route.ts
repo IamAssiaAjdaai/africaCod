@@ -1,17 +1,22 @@
+import { optimizedImage } from "@/lib/image-processing";
+import { logEvent } from "@africacod/shared";
 import { DomainError } from "@africacod/domain";
 import { site } from "@/lib/server";
-import { localMediaStorage } from "@/lib/local-media-storage";
+import { mediaStorage } from "@/lib/media-storage";
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ storeSlug: string }> },
 ) {
   try {
     const { storeSlug } = await params;
     const logo = await site().getPublicLogo(storeSlug);
-    const bytes = await localMediaStorage.read(logo.storageKey);
+    const width = Number(new URL(request.url).searchParams.get("w") ?? "960");
+    if (![320, 640, 960, 1600].includes(width))
+      return new Response("Invalid size", { status: 400 });
+    const bytes = await optimizedImage(mediaStorage(), logo.storageKey, width);
     return new Response(Buffer.from(bytes), {
       headers: {
-        "Content-Type": logo.mimeType,
+        "Content-Type": "image/webp",
         "Cache-Control": "no-store",
         "X-Content-Type-Options": "nosniff",
       },
@@ -25,6 +30,10 @@ export async function GET(
         error.code === "ENOENT")
     )
       return new Response("Not found", { status: 404 });
-    throw error;
+    logEvent("error", "media.delivery_failed");
+    return new Response("Media temporarily unavailable", {
+      status: 503,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 }

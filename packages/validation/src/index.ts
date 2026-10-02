@@ -165,6 +165,7 @@ const trackingUrl = z
   .nullable()
   .default(null);
 export const attributionInput = z.object({
+  marketingConsent: z.boolean().default(false),
   utmSource: trackingValue,
   utmMedium: trackingValue,
   utmCampaign: trackingValue,
@@ -186,6 +187,7 @@ export const checkoutInput = z.object({
   variantId: z.uuid().nullable().default(null),
   quantity: z.number().int().min(1).max(20),
   attribution: attributionInput.default({
+    marketingConsent: false,
     utmSource: null,
     utmMedium: null,
     utmCampaign: null,

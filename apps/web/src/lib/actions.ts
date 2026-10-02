@@ -1,4 +1,5 @@
 "use server";
+import { logEvent } from "@africacod/shared";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ZodError } from "zod";
@@ -11,7 +12,7 @@ function errorState(error: unknown): FormState {
     return {
       error: error.issues[0]?.message ?? "Check the form and try again.",
     };
-  console.error("Commerce action failed", error);
+  logEvent("error", "commerce_action_failed");
   return { error: "Something went wrong. Please try again." };
 }
 export async function createOrganizationAction(

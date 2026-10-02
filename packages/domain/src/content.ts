@@ -1,3 +1,4 @@
+import { logEvent } from "@africacod/shared";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -230,9 +231,7 @@ export class ContentService extends StorefrontService {
     if (previous)
       await storage
         .remove(previous)
-        .catch((error) =>
-          console.error("Old store logo cleanup failed", error),
-        );
+        .catch(() => logEvent("error", "old_store_logo_cleanup_failed"));
   }
   async getPublicLogo(storeSlug: string) {
     const [store] = await this.db

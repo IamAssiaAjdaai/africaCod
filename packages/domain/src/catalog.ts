@@ -1,3 +1,4 @@
+import { logEvent } from "@africacod/shared";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -530,8 +531,8 @@ export class CatalogService extends CommerceService {
     // A failed physical cleanup leaves an inaccessible orphan, never a broken visible record.
     try {
       await storage.remove(media.storageKey);
-    } catch (error) {
-      console.error("Media cleanup failed", error);
+    } catch {
+      logEvent("error", "media_cleanup_failed");
     }
   }
   async reorderMedia(userId: string | null, input: unknown) {

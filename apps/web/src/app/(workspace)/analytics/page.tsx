@@ -19,7 +19,12 @@ function Breakdown({
   return (
     <section className="panel" data-testid={`analytics-${title.toLowerCase()}`}>
       <h2>{title}</h2>
-      <div className="table-scroll">
+      <div
+        className="table-scroll"
+        tabIndex={0}
+        role="region"
+        aria-label={`${title} data table`}
+      >
         <table className="markets-table analytics-table">
           <thead>
             <tr>

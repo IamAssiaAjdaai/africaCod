@@ -75,7 +75,7 @@ h3 {
   font-size: 10px;
   letter-spacing: 1.9px;
   font-weight: 600;
-  color: #6b806d;
+  color: #536b55;
 }
 .tiny-dot {
   display: inline-block;
@@ -184,13 +184,13 @@ h3 {
 }
 .badge-inactive {
   background: #eff0ed;
-  color: #838981;
+  color: var(--muted);
 }
 .back-link {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #838a82;
+  color: #586552;
   font-size: 12px;
   margin-bottom: 25px;
 }
@@ -361,7 +361,7 @@ label small {
 }
 .nav-position {
   font-size: 11px;
-  color: #86917e;
+  color: var(--muted);
 }
 .nav-actions {
   display: flex;
@@ -399,7 +399,7 @@ label small {
 }
 .hero-description {
   max-width: 390px;
-  color: #798071;
+  color: var(--muted);
   font-size: 14px;
   line-height: 1.9;
   margin-top: 28px;
@@ -412,7 +412,7 @@ label small {
 }
 .hero-actions > span {
   font-size: 10px;
-  color: #929889;
+  color: var(--muted);
   max-width: 100px;
   line-height: 1.6;
 }
@@ -426,7 +426,7 @@ label small {
   gap: 7px;
   margin-top: 27px;
   font-size: 10px;
-  color: #85927a;
+  color: var(--muted);
 }
 .hero-art {
   height: 474px;
@@ -625,7 +625,7 @@ label small {
 .landing-values p {
   font-size: 12px;
   line-height: 1.7;
-  color: #8b927f;
+  color: var(--muted);
   max-width: 270px;
 }
 .feature-number {
@@ -634,7 +634,7 @@ label small {
   right: 32px;
   font-size: 9px;
   letter-spacing: 1px;
-  color: #a3ad97;
+  color: var(--muted);
 }
 .landing-footer {
   border-top: 1px solid #e0e5d9;
@@ -645,7 +645,7 @@ label small {
   align-items: center;
   justify-content: space-between;
   font-size: 10px;
-  color: #909a84;
+  color: var(--muted);
 }
 .landing-footer .brand {
   font-size: 16px;
@@ -703,7 +703,7 @@ label small {
 }
 .auth-story small {
   font-size: 10px;
-  color: #99b49b;
+  color: #afc5b0;
 }
 .auth-globe {
   margin-top: 35px;
@@ -752,7 +752,7 @@ label small {
 .auth-footer {
   text-align: center;
   font-size: 10px;
-  color: #a0a699;
+  color: #586552;
 }
 .password-input {
   position: relative;
@@ -771,7 +771,7 @@ label small {
 .auth-switch {
   text-align: center;
   font-size: 12px;
-  color: #8a9386;
+  color: #586552;
   margin-top: 25px;
 }
 .auth-switch a {
@@ -860,7 +860,7 @@ label small {
   display: block;
   margin-top: 4px;
   font-size: 9px;
-  color: #9aa18f;
+  color: var(--muted);
 }
 .org-card > svg {
   color: #adb4a4;
@@ -990,7 +990,7 @@ label small {
   align-items: center;
   gap: 13px;
   font-size: 11px;
-  color: #a0a794;
+  color: var(--muted);
 }
 .breadcrumb strong {
   color: #606f58;
@@ -1006,7 +1006,7 @@ label small {
   gap: 6px;
   align-items: center;
   font-size: 9px;
-  color: #99a589;
+  color: var(--muted);
 }
 .workspace-content {
   padding: 35px 37px;
@@ -1020,7 +1020,7 @@ label small {
   justify-content: space-between;
   align-items: center;
   font-size: 9px;
-  color: #abb29f;
+  color: var(--muted);
   padding: 20px 37px;
 }
 .workspace-footer > span:last-child {
@@ -1121,7 +1121,7 @@ label small {
   align-items: center;
   justify-content: space-between;
   font-size: 11px;
-  color: #8c9581;
+  color: var(--muted);
 }
 .stat-card svg {
   color: #9bac8c;
@@ -1143,7 +1143,7 @@ label small {
 }
 .stat-card small {
   font-size: 9px;
-  color: #adb39f;
+  color: var(--muted);
 }
 .dashboard-store-list > a {
   display: flex;
@@ -1157,7 +1157,7 @@ label small {
 }
 .dashboard-store-list small {
   display: block;
-  color: #8f9c83;
+  color: var(--muted);
   font-size: 10px;
   margin-top: 4px;
 }
@@ -1347,7 +1347,7 @@ label small {
   gap: 6px;
   align-items: center;
   font-size: 10px;
-  color: #99a38f;
+  color: var(--muted);
   margin-bottom: 10px;
 }
 .store-info-grid strong {
@@ -1420,7 +1420,7 @@ label small {
 .country-label small {
   display: block;
   font-size: 9px;
-  color: #9aa58d;
+  color: var(--muted);
   margin-top: 4px;
 }
 .country-flag {
@@ -1440,13 +1440,13 @@ label small {
   border: 1px solid #e4e9dc;
   padding: 4px 7px;
   border-radius: 4px;
-  color: #718661;
+  color: var(--muted);
 }
 .markets-footnote {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #99a88b;
+  color: var(--muted);
   font-size: 10px;
   margin-top: 18px;
 }
@@ -1592,14 +1592,14 @@ label small {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #8e9c82;
+  color: var(--muted);
 }
 .settings-rows dd {
   margin: 0;
 }
 .settings-note {
   font-size: 10px;
-  color: #9aaa88;
+  color: var(--muted);
   border-top: 1px solid var(--line);
   padding-top: 18px;
 }
@@ -2122,7 +2122,7 @@ textarea:focus-visible {
   position: absolute;
   top: 12px;
   left: 13px;
-  color: #87917b;
+  color: var(--muted);
 }
 .search-field input:not([type="radio"]):not([type="hidden"]) {
   padding-left: 38px;
@@ -2132,7 +2132,7 @@ textarea:focus-visible {
 }
 .catalog-slug {
   display: block;
-  color: #87917b;
+  color: var(--muted);
   font-size: 11px;
   margin-top: 6px;
 }
@@ -2163,7 +2163,7 @@ textarea:focus-visible {
 }
 .product-list-name small {
   display: block;
-  color: #87917b;
+  color: var(--muted);
   font-size: 11px;
   margin-top: 5px;
 }
@@ -2202,7 +2202,7 @@ textarea:focus-visible {
   display: block;
   margin-top: 7px;
   font-size: 10px;
-  color: #87917b;
+  color: var(--muted);
 }
 .offer-card summary::-webkit-details-marker {
   display: none;
@@ -3160,4 +3160,27 @@ summary {
   .sidebar.sidebar-open {
     visibility: visible;
   }
+}
+
+.consent-panel {
+  margin: 20px auto;
+  padding: 24px;
+  max-width: 960px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+}
+
+.public-gallery picture {
+  display: block;
+  width: 100%;
+}
+.public-gallery picture img {
+  width: 100%;
+  height: auto;
+}
+
+.table-scroll:focus-visible {
+  outline: 3px solid #194e3c;
+  outline-offset: 3px;
 }

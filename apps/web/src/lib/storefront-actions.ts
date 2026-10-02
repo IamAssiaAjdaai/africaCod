@@ -1,4 +1,5 @@
 "use server";
+import { logEvent } from "@africacod/shared";
 import { revalidatePath } from "next/cache";
 import { DomainError } from "@africacod/domain";
 import { ZodError } from "zod";
@@ -40,7 +41,7 @@ export async function pageAction(
     if (error instanceof DomainError) return { error: error.message };
     if (error instanceof ZodError)
       return { error: error.issues[0]?.message ?? "Check the form." };
-    console.error("Storefront action failed", error);
+    logEvent("error", "storefront_action_failed");
     return { error: "Could not save. Please try again." };
   }
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "provider_jobs" ADD CONSTRAINT "job_order_tenant_fk" FOREIGN KEY ("order_id","organization_id") REFERENCES "public"."orders"("id","organization_id") ON DELETE no action ON UPDATE no action;

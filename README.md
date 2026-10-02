@@ -416,3 +416,40 @@ Tracking enablement updates now use the database clock, matching Order event tim
 ### Checkpoint 8 verification
 
 All seven quality gates passed: `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test` (**33 tests**), `pnpm test:integration` (**98 tests**), `pnpm build` and `pnpm test:e2e` (**11 tests**, Chrome). A fresh PostgreSQL migration produced all **40 tables**. Browser regression includes earlier checkpoints and the new merchant/customer UX scenario at **375px, 768px and 1280px**, with no page overflow or client exceptions in that scenario. Visual review covered Order detail and the mobile receipt. Accessibility checks cover labels, focus, navigation, mobile menu behavior and receipt feedback; formal WCAG review remains a deployment task.
+
+## Checkpoint 9: production hardening and integration activation boundary
+
+The repository is a production beta candidate, conditional on the external release checklist in [production readiness](docs/production-readiness.md). The [severity audit](docs/checkpoint-9-audit.md) records blockers and deferred findings; the [42-table constraint audit](docs/database-audit.md) covers the original 40 tables plus operational OAuth states and shared abuse buckets. No new major business domain is added.
+
+`APP_ENV` explicitly distinguishes development, isolated test, staging and production. The web build/start CLI validates before launching Next.js (instrumentation can initialize lazily); the worker validates before its processing loop. Production requires: HTTPS, PostgreSQL TLS, independently generated credential keys, trusted-proxy rate-limit identity and private S3 storage are mandatory; deterministic provider/tracking adapters are forbidden. `.env.example` documents configuration. Web and worker must receive the same long-lived encryption keys. Production does not load local `.env` files. Staging uses separate resources and may explicitly enable mock adapters; a production build never implies live provider authorization.
+
+Checkout/auth/anonymous observations/media/actions now share atomic PostgreSQL abuse budgets across instances. Request bodies are bounded, request IDs and safe JSON diagnostics omit customer payloads/provider responses/secrets, and alive/database-ready endpoints are separate. Merchant-facing failed tracking jobs show safe reason/time/retry eligibility, preserving event IDs and current connection revision. Orders remain durable even when external exports fail.
+
+Media uses a real S3-compatible SDK adapter with private generated paths, conditional writes and tenant/publication-authorized delivery. Uploaded PNG/JPEG/WebP is decoded, size/pixel limited, normalized to at most 1600 pixels and stripped of metadata. Private responsive WebP derivatives serve product images/cards/logos; no-store public responses preserve unpublish revocation. The S3 transport, optimization and deletion are tested against a local HTTP S3 emulator; live R2 credentials, bucket ACL and deployment behavior remain external checks. Historical product/market/offer deletion protection is regression tested.
+
+Google Sheets now supports Connect Google, state/PKCE callback, encrypted offline tokens, refresh and disconnect. Configure Google Cloud web OAuth/Sheets API credentials, exact callback URL and approved beta users; enter spreadsheet ID and numeric tab `gid` in Apps. A dedicated empty tab provides an Order Number ledger; RAW fixed-row updates preserve idempotence after lost responses and follow tab renames. Revoked authorization, deleted destinations, missing permission, quotas and temporary failures surface safely. Do not share tab write ownership with another exporter. CI uses mocked Google HTTP responses; no live connection is claimed.
+
+Meta retains matching browser/CAPI Lead event IDs, immutable order values and optional delivered-only Purchase. Current official Meta documentation was reviewed successfully, including v25.0 transport, deduplication, required website context, hashing and Purchase value/currency. Live account validation remains required. TikTok/Google Ads stay honest browser foundations with server conversions deferred. ShipCOD production remains BLOCKED pending official documentation/access; manual fulfillment remains fully available.
+
+Required-mode Store consent separates essential auth/checkout from optional analytics and marketing. Modules default OFF until a signed preference is saved; browser DNT is respected. URL queries and disallowed marketing attribution are removed. Worker cleanup enforces 30-day anonymous observation retention; commercial retention/anonymization is an operator policy, not destructive automatic deletion. Deployment, monitoring, backup restore, encryption-key rotation and rollback runbooks are included. Self-service recovery/verification/MFA and strict nonce CSP remain documented deferred work for a closed beta.
+
+Formal accessibility regression adds axe WCAG 2 A/AA and 2.1 AA checks to merchant screens, authentication, public checkout and Order detail, alongside existing keyboard/mobile/focus/error tests. Low-contrast copy is corrected; invalid legacy PNG fixtures are replaced with valid decodable images rather than relaxing upload validation. No WCAG certification is claimed.
+
+Additional verification commands:
+
+```sh
+pnpm exec tsx scripts/verify-migrations.ts # local disposable fresh + CP8 upgrade databases
+pnpm exec tsx scripts/verify-production.ts # strict production build; ephemeral keys, zero mocks
+pnpm exec tsx scripts/verify-production-startup.ts # actual startup rejects mock flags before listening
+PLAYWRIGHT_CHROME_CHANNEL=chrome pnpm exec tsx scripts/staging-smoke.ts # disposable fresh DB, manual lifecycle, zero mocks
+```
+
+For optional S3 network verification, start an isolated local S3 emulator at port 9090 with a bucket named `africacod-test-media`, then run `pnpm exec tsx scripts/verify-s3.ts`. Its synthetic credentials are test-only and are never production defaults. Set the documented S3 variables on `staging-smoke.ts` to exercise media over that SDK transport. A real private bucket check is still a release condition.
+
+Run deployed processes with `pnpm --filter @africacod/web start` and `pnpm --filter @africacod/worker start`. Their TypeScript launcher is a runtime dependency. Authentication diagnostics and session/handler failures use safe fixed messages; vendor error arguments are never forwarded to logs.
+
+### Checkpoint 9 verification
+
+All seven gates pass: typecheck, lint, formatting, **54 unit tests**, **101 integration tests**, strict production build with both test adapters disabled, and **12 Chrome E2E tests**. Actual production startup rejects mock flags and missing `APP_ENV` before opening a listener, without inheriting a local development identity. Fresh and CP8-upgrade migration checks produce **42 tables**, seed **252 reference countries** idempotently, preserve existing data and create no StoreMarkets. S3 SDK network roundtrip, responsive derivation and deletion pass against an isolated local emulator. Browser accessibility checks report no axe violations in the tested screens, with keyboard and responsive regressions retained. Live provider receipts, real bucket policies and deployed infrastructure remain external release conditions.
+
+The disposable fresh-database staging smoke also passes **2 tests**: the complete manual COD lifecycle through delivery/return and analytics, and a Chromium-intercepted Google authorization redirect verifying PKCE, state cookie and no browser client secret. Both integration test adapters are disabled; consent is required, encryption keys are independently generated for the run, and media uses the real S3 SDK against the isolated emulator. No live Google account is contacted by the passing test.

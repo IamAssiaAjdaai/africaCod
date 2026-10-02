@@ -1,9 +1,11 @@
+import { runtimeEnvironment, logEvent } from "@africacod/shared";
 import "server-only";
 import { VisitorService } from "@africacod/domain";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAuth } from "@africacod/auth";
 import {
+  GoogleSheetsService,
   CommerceService,
   CatalogService,
   StorefrontService,
@@ -18,8 +20,17 @@ import { getDatabase } from "@africacod/db";
 export function commerce() {
   return new CommerceService(getDatabase());
 }
+export async function readSession() {
+  const requestHeaders = await headers();
+  try {
+    return await getAuth().api.getSession({ headers: requestHeaders });
+  } catch {
+    logEvent("error", "auth.session_unavailable");
+    throw new Error("Authentication temporarily unavailable.");
+  }
+}
 export async function requireSession() {
-  const session = await getAuth().api.getSession({ headers: await headers() });
+  const session = await readSession();
   if (!session) redirect("/sign-in");
   return session;
 }
@@ -50,7 +61,7 @@ export function operations() {
 }
 
 export function providerTestMode() {
-  return process.env.PROVIDER_TEST_MODE === "1";
+  return runtimeEnvironment().PROVIDER_TEST_MODE === "1";
 }
 export function providers() {
   return new ProviderService(getDatabase(), {
@@ -60,11 +71,13 @@ export function providers() {
 }
 
 export function trackingTestMode() {
-  return process.env.TRACKING_TEST_MODE === "1";
+  return runtimeEnvironment().TRACKING_TEST_MODE === "1";
 }
 export function tracking() {
   return new TrackingService(getDatabase(), {
     testMode: trackingTestMode(),
+    google: googleConfig(),
+    consentRequired: runtimeEnvironment().CONSENT_MODE === "required",
     encryptionKey: process.env.INTEGRATION_CREDENTIALS_KEY,
   });
 }
@@ -74,4 +87,25 @@ export function analytics() {
 
 export function visitors() {
   return new VisitorService(getDatabase());
+}
+
+export function googleConfig() {
+  const env = runtimeEnvironment();
+  return env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+    ? {
+        clientId: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+        redirectUri: new URL(
+          "/api/integrations/google/callback",
+          env.BETTER_AUTH_URL,
+        ).toString(),
+      }
+    : undefined;
+}
+export function googleSheets() {
+  return new GoogleSheetsService(
+    getDatabase(),
+    process.env.INTEGRATION_CREDENTIALS_KEY,
+    googleConfig(),
+  );
 }

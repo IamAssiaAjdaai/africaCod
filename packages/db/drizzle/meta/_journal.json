@@ -85,6 +85,20 @@
       "when": 1790968723417,
       "tag": "0011_visitor_observations",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790977413981,
+      "tag": "0012_production_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790979330812,
+      "tag": "0013_provider_job_order_tenant",
+      "breakpoints": true
     }
   ]
 }

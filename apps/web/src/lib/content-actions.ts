@@ -1,16 +1,18 @@
 "use server";
+import { logEvent } from "@africacod/shared";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { DomainError, maxImageBytes } from "@africacod/domain";
 import { ZodError } from "zod";
 import { site, requireSession } from "./server";
-import { localMediaStorage } from "./local-media-storage";
+import { normalizedImage } from "./image-processing";
+import { mediaStorage } from "./media-storage";
 import type { FormState } from "./actions";
 function failure(error: unknown): FormState {
   if (error instanceof DomainError) return { error: error.message };
   if (error instanceof ZodError)
     return { error: error.issues[0]?.message ?? "Check the form." };
-  console.error("Content action failed", error);
+  logEvent("error", "content_action_failed");
   return { error: "Could not save. Please try again." };
 }
 export async function contentAction(
@@ -89,9 +91,12 @@ export async function logoAction(
     await site().uploadStoreLogo(
       user.id,
       storeId,
-      new Uint8Array(await file.arrayBuffer()),
+      await normalizedImage(
+        new Uint8Array(await file.arrayBuffer()),
+        file.type,
+      ),
       file.type,
-      localMediaStorage,
+      mediaStorage(),
     );
     revalidatePath(`/stores/${storeId}`);
     return { success: "Logo saved." };

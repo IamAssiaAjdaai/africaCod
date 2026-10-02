@@ -39,6 +39,7 @@ function emit(
   phase: "view" | "checkout",
   orderNumber?: string,
 ) {
+  if (navigator.doNotTrack === "1") return;
   const w = window as PixelWindow;
   for (const e of browserEvents(connections, phase, orderNumber)) {
     const key = `${e.provider}:${e.settings.pixelId ?? e.settings.tagId}:${e.eventId ?? crypto.randomUUID()}:${e.name}`;

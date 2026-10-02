@@ -9,7 +9,11 @@ while (
   dirname(directory) !== directory
 )
   directory = dirname(directory);
-config({ path: join(directory, ".env"), quiet: true });
+if (
+  process.env.APP_ENV !== "production" &&
+  process.env.NODE_ENV !== "production"
+)
+  config({ path: join(directory, ".env"), quiet: true });
 const databaseEnvironment = z.object({ DATABASE_URL: z.url() });
 const authEnvironment = z.object({
   BETTER_AUTH_URL: z.url(),
@@ -22,3 +26,9 @@ export function getAuthEnvironment() {
   return authEnvironment.parse(process.env);
 }
 export const defaultLocale = "en";
+export {
+  runtimeEnvironment,
+  validateRuntime,
+  assertAdapterRuntime,
+} from "./runtime";
+export { logEvent, setErrorMonitor } from "./logging";

@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 const password = "Test-storefront-password-2026!";
 async function noOverflow(page: Page) {
@@ -97,7 +98,7 @@ test("coherent merchant navigation and mobile customer checkout", async ({
   await expect(page).toHaveURL(/\/products\/[0-9a-f-]+$/);
   const productUrl = page.url();
   const bytes = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=",
+    "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAGUlEQVQokWOomLWHJMQwqmHWaChVDNekAQBYfc4QCt8PtQAAAABJRU5ErkJggg==",
     "base64",
   );
   await page
@@ -218,6 +219,23 @@ test("coherent merchant navigation and mobile customer checkout", async ({
       await page.goto(route);
       await expect(page.locator("h1").first()).toBeVisible();
       await noOverflow(page);
+      if (route === "/analytics" && width === 375) {
+        const region = page.getByRole("region", { name: "Markets data table" });
+        await region.focus();
+        await expect(region).toBeFocused();
+        const before = await region.evaluate((el) => el.scrollLeft);
+        await page.keyboard.press("ArrowRight");
+        await expect
+          .poll(() => region.evaluate((el) => el.scrollLeft))
+          .toBeGreaterThan(before);
+      }
+
+      if (width === 1280) {
+        const result = await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+          .analyze();
+        expect.soft(result.violations, route).toEqual([]);
+      }
     }
     await page.goto("/dashboard");
     const nav = page.getByRole("navigation", { name: "Main navigation" });
@@ -266,6 +284,10 @@ test("coherent merchant navigation and mobile customer checkout", async ({
   await customer
     .getByLabel("Delivery address", { exact: true })
     .fill("12 Garden Road");
+  const checkoutAccessibility = await new AxeBuilder({ page: customer })
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+    .analyze();
+  expect.soft(checkoutAccessibility.violations, "Public checkout").toEqual([]);
   await customer
     .getByRole("button", { name: "Order with cash on delivery", exact: true })
     .click();
@@ -293,6 +315,10 @@ test("coherent merchant navigation and mobile customer checkout", async ({
     .first()
     .click();
   await expect(page.getByTestId("order-commercial-status")).toHaveText("new");
+  const orderAccessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+    .analyze();
+  expect.soft(orderAccessibility.violations, "Order detail").toEqual([]);
   await expect(
     page.getByRole("heading", { name: "Customer & delivery snapshot" }),
   ).toBeVisible();

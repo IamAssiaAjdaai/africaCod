@@ -104,7 +104,7 @@ export function StoreGrid({
                 >
                   {product.imageUrl ? (
                     <Image
-                      src={product.imageUrl}
+                      src={`${product.imageUrl}?w=320`}
                       unoptimized
                       width={500}
                       height={500}

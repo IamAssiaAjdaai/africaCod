@@ -4,30 +4,34 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "build": "tsx src/cli.ts build",
+    "start": "tsx src/cli.ts start",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@africacod/auth": "workspace:*",
+    "@africacod/db": "workspace:*",
+    "@africacod/domain": "workspace:*",
+    "@africacod/shared": "workspace:*",
+    "@africacod/ui": "workspace:*",
+    "@africacod/validation": "workspace:*",
+    "@aws-sdk/client-s3": "^3.1146.0",
+    "better-auth": "^1.4.18",
+    "drizzle-orm": "^0.45.3",
+    "lucide-react": "^0.563.0",
     "next": "^16.1.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "better-auth": "^1.4.18",
-    "lucide-react": "^0.563.0",
-    "@africacod/auth": "workspace:*",
-    "@africacod/domain": "workspace:*",
-    "@africacod/db": "workspace:*",
-    "@africacod/ui": "workspace:*",
-    "@africacod/validation": "workspace:*",
-    "@africacod/shared": "workspace:*",
-    "zod": "^4.3.6",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "sharp": "^0.35.5",
+    "tsx": "^4.23.15",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
-    "tailwindcss": "^4.1.18",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
+    "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
   }
 }

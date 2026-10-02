@@ -2,11 +2,12 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { getDatabase } from "@africacod/db";
 import * as schema from "@africacod/db/schema";
-import { getAuthEnvironment } from "@africacod/shared";
+import { getAuthEnvironment, logEvent } from "@africacod/shared";
 export function createAuth() {
   const env = getAuthEnvironment();
   return betterAuth({
     appName: "AfricaCod",
+    logger: { level: "error", log: () => logEvent("error", "auth.failed") },
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
     database: drizzleAdapter(getDatabase(), { provider: "pg", schema }),
@@ -16,6 +17,9 @@ export function createAuth() {
       maxPasswordLength: 128,
     },
     trustedOrigins: [env.BETTER_AUTH_URL],
+    advanced: {
+      useSecureCookies: new URL(env.BETTER_AUTH_URL).protocol === "https:",
+    },
     rateLimit: { enabled: true, window: 60, max: 60 },
   });
 }

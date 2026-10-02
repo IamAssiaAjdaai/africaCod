@@ -1,4 +1,5 @@
 "use client";
+import { useTrackingConsent } from "./tracking-consent";
 import { useEffect, useRef } from "react";
 import { captureVisitor } from "@/lib/visitor-capture";
 import Link from "next/link";
@@ -21,14 +22,19 @@ export function StoreShell({
     (market === null && store.markets.length === 1
       ? store.markets[0]
       : undefined);
+  const consent = useTrackingConsent();
   const observed = useRef("");
   useEffect(() => {
     const identity = `${pathname}:${selected?.token ?? ""}`;
-    if (observed.current === identity || pathname !== `/s/${store.slug}`)
+    if (
+      !consent.analytics ||
+      observed.current === identity ||
+      pathname !== `/s/${store.slug}`
+    )
       return;
     observed.current = identity;
     captureVisitor(store.slug, "store_view", selected?.token);
-  }, [pathname, selected?.token, store.slug]);
+  }, [pathname, selected?.token, store.slug, consent.analytics]);
   const link = (path: string) =>
     path + (market !== null ? `?market=${encodeURIComponent(market)}` : "");
   return (

@@ -1,3 +1,5 @@
+import { googleConfig } from "@/lib/server";
+import { retryTrackingAction } from "@/lib/tracking-actions";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PageHeading } from "@africacod/ui";
@@ -72,7 +74,7 @@ export default async function Integration({
             : provider === "meta"
               ? "Pixel and CAPI available. Supply your Pixel ID and token, then verify reception in Meta Events Manager."
               : provider === "google-sheets"
-                ? "Production blocked: Google OAuth authorization and spreadsheet access are required."
+                ? "Production OAuth and idempotent synchronization are available after Google Cloud setup and merchant authorization. Live validation is required."
                 : "Browser foundation available. Supply your own account identifiers and verify in the provider console. Server delivery conversions are deferred."}
         </p>
         <p data-testid="tracking-status">
@@ -87,6 +89,38 @@ export default async function Integration({
               ? "Configured (browser; receipt unverified)"
               : "Not connected"}
         </p>
+        {provider === "google-sheets" && !mock && (
+          <>
+            <p>
+              {c?.hasSecret
+                ? "Google authorization: Configured"
+                : "Google authorization: Not configured"}
+            </p>
+            <form method="post" action="/api/integrations/google/connect">
+              <input type="hidden" name="storeId" value={storeId} />
+              <button
+                className="button button-green"
+                disabled={!googleConfig()}
+              >
+                Connect Google
+              </button>
+            </form>
+            {!googleConfig() && (
+              <p className="muted">
+                Requires external Google Cloud OAuth credentials in the
+                deployment environment.
+              </p>
+            )}
+            {c?.hasSecret && (
+              <form method="post" action="/api/integrations/google/disconnect">
+                <input type="hidden" name="storeId" value={storeId} />
+                <button className="button button-outline">
+                  Disconnect Google
+                </button>
+              </form>
+            )}
+          </>
+        )}
         <TrackingForm>
           <input type="hidden" name="storeId" value={storeId} />
           <input type="hidden" name="provider" value={provider} />
@@ -164,13 +198,25 @@ export default async function Integration({
                   name="destination"
                   defaultValue={s.destination ?? ""}
                   placeholder={
-                    mock ? "Test spreadsheet name" : "Spreadsheet ID / tab"
+                    mock ? "Test spreadsheet name" : "Spreadsheet ID"
                   }
                 />
               </label>
+              {!mock && (
+                <label>
+                  Numeric sheet ID
+                  <input
+                    name="sheetId"
+                    defaultValue={s.sheetId ?? ""}
+                    inputMode="numeric"
+                    placeholder="0"
+                  />
+                </label>
+              )}
               <p className="muted">
-                Production OAuth is deferred. No authorization is simulated
-                outside test mode.
+                {mock
+                  ? "Test adapter only; no Google authorization or remote writes."
+                  : "Paste the spreadsheet ID and numeric gid from its URL. Use a dedicated tab; its name may change, but its numeric sheet ID must stay stable. Enable only after authorization."}
               </p>
             </>
           )}
@@ -206,7 +252,11 @@ export default async function Integration({
               )}
               {health.events.map((e) => (
                 <tr key={e.id}>
-                  <td>{e.type}</td>
+                  <td>
+                    {e.type}
+                    <br />
+                    <small>{e.occurredAt.toISOString()}</small>
+                  </td>
                   <td>{e.status}</td>
                   <td>{e.attempts}</td>
                   <td>
@@ -214,6 +264,21 @@ export default async function Integration({
                       [e.eventName, e.value, e.currency, e.eventId]
                         .filter((v) => v !== null && v !== undefined)
                         .join(" · ")}
+                    {e.canRetry && e.revisionMatches && (
+                      <form action={retryTrackingAction}>
+                        <input type="hidden" name="jobId" value={e.id} />
+                        <button className="button button-outline">
+                          Retry event
+                        </button>
+                      </form>
+                    )}
+                    {e.status === "failed" &&
+                      (!e.canRetry || !e.revisionMatches) && (
+                        <p>
+                          Repair connection or destination; this event cannot
+                          currently be retried.
+                        </p>
+                      )}
                   </td>
                 </tr>
               ))}

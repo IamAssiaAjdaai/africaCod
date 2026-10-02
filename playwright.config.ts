@@ -8,7 +8,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: [["list"], ["html", { open: "never" }]],
-  use: { baseURL: "http://localhost:3000", trace: "retain-on-failure" },
+  use: { baseURL: "http://localhost:3100", trace: "retain-on-failure" },
   projects: [
     {
       name: "chromium",
@@ -22,6 +22,10 @@ export default defineConfig({
   ],
   webServer: {
     env: {
+      APP_ENV: "staging",
+      PORT: "3100",
+      BETTER_AUTH_URL: "http://localhost:3100",
+      CONSENT_MODE: "merchant-managed",
       TRACKING_TEST_MODE: "1",
       INTEGRATION_CREDENTIALS_KEY:
         "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
@@ -29,7 +33,7 @@ export default defineConfig({
       PROVIDER_CREDENTIALS_KEY: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
     },
     command: "corepack pnpm --filter @africacod/web start",
-    url: "http://localhost:3000",
+    url: "http://localhost:3100",
     reuseExistingServer: false,
     timeout: 120000,
   },

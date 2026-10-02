@@ -1,3 +1,6 @@
+import { GoogleTransport, GoogleFailure, type GoogleConfig } from "./google";
+import { googleTokenData } from "./oauth";
+import { assertAdapterRuntime, logEvent } from "@africacod/shared";
 import { VisitorService } from "../visitors";
 import { createHash } from "node:crypto";
 import { and, eq, sql, asc, desc } from "drizzle-orm";
@@ -43,11 +46,13 @@ const input = z.object({
   leadLabel: z.string().trim().max(100).default(""),
   deliveredLabel: z.string().trim().max(100).default(""),
   destination: z.string().trim().max(200).default(""),
+  sheetId: z.string().regex(/^\d*$/).max(12).default(""),
   failOnce: z.boolean().default(false),
 });
 type Connection = typeof trackingConnections.$inferSelect;
 const safe = (c: Connection) => ({
   id: c.id,
+  revision: c.revision,
   storeId: c.storeId,
   provider: c.provider,
   enabled: c.enabled,
@@ -62,10 +67,60 @@ const safe = (c: Connection) => ({
 export class TrackingService extends OperationsService {
   constructor(
     db: Database,
-    private readonly runtime: { testMode: boolean; encryptionKey?: string },
+    private readonly runtime: {
+      testMode: boolean;
+      encryptionKey?: string;
+      google?: GoogleConfig;
+      consentRequired?: boolean;
+    },
   ) {
     super(db);
+    assertAdapterRuntime(runtime.testMode);
   }
+
+  async retryFailed(userId: string | null, jobId: string) {
+    const org = await this.tenant(userId);
+    return this.db.transaction(async (tx) => {
+      const [job] = await tx
+        .select()
+        .from(trackingJobs)
+        .where(
+          and(
+            eq(trackingJobs.id, z.uuid().parse(jobId)),
+            eq(trackingJobs.organizationId, org.id),
+          ),
+        )
+        .for("update");
+      if (!job) throw new DomainError("NOT_FOUND", "Event not found.");
+      const [connection] = await tx
+        .select()
+        .from(trackingConnections)
+        .where(eq(trackingConnections.id, job.connectionId))
+        .for("update");
+      if (
+        job.status !== "failed" ||
+        !connection.enabled ||
+        connection.revision !== job.revision ||
+        connection.mode === "blocked" ||
+        connection.mode === "browser" ||
+        (connection.mode === "mock" && !this.runtime.testMode)
+      )
+        throw new DomainError(
+          "INVALID_INPUT",
+          "Retry unavailable. Repair or reconnect the integration first.",
+        );
+      await tx
+        .update(trackingJobs)
+        .set({
+          status: "pending",
+          attempts: 0,
+          safeError: null,
+          availableAt: new Date(),
+        })
+        .where(eq(trackingJobs.id, job.id));
+    });
+  }
+
   async connection(userId: string | null, storeId: string, provider: string) {
     await this.getStore(userId, storeId);
     const [c] = await this.db
@@ -115,7 +170,7 @@ export class TrackingService extends OperationsService {
       Object.prototype.hasOwnProperty.call(Object.prototype, v.pixelId)
     )
       throw new DomainError("INVALID_INPUT", "Supply a valid TikTok Pixel ID.");
-    const mode = this.runtime.testMode
+    let mode = this.runtime.testMode
       ? "mock"
       : p === "meta"
         ? "production"
@@ -135,6 +190,28 @@ export class TrackingService extends OperationsService {
             eq(trackingConnections.provider, p),
           ),
         );
+      if (p === "google-sheets" && !this.runtime.testMode) {
+        if (v.token)
+          throw new DomainError(
+            "INVALID_INPUT",
+            "Use Google OAuth to authorize Sheets.",
+          );
+        mode =
+          old?.secretEncrypted && old.mode === "production"
+            ? "production"
+            : "blocked";
+        if (
+          v.enabled &&
+          (mode !== "production" ||
+            !this.runtime.google ||
+            !v.sheetId ||
+            !/^[A-Za-z0-9_-]{10,150}$/.test(v.destination))
+        )
+          throw new DomainError(
+            "INVALID_INPUT",
+            "Connect Google and supply a spreadsheet ID and numeric sheet ID.",
+          );
+      }
       const id = old?.id ?? crypto.randomUUID(),
         context = `${store.organizationId}:${storeId}:${id}:${p}`;
       const secretEncrypted = v.token
@@ -155,6 +232,7 @@ export class TrackingService extends OperationsService {
         leadLabel: v.leadLabel,
         deliveredLabel: v.deliveredLabel,
         destination: v.destination,
+        sheetId: v.sheetId,
         failOnce: this.runtime.testMode && v.failOnce ? "1" : "0",
       };
       const [saved] = await tx
@@ -228,6 +306,8 @@ export class TrackingService extends OperationsService {
         type: commerceEvents.type,
         status: trackingJobs.status,
         attempts: trackingJobs.attempts,
+        revision: trackingJobs.revision,
+        availableAt: trackingJobs.availableAt,
         error: trackingJobs.safeError,
         occurredAt: commerceEvents.occurredAt,
         eventName: trackingTestReceipts.eventName,
@@ -255,6 +335,18 @@ export class TrackingService extends OperationsService {
         attempts: e.attempts,
         error: e.error,
         occurredAt: e.occurredAt,
+        availableAt: e.availableAt,
+        canRetry:
+          (e.status === "failed" &&
+            c.enabled &&
+            c.mode !== "blocked" &&
+            c.mode !== "browser" &&
+            c.mode !== "mock") ||
+          (e.status === "failed" &&
+            c.enabled &&
+            c.mode === "mock" &&
+            this.runtime.testMode),
+        revisionMatches: e.revision === c.revision,
         eventName: e.eventName,
         eventId:
           typeof e.payload?.event_id === "string" ? e.payload.event_id : null,
@@ -466,6 +558,16 @@ export class TrackingService extends OperationsService {
                 .digest("hex"),
             ],
           };
+          if (this.runtime.consentRequired && !attribution?.marketingConsent) {
+            await tx
+              .update(trackingJobs)
+              .set({
+                status: "skipped",
+                safeError: "Marketing consent unavailable.",
+              })
+              .where(eq(trackingJobs.id, j.id));
+            return true;
+          }
           if (attribution?.fbp) user_data.fbp = attribution.fbp;
           if (attribution?.fbc) user_data.fbc = attribution.fbc;
           else if (attribution?.fbclid)
@@ -554,13 +656,76 @@ export class TrackingService extends OperationsService {
             "UTM Source": attr?.utmSource ?? "",
             "UTM Campaign": attr?.utmCampaign ?? "",
           };
-          await new DeterministicSheetsTransport(tx, c.id).upsert(
-            c.settings.destination,
-            columns,
-          );
+          if (c.mode === "mock")
+            await new DeterministicSheetsTransport(tx, c.id).upsert(
+              c.settings.destination,
+              columns,
+            );
+          else {
+            if (!this.runtime.google || !c.secretEncrypted)
+              throw new GoogleFailure("authorization", false);
+            const context = `${c.organizationId}:${c.storeId}:${c.id}:google-sheets`,
+              vault = new CredentialVault(this.runtime.encryptionKey);
+            let tokens = googleTokenData.parse(
+              JSON.parse(vault.decrypt(c.secretEncrypted, context).apiKey),
+            );
+            const transport = new GoogleTransport(this.runtime.google);
+            if (tokens.expiresAt <= Date.now() + 60000) {
+              tokens = await transport.refresh(tokens.refreshToken);
+              await tx
+                .update(trackingConnections)
+                .set({
+                  secretEncrypted: vault.encrypt(
+                    {
+                      apiKey: JSON.stringify(tokens),
+                      apiSecret: "google-sheets",
+                    },
+                    context,
+                  ),
+                })
+                .where(eq(trackingConnections.id, c.id));
+            }
+            try {
+              await transport.upsert(
+                c.settings.destination,
+                Number(c.settings.sheetId),
+                tokens.accessToken,
+                columns,
+              );
+            } catch (error) {
+              if (!(
+                error instanceof GoogleFailure && error.code === "authorization"
+              ))
+                throw error;
+              tokens = await transport.refresh(tokens.refreshToken);
+              await tx
+                .update(trackingConnections)
+                .set({
+                  secretEncrypted: vault.encrypt(
+                    {
+                      apiKey: JSON.stringify(tokens),
+                      apiSecret: "google-sheets",
+                    },
+                    context,
+                  ),
+                })
+                .where(eq(trackingConnections.id, c.id));
+              await transport.upsert(
+                c.settings.destination,
+                Number(c.settings.sheetId),
+                tokens.accessToken,
+                columns,
+              );
+            }
+          }
         }
         // Simulate acceptance with a lost response once. Stable adapter receipt/row survives and is not duplicated on retry.
-        if (c.settings.failOnce === "1" && j.attempts === 0)
+        if (
+          this.runtime.testMode &&
+          c.mode === "mock" &&
+          c.settings.failOnce === "1" &&
+          j.attempts === 0
+        )
           throw new Error(
             "Test adapter accepted the event but the response was interrupted.",
           );
@@ -577,22 +742,40 @@ export class TrackingService extends OperationsService {
           .set({ lastSuccess: new Date(), lastError: null })
           .where(eq(trackingConnections.id, c.id));
       } catch (error) {
+        logEvent("error", "tracking.delivery_failed", {
+          organizationId: c.organizationId,
+          storeId: c.storeId,
+          orderId: o?.id,
+          jobId: j.id,
+          eventType: event.type,
+          code: error instanceof GoogleFailure ? error.code : "delivery",
+        });
         const safeError =
-          error instanceof Error && error.message.startsWith("Test adapter")
-            ? "Test adapter response interrupted; retry scheduled."
-            : c.mode === "blocked"
-              ? "Production delivery blocked: provider setup required."
-              : c.mode === "production"
-                ? "Meta delivery failed; check account configuration."
-                : "Test adapter delivery failed.";
+          error instanceof GoogleFailure
+            ? error.message
+            : error instanceof Error && error.message.startsWith("Test adapter")
+              ? "Test adapter response interrupted; retry scheduled."
+              : c.mode === "blocked"
+                ? "Production delivery blocked: provider setup required."
+                : c.mode === "production"
+                  ? "Integration delivery failed; check account configuration."
+                  : "Test adapter delivery failed.";
         await tx
           .update(trackingJobs)
           .set({
             status:
-              j.attempts >= 4 || c.mode === "blocked" ? "failed" : "pending",
+              j.attempts >= 4 ||
+              c.mode === "blocked" ||
+              (error instanceof GoogleFailure && !error.retryable)
+                ? "failed"
+                : "pending",
             safeError,
             availableAt: new Date(
-              Date.now() + Math.min(60000, 1000 * 2 ** j.attempts),
+              Date.now() +
+                Math.min(
+                  3600000,
+                  (c.mode === "mock" ? 1000 : 30000) * 2 ** j.attempts,
+                ),
             ),
           })
           .where(eq(trackingJobs.id, j.id));

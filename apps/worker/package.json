@@ -5,15 +5,17 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc --noEmit false --outDir dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "start": "tsx src/index.ts"
   },
   "dependencies": {
     "@africacod/shared": "workspace:*",
     "@africacod/domain": "workspace:*",
-    "@africacod/db": "workspace:*"
+    "@africacod/db": "workspace:*",
+    "drizzle-orm": "^0.45.1",
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "@types/node": "^22.19.0"
   }

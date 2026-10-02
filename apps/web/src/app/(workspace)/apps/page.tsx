@@ -51,7 +51,7 @@ export default async function Apps({
     if (!["meta", "tiktok", "google-ads", "google-sheets"].includes(id))
       return "Coming soon";
     const c = trackingConnections.find((c) => c?.provider === id);
-    if (!trackingTestMode() && id === "google-sheets")
+    if (!trackingTestMode() && id === "google-sheets" && !c)
       return "Production setup required";
     if (c) {
       if (c.mode === "mock" && !trackingTestMode())
@@ -80,7 +80,8 @@ export default async function Apps({
       <section className="panel integration-guidance">
         <h2>Choose what your Store connects</h2>
         <p>
-          Marketing and data integrations are PARTIAL. Configuration
+          Marketing integrations remain PARTIAL. Sheets OAuth and export require
+          external credentials and live merchant authorization. Configuration
           availability does not mean verified production delivery. ShipCOD
           offers a test adapter; production API access remains blocked.
         </p>

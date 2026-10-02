@@ -1,21 +1,28 @@
-import { headers } from "next/headers";
-import { getAuth } from "@africacod/auth";
 import { DomainError } from "@africacod/domain";
+import { logEvent } from "@africacod/shared";
 import { z } from "zod";
-import { catalog } from "@/lib/server";
-import { localMediaStorage } from "@/lib/local-media-storage";
+import { catalog, readSession } from "@/lib/server";
+import { mediaStorage } from "@/lib/media-storage";
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ mediaId: string }> },
 ) {
-  const session = await getAuth().api.getSession({ headers: await headers() });
+  let session;
+  try {
+    session = await readSession();
+  } catch {
+    return new Response("Media temporarily unavailable", {
+      status: 503,
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
   if (!session) return new Response("Unauthorized", { status: 401 });
   const { mediaId } = await params;
   if (!z.uuid().safeParse(mediaId).success)
     return new Response("Not found", { status: 404 });
   try {
     const media = await catalog().getMedia(session.user.id, mediaId);
-    const bytes = await localMediaStorage.read(media.storageKey);
+    const bytes = await mediaStorage().read(media.storageKey);
     return new Response(Buffer.from(bytes), {
       headers: {
         "Content-Type": media.mimeType,
@@ -37,6 +44,10 @@ export async function GET(
       error.code === "ENOENT"
     )
       return new Response("Not found", { status: 404 });
-    throw error;
+    logEvent("error", "media.private_unavailable");
+    return new Response("Media temporarily unavailable", {
+      status: 503,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 }

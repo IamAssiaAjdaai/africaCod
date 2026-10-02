@@ -16,3 +16,5 @@ export * from "./tracking/service";
 export * from "./tracking/policy";
 export * from "./analytics";
 export * from "./visitors";
+export { AbuseService, abuseKey } from "./abuse";
+export { GoogleSheetsService } from "./tracking/oauth";

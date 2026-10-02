@@ -1,16 +1,18 @@
 "use server";
+import { logEvent } from "@africacod/shared";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ZodError } from "zod";
 import { DomainError, maxImageBytes } from "@africacod/domain";
 import { catalog, requireSession } from "./server";
-import { localMediaStorage } from "./local-media-storage";
+import { normalizedImage } from "./image-processing";
+import { mediaStorage } from "./media-storage";
 import type { FormState } from "./actions";
 function failure(error: unknown): FormState {
   if (error instanceof DomainError) return { error: error.message };
   if (error instanceof ZodError)
     return { error: error.issues[0]?.message ?? "Check the form." };
-  console.error("Catalog action failed", error);
+  logEvent("error", "catalog_action_failed");
   return { error: "Something went wrong. Please try again." };
 }
 function refresh(productId?: string) {
@@ -133,9 +135,12 @@ export async function uploadMediaAction(
     const media = await catalog().uploadMedia(
       user.id,
       { productId: data.get("productId"), altText: nullable(data, "altText") },
-      new Uint8Array(await file.arrayBuffer()),
+      await normalizedImage(
+        new Uint8Array(await file.arrayBuffer()),
+        file.type,
+      ),
       file.type,
-      localMediaStorage,
+      mediaStorage(),
     );
     refresh(media.productId);
     return { success: "Image uploaded." };
@@ -153,7 +158,7 @@ export async function removeMediaAction(
       user.id,
       String(data.get("mediaId")),
     );
-    await catalog().removeMedia(user.id, media.id, localMediaStorage);
+    await catalog().removeMedia(user.id, media.id, mediaStorage());
     refresh(media.productId);
     return { success: "Image removed." };
   } catch (error) {

@@ -22,6 +22,7 @@ export async function trackingAction(
         leadLabel: String(data.get("leadLabel") ?? ""),
         deliveredLabel: String(data.get("deliveredLabel") ?? ""),
         destination: String(data.get("destination") ?? ""),
+        sheetId: String(data.get("sheetId") ?? ""),
       },
     );
     revalidatePath("/apps");
@@ -32,4 +33,14 @@ export async function trackingAction(
         "Could not save. Check account identifiers, destination and encryption configuration.",
     };
   }
+}
+
+export async function retryTrackingAction(data: FormData) {
+  const { user } = await requireSession();
+  try {
+    await tracking().retryFailed(user.id, String(data.get("jobId")));
+  } catch {
+    /* Safe status remains visible; no raw job data is exposed. */
+  }
+  revalidatePath("/apps/[integration]", "page");
 }
