@@ -47,25 +47,4 @@ export function callbackTiming(at: Date | null, now = new Date()) {
   if (at <= now) return "due now";
   return "upcoming";
 }
-// Provider adapters translate external states into these normalized logistics states.
-// No credentials, network calls or provider implementations exist in this checkpoint.
-export interface ShipmentProvider {
-  key: string;
-  validateCredentials(credentials: unknown): Promise<boolean>;
-  createShipment(
-    orderSnapshot: unknown,
-  ): Promise<{ providerShipmentId: string; status: ShipmentStatus }>;
-  getShipmentStatus(
-    providerShipmentId: string,
-  ): Promise<{ raw: string; status: ShipmentStatus }>;
-  mapProviderStatus(raw: string): ShipmentStatus;
-  verifyWebhook(
-    body: Uint8Array,
-    headers: Record<string, string>,
-  ): Promise<boolean>;
-  parseWebhook(body: Uint8Array): {
-    providerShipmentId: string;
-    rawStatus: string;
-    occurredAt: Date;
-  };
-}
+export type { FulfillmentProvider as ShipmentProvider } from "./integrations/providers/contract";

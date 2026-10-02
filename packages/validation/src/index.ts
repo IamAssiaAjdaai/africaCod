@@ -234,3 +234,23 @@ export const brandingInput = z.object({
     .nullable()
     .default(null),
 });
+export type ProviderHandoffSnapshot = {
+  orderNumber: string;
+  countryCode: string;
+  currency: string;
+  totalMinor: number;
+  customer: {
+    name: string;
+    phone: string;
+    region: string;
+    city: string;
+    address: string;
+  };
+  items: {
+    name: string;
+    quantity: number;
+    providerProductId: string | null;
+    providerSku: string | null;
+  }[];
+  source?: string;
+};

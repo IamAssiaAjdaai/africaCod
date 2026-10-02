@@ -769,6 +769,7 @@ export const fulfillments = pgTable(
     orderId: uuid("order_id").notNull().unique(),
     status: fulfillmentStatus("status").default("pending").notNull(),
     mode: text("mode").default("manual").notNull(),
+    providerConnectionId: uuid("provider_connection_id"),
     ...dates(),
   },
   (t) => [
@@ -778,7 +779,18 @@ export const fulfillments = pgTable(
       columns: [t.orderId, t.organizationId],
       foreignColumns: [orders.id, orders.organizationId],
     }),
-    check("fulfillment_manual_mode", sql`${t.mode} = 'manual'`),
+    foreignKey({
+      name: "fulfillment_provider_tenant_fk",
+      columns: [t.providerConnectionId, t.organizationId],
+      foreignColumns: [
+        providerConnections.id,
+        providerConnections.organizationId,
+      ],
+    }),
+    check(
+      "fulfillment_manual_mode",
+      sql`(${t.mode} = 'manual' AND ${t.providerConnectionId} IS NULL) OR (${t.mode} = 'provider' AND ${t.providerConnectionId} IS NOT NULL)`,
+    ),
   ],
 );
 export const fulfillmentStateEvents = pgTable(
@@ -815,6 +827,10 @@ export const shipments = pgTable(
     orderId: uuid("order_id").notNull().unique(),
     fulfillmentId: uuid("fulfillment_id").notNull().unique(),
     providerKey: text("provider_key").default("manual").notNull(),
+    providerConnectionId: uuid("provider_connection_id"),
+    providerRawStatus: text("provider_raw_status"),
+    lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+    integrationError: text("integration_error"),
     providerShipmentId: text("provider_shipment_id"),
     trackingNumber: text("tracking_number"),
     trackingUrl: text("tracking_url"),
@@ -826,6 +842,18 @@ export const shipments = pgTable(
   },
   (t) => [
     unique("shipment_id_org_unique").on(t.id, t.organizationId),
+    unique("shipment_provider_external_unique").on(
+      t.providerConnectionId,
+      t.providerShipmentId,
+    ),
+    foreignKey({
+      name: "shipment_provider_tenant_fk",
+      columns: [t.providerConnectionId, t.organizationId],
+      foreignColumns: [
+        providerConnections.id,
+        providerConnections.organizationId,
+      ],
+    }),
     foreignKey({
       name: "shipment_fulfillment_order_tenant_fk",
       columns: [t.fulfillmentId, t.orderId, t.organizationId],
@@ -837,7 +865,7 @@ export const shipments = pgTable(
     }),
     check(
       "manual_shipment_provider",
-      sql`${t.providerKey} = 'manual' AND ${t.providerShipmentId} IS NULL`,
+      sql`(${t.providerKey} = 'manual' AND ${t.providerShipmentId} IS NULL AND ${t.providerConnectionId} IS NULL) OR (${t.providerKey} = 'shipcod' AND ${t.providerShipmentId} IS NOT NULL AND ${t.providerConnectionId} IS NOT NULL)`,
     ),
   ],
 );
@@ -864,6 +892,249 @@ export const shipmentEvents = pgTable(
       columns: [t.shipmentId, t.organizationId],
       foreignColumns: [shipments.id, shipments.organizationId],
     }),
-    check("shipment_event_manual_source", sql`${t.source} = 'manual'`),
+    check(
+      "shipment_event_manual_source",
+      sql`${t.source} IN ('manual','poll')`,
+    ),
   ],
 );
+
+export const providerConnections = pgTable(
+  "provider_connections",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    storeId: uuid("store_id").notNull(),
+    providerKey: text("provider_key").notNull(),
+    adapterMode: text("adapter_mode").notNull(),
+    credentialsEncrypted: text("credentials_encrypted").notNull(),
+    status: text("status").default("not_connected").notNull(),
+    revision: integer("revision").default(1).notNull(),
+    settings: jsonb("settings_json")
+      .$type<{ sourceTracking: boolean; mockFailOnce: boolean }>()
+      .notNull(),
+    lastSuccessAt: timestamp("last_success_at", { withTimezone: true }),
+    lastErrorAt: timestamp("last_error_at", { withTimezone: true }),
+    lastErrorMessage: text("last_error_message"),
+    ...dates(),
+  },
+  (t) => [
+    unique("provider_store_key_unique").on(t.storeId, t.providerKey),
+    unique("provider_id_org_unique").on(t.id, t.organizationId),
+    unique("provider_identity_unique").on(t.id, t.storeId, t.organizationId),
+    foreignKey({
+      name: "provider_store_tenant_fk",
+      columns: [t.storeId, t.organizationId],
+      foreignColumns: [stores.id, stores.organizationId],
+    }),
+    check(
+      "provider_connection_values",
+      sql`${t.providerKey} = 'shipcod' AND ${t.adapterMode} IN ('mock','production') AND ${t.status} IN ('not_connected','connected','error','disconnected')`,
+    ),
+  ],
+);
+export const providerConnectionMarkets = pgTable(
+  "provider_connection_markets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    storeId: uuid("store_id").notNull(),
+    connectionId: uuid("connection_id").notNull(),
+    storeMarketId: uuid("store_market_id").notNull(),
+  },
+  (t) => [
+    unique("provider_market_unique").on(t.connectionId, t.storeMarketId),
+    foreignKey({
+      name: "provider_market_connection_fk",
+      columns: [t.connectionId, t.storeId, t.organizationId],
+      foreignColumns: [
+        providerConnections.id,
+        providerConnections.storeId,
+        providerConnections.organizationId,
+      ],
+    }),
+    foreignKey({
+      name: "provider_market_store_fk",
+      columns: [t.storeMarketId, t.storeId, t.organizationId],
+      foreignColumns: [
+        storeMarkets.id,
+        storeMarkets.storeId,
+        storeMarkets.organizationId,
+      ],
+    }),
+  ],
+);
+export const providerProductMappings = pgTable(
+  "provider_product_mappings",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    storeId: uuid("store_id").notNull(),
+    connectionId: uuid("connection_id").notNull(),
+    productId: uuid("product_id").notNull(),
+    variantId: uuid("variant_id"),
+    mappingKey: text("mapping_key").notNull(),
+    providerProductId: text("provider_product_id"),
+    providerSku: text("provider_sku"),
+    ...dates(),
+  },
+  (t) => [
+    unique("provider_mapping_unique").on(t.connectionId, t.mappingKey),
+    foreignKey({
+      name: "mapping_connection_store_fk",
+      columns: [t.connectionId, t.storeId, t.organizationId],
+      foreignColumns: [
+        providerConnections.id,
+        providerConnections.storeId,
+        providerConnections.organizationId,
+      ],
+    }),
+    foreignKey({
+      name: "mapping_product_store_fk",
+      columns: [t.productId, t.storeId, t.organizationId],
+      foreignColumns: [products.id, products.storeId, products.organizationId],
+    }),
+    foreignKey({
+      name: "mapping_variant_product_fk",
+      columns: [t.variantId, t.productId, t.organizationId],
+      foreignColumns: [
+        productVariants.id,
+        productVariants.productId,
+        productVariants.organizationId,
+      ],
+    }),
+    check(
+      "mapping_key_valid",
+      sql`${t.mappingKey} = ${t.productId}::text || ':' || coalesce(${t.variantId}::text,'base') AND (${t.providerProductId} IS NOT NULL OR ${t.providerSku} IS NOT NULL)`,
+    ),
+  ],
+);
+export const providerJobs = pgTable(
+  "provider_jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    connectionId: uuid("connection_id").notNull(),
+    connectionRevision: integer("connection_revision").notNull(),
+    orderId: uuid("order_id"),
+    fulfillmentId: uuid("fulfillment_id"),
+    shipmentId: uuid("shipment_id"),
+    operation: text("operation").notNull(),
+    dedupeKey: text("dedupe_key").notNull().unique(),
+    status: text("status").default("pending").notNull(),
+    snapshot:
+      jsonb("snapshot").$type<
+        import("@africacod/validation").ProviderHandoffSnapshot
+      >(),
+    attemptCount: integer("attempt_count").default(0).notNull(),
+    availableAt: timestamp("available_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    leaseUntil: timestamp("lease_until", { withTimezone: true }),
+    lastError: text("last_error"),
+    ...dates(),
+  },
+  (t) => [
+    foreignKey({
+      name: "job_connection_tenant_fk",
+      columns: [t.connectionId, t.organizationId],
+      foreignColumns: [
+        providerConnections.id,
+        providerConnections.organizationId,
+      ],
+    }),
+    foreignKey({
+      name: "job_fulfillment_identity_fk",
+      columns: [t.fulfillmentId, t.orderId, t.organizationId],
+      foreignColumns: [
+        fulfillments.id,
+        fulfillments.orderId,
+        fulfillments.organizationId,
+      ],
+    }),
+    foreignKey({
+      name: "job_shipment_tenant_fk",
+      columns: [t.shipmentId, t.organizationId],
+      foreignColumns: [shipments.id, shipments.organizationId],
+    }),
+    index("provider_job_due_idx").on(t.status, t.availableAt),
+    check(
+      "provider_job_values",
+      sql`${t.operation} IN ('validate','create','poll') AND ${t.status} IN ('pending','processing','done','failed','investigation','cancelled')`,
+    ),
+  ],
+);
+export const providerAttempts = pgTable(
+  "provider_attempts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    connectionId: uuid("connection_id").notNull(),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => providerJobs.id),
+    operation: text("operation").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    success: boolean("success"),
+    safeError: text("safe_error"),
+    responseIdentifier: text("response_identifier"),
+  },
+  (t) => [
+    foreignKey({
+      name: "attempt_provider_connection_fk",
+      columns: [t.connectionId, t.organizationId],
+      foreignColumns: [
+        providerConnections.id,
+        providerConnections.organizationId,
+      ],
+    }),
+  ],
+);
+export const providerStatusEvents = pgTable(
+  "provider_status_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    connectionId: uuid("connection_id").notNull(),
+    shipmentId: uuid("shipment_id").notNull(),
+    eventKey: text("event_key").notNull(),
+    rawStatus: text("raw_status").notNull(),
+    normalizedStatus: shipmentStatus("normalized_status"),
+    disposition: text("disposition").notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    unique("provider_event_dedupe").on(t.connectionId, t.eventKey),
+    foreignKey({
+      name: "raw_event_connection_tenant_fk",
+      columns: [t.connectionId, t.organizationId],
+      foreignColumns: [
+        providerConnections.id,
+        providerConnections.organizationId,
+      ],
+    }),
+    foreignKey({
+      name: "raw_event_shipment_tenant_fk",
+      columns: [t.shipmentId, t.organizationId],
+      foreignColumns: [shipments.id, shipments.organizationId],
+    }),
+  ],
+);
+// Local deterministic remote simulator only; no production provider/customer payloads are stored here.
+export const providerTestShipments = pgTable("provider_test_shipments", {
+  requestKey: uuid("request_key").primaryKey(),
+  connectionId: uuid("connection_id")
+    .notNull()
+    .references(() => providerConnections.id),
+  externalId: text("external_id").notNull().unique(),
+  rawStatus: text("raw_status").notNull(),
+  revision: integer("revision").default(1).notNull(),
+  calls: integer("calls").default(0).notNull(),
+  ...dates(),
+});

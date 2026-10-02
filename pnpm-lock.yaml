@@ -105,6 +105,12 @@ importers:
 
   apps/worker:
     dependencies:
+      '@africacod/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@africacod/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@africacod/shared':
         specifier: workspace:*
         version: link:../../packages/shared

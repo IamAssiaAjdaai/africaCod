@@ -8,7 +8,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@africacod/shared": "workspace:*"
+    "@africacod/shared": "workspace:*",
+    "@africacod/domain": "workspace:*",
+    "@africacod/db": "workspace:*"
   },
   "devDependencies": {
     "tsx": "^4.21.0",

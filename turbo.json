@@ -5,7 +5,9 @@
     "DATABASE_URL",
     "BETTER_AUTH_SECRET",
     "BETTER_AUTH_URL",
-    "NODE_ENV"
+    "NODE_ENV",
+    "PROVIDER_TEST_MODE",
+    "PROVIDER_CREDENTIALS_KEY"
   ],
   "tasks": {
     "build": {

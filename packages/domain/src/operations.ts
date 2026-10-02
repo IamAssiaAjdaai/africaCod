@@ -325,6 +325,11 @@ export class OperationsService extends ContentService {
         )
         .for("update");
       if (!f) throw new DomainError("NOT_FOUND", "Fulfillment not found.");
+      if (f.mode !== "manual")
+        throw new DomainError(
+          "INVALID_INPUT",
+          "Provider fulfillment is controlled by its handoff job.",
+        );
       if (target === f.status) return f;
       if (
         !(fulfillmentTransitions[f.status] as readonly string[]).includes(
@@ -397,7 +402,10 @@ export class OperationsService extends ContentService {
           "This fulfillment already has a shipment.",
         );
       }
-      if (!["pending", "ready", "processing"].includes(f.status))
+      if (
+        f.mode !== "manual" ||
+        !["pending", "ready", "processing"].includes(f.status)
+      )
         throw new DomainError(
           "INVALID_INPUT",
           "This fulfillment cannot create a shipment.",
@@ -466,6 +474,11 @@ export class OperationsService extends ContentService {
           ),
         )
         .for("update");
+      if (shipment.providerKey !== "manual")
+        throw new DomainError(
+          "INVALID_INPUT",
+          "Provider shipment states must be synchronized through the adapter.",
+        );
       if (target === shipment.status) return shipment;
       if (
         !(shipmentTransitions[shipment.status] as readonly string[]).includes(
@@ -630,6 +643,8 @@ export class OperationsService extends ContentService {
           string | null
         >`case when ${orders.status} = 'new' and ${latestOutcome} = 'callback' then ${latestCallback} else null end`,
         fulfillmentStatus: fulfillments.status,
+        fulfillmentMode: fulfillments.mode,
+        shipmentProvider: shipments.providerKey,
         shipmentStatus: shipments.status,
         agentName: user.name,
       })

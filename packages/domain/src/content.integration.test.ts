@@ -423,7 +423,7 @@ describe.sequential(
     });
     it("provides an honest immutable app catalog with no fake connections", async () => {
       const catalog = await apps.listApps(a, storeId);
-      expect(catalog).toHaveLength(6);
+      expect(catalog).toHaveLength(9);
       expect(catalog.every((app) => app.status === "Coming soon")).toBe(true);
       expect(Reflect.set(catalog[0], "status", "Connected")).toBe(false);
       expect(catalog[0].status).toBe("Coming soon");

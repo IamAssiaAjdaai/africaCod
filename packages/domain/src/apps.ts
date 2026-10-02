@@ -49,10 +49,32 @@ export const appCatalog: ReadonlyArray<
       status: "Coming soon",
     },
     {
-      id: "fulfillment",
-      name: "Fulfillment providers",
+      id: "shipcod",
+      name: "ShipCOD",
       category: "Fulfillment",
-      description: "Provider integrations are not implemented or connected.",
+      description:
+        "Production BLOCKED pending official API documentation. Deterministic test adapter available only in explicit test mode.",
+      status: "Coming soon",
+    },
+    {
+      id: "cod-in-africa",
+      name: "COD in Africa",
+      category: "Fulfillment",
+      description: "Provider integration is planned.",
+      status: "Coming soon",
+    },
+    {
+      id: "wegoo",
+      name: "WeGoo",
+      category: "Fulfillment",
+      description: "Provider integration is planned.",
+      status: "Coming soon",
+    },
+    {
+      id: "haulstow",
+      name: "Haulstow",
+      category: "Fulfillment",
+      description: "Provider integration is planned.",
       status: "Coming soon",
     },
   ].map((app) => Object.freeze(app)) as ReadonlyArray<
@@ -65,7 +87,7 @@ export const appCatalog: ReadonlyArray<
     }>
   >,
 );
-// Catalog IDs are the future Store → App Connection attachment point. No credentials or connections exist yet.
+// Planned app entries remain reference data; connections are created explicitly.
 export class AppsService extends CommerceService {
   async listApps(userId: string | null, storeId?: string) {
     await this.tenant(userId);
