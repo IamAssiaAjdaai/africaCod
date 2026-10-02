@@ -1,15 +1,6 @@
-import { countryCatalog } from "@africacod/markets";
+import { seedCountries } from "./catalog-seed";
 import { getDatabaseEnvironment } from "@africacod/shared";
-import { createDatabase, countryDefinitions } from "./index";
-export async function seedCountries(
-  db: ReturnType<typeof createDatabase>["db"],
-) {
-  // Re-running the seed neither resets admin-managed definitions nor assigns store markets.
-  await db
-    .insert(countryDefinitions)
-    .values(countryCatalog)
-    .onConflictDoNothing();
-}
+import { createDatabase } from "./index";
 const { db, client } = createDatabase(getDatabaseEnvironment().DATABASE_URL);
 try {
   await seedCountries(db);

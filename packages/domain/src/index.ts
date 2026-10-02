@@ -1,3 +1,4 @@
+import { isCatalogCountry, normalizeMarketName } from "@africacod/markets";
 import { and, asc, eq } from "drizzle-orm";
 import {
   type Database,
@@ -12,6 +13,7 @@ import {
   storeInput,
   marketInput,
   marketStatusInput,
+  customMarketInput,
 } from "@africacod/validation";
 export class DomainError extends Error {
   constructor(
@@ -20,7 +22,8 @@ export class DomainError extends Error {
       | "ONBOARDING_REQUIRED"
       | "NOT_FOUND"
       | "CONFLICT"
-      | "UNSUPPORTED_COUNTRY",
+      | "COUNTRY_NOT_FOUND"
+      | "CANONICAL_COUNTRY_REQUIRED",
     message: string,
   ) {
     super(message);
@@ -131,31 +134,27 @@ export class CommerceService {
         organizationId: storeMarkets.organizationId,
         storeId: storeMarkets.storeId,
         countryCode: storeMarkets.countryCode,
-        countryName: countryDefinitions.name,
+        countryName: storeMarkets.name,
+        callingCode: storeMarkets.callingCode,
         currency: storeMarkets.currency,
         locale: storeMarkets.locale,
         status: storeMarkets.status,
         createdAt: storeMarkets.createdAt,
       })
       .from(storeMarkets)
-      .innerJoin(
-        countryDefinitions,
-        eq(countryDefinitions.code, storeMarkets.countryCode),
-      )
       .where(
         and(
           eq(storeMarkets.storeId, store.id),
           eq(storeMarkets.organizationId, store.organizationId),
         ),
       )
-      .orderBy(asc(countryDefinitions.name));
+      .orderBy(asc(storeMarkets.name));
   }
-  async supportedCountries(userId: string | null) {
+  async listCountries(userId: string | null) {
     await this.tenant(userId);
     return this.db
       .select()
       .from(countryDefinitions)
-      .where(eq(countryDefinitions.active, true))
       .orderBy(asc(countryDefinitions.name));
   }
   async addMarket(userId: string | null, input: unknown) {
@@ -164,17 +163,12 @@ export class CommerceService {
     const [country] = await this.db
       .select()
       .from(countryDefinitions)
-      .where(
-        and(
-          eq(countryDefinitions.code, value.countryCode),
-          eq(countryDefinitions.active, true),
-        ),
-      )
+      .where(eq(countryDefinitions.code, value.countryCode))
       .limit(1);
     if (!country)
       throw new DomainError(
-        "UNSUPPORTED_COUNTRY",
-        "This country is not currently supported.",
+        "COUNTRY_NOT_FOUND",
+        "Choose a country from the catalog.",
       );
     try {
       const [market] = await this.db
@@ -183,6 +177,8 @@ export class CommerceService {
           organizationId: store.organizationId,
           storeId: store.id,
           countryCode: country.code,
+          name: country.name,
+          callingCode: country.callingCode,
           currency: country.currencyCode,
           locale: country.defaultLocale,
         })
@@ -194,6 +190,47 @@ export class CommerceService {
           "CONFLICT",
           "This market already exists. You can reactivate it from the list.",
         );
+      throw error;
+    }
+  }
+  // Reserved service boundary; custom-market creation UI is intentionally deferred.
+  async addCustomMarket(userId: string | null, input: unknown) {
+    const value = customMarketInput.parse(input);
+    const store = await this.getStore(userId, value.storeId);
+    const definitions = await this.listCountries(userId);
+    const customKey = normalizeMarketName(value.name);
+    if (!customKey)
+      throw new DomainError("CONFLICT", "Use a meaningful market name.");
+    if (
+      isCatalogCountry(value.name) ||
+      definitions.some(
+        (country) =>
+          normalizeMarketName(country.name) === customKey ||
+          normalizeMarketName(country.code) === customKey,
+      )
+    )
+      throw new DomainError(
+        "CANONICAL_COUNTRY_REQUIRED",
+        "Choose the canonical country from the catalog.",
+      );
+    try {
+      const [market] = await this.db
+        .insert(storeMarkets)
+        .values({
+          organizationId: store.organizationId,
+          storeId: store.id,
+          countryCode: null,
+          customKey,
+          name: value.name,
+          currency: value.currency,
+          locale: Intl.getCanonicalLocales(value.locale)[0],
+          callingCode: value.callingCode,
+        })
+        .returning();
+      return market;
+    } catch (error) {
+      if (isUniqueViolation(error))
+        throw new DomainError("CONFLICT", "This custom market already exists.");
       throw error;
     }
   }

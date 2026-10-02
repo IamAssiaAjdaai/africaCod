@@ -171,6 +171,9 @@ importers:
       '@africacod/db':
         specifier: workspace:*
         version: link:../db
+      '@africacod/markets':
+        specifier: workspace:*
+        version: link:../markets
       '@africacod/validation':
         specifier: workspace:*
         version: link:../validation
@@ -178,9 +181,6 @@ importers:
         specifier: ^0.45.1
         version: 0.45.3(kysely@0.29.6)(postgres@3.4.9)
     devDependencies:
-      '@africacod/markets':
-        specifier: workspace:*
-        version: link:../markets
       '@africacod/shared':
         specifier: workspace:*
         version: link:../shared
@@ -192,6 +192,10 @@ importers:
         version: 5.9.3
 
   packages/markets:
+    dependencies:
+      countries-list:
+        specifier: 3.4.1
+        version: 3.4.1
     devDependencies:
       '@types/node':
         specifier: ^22.19.0
@@ -1896,6 +1900,9 @@ packages:
 
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
+
+  countries-list@3.4.1:
+    resolution: {integrity: sha512-sKLGAZD5EAdzQwQ19vOp/9u33MTjmZ0CkdXPYtp/An6cyIlJ/E8TwGf2FcPe1AnzHO+h7nbTfoHyXIi58Hpa+Q==}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -4660,6 +4667,8 @@ snapshots:
   concat-map@0.0.1: {}
 
   convert-source-map@2.0.0: {}
+
+  countries-list@3.4.1: {}
 
   cross-spawn@7.0.6:
     dependencies:

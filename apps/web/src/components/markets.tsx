@@ -5,7 +5,7 @@ import { Badge } from "@africacod/ui";
 import { addMarketAction, setMarketStatusAction } from "@/lib/actions";
 type Market = {
   id: string;
-  countryCode: string;
+  countryCode: string | null;
   countryName: string;
   currency: string;
   locale: string;
@@ -16,7 +16,7 @@ type Country = {
   name: string;
   currencyCode: string;
   defaultLocale: string;
-  callingCode: string;
+  callingCode: string | null;
 };
 function flag(code: string) {
   return String.fromCodePoint(
@@ -33,6 +33,12 @@ export function Markets({
   countries: Country[];
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const [query, setQuery] = useState("");
+  function openPicker() {
+    setSelected("");
+    setQuery("");
+    dialog.current?.showModal();
+  }
   const [selected, setSelected] = useState("");
   const [state, action, pending] = useActionState(addMarketAction, {});
   useEffect(() => {
@@ -42,6 +48,15 @@ export function Markets({
   }, [state]);
   const available = countries.filter(
     (c) => !markets.some((m) => m.countryCode === c.code),
+  );
+  const filtered = available.filter((country) =>
+    `${country.name} ${country.code}`
+      .normalize("NFKD")
+      .replace(/\p{M}/gu, "")
+      .toLowerCase()
+      .includes(
+        query.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim(),
+      ),
   );
   return (
     <section className="panel markets-panel">
@@ -56,10 +71,7 @@ export function Markets({
         </div>
         <button
           className="button button-green"
-          onClick={() => {
-            setSelected("");
-            dialog.current?.showModal();
-          }}
+          onClick={openPicker}
           disabled={available.length === 0}
         >
           <Plus size={16} /> Add Market
@@ -75,10 +87,7 @@ export function Markets({
           </div>
           <h3>No markets yet</h3>
           <p>Add the countries where you want to sell.</p>
-          <button
-            className="button button-outline"
-            onClick={() => dialog.current?.showModal()}
-          >
+          <button className="button button-outline" onClick={openPicker}>
             <Plus size={16} /> Add Market
           </button>
           <small>You’re in control. No markets are added automatically.</small>
@@ -104,11 +113,15 @@ export function Markets({
                     <td>
                       <span className="country-label">
                         <span className="country-flag">
-                          {flag(market.countryCode)}
+                          {market.countryCode ? (
+                            flag(market.countryCode)
+                          ) : (
+                            <Globe2 size={20} />
+                          )}
                         </span>
                         <span>
                           <strong>{market.countryName}</strong>
-                          <small>{market.countryCode}</small>
+                          <small>{market.countryCode ?? "Custom"}</small>
                         </span>
                       </span>
                     </td>
@@ -163,15 +176,34 @@ export function Markets({
         </div>
         <h2 id="market-dialog-title">Add a market</h2>
         <p className="muted">
-          Choose the next country for your store. Its local currency and
-          language are ready to go.
+          Choose a country or territory for your store. Currency and locale
+          defaults are copied to its market settings.
         </p>
         <form action={action}>
           <input type="hidden" name="storeId" value={storeId} />
           <fieldset disabled={pending}>
             <legend className="field-label">Available markets</legend>
+            <label className="field-label" htmlFor="country-search">
+              Search countries
+            </label>
+            <input
+              id="country-search"
+              type="search"
+              placeholder="Country name or ISO code"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setSelected("");
+              }}
+            />
+            <p className="muted" role="status">
+              {filtered.length} countries available
+            </p>
+            {filtered.length === 0 && (
+              <p>No countries found. Try another name or country code.</p>
+            )}
             <div className="country-options">
-              {available.map((country) => (
+              {filtered.map((country) => (
                 <label
                   className={`country-option ${selected === country.code ? "country-selected" : ""}`}
                   key={country.code}

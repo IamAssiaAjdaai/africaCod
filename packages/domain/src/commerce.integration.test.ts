@@ -4,6 +4,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { fileURLToPath } from "node:url";
 import {
   createDatabase,
+  seedCountries,
   user,
   countryDefinitions,
   memberships,
@@ -37,10 +38,7 @@ beforeAll(async () => {
       new URL("../../db/drizzle", import.meta.url),
     ),
   });
-  await db
-    .insert(countryDefinitions)
-    .values(countryCatalog)
-    .onConflictDoNothing();
+  await seedCountries(db);
   await db.insert(user).values(
     [a, b, newcomer].map((id) => ({
       id,
@@ -265,6 +263,7 @@ describe.sequential(
           organizationId: orgA.id,
           storeId: storeB.id,
           countryCode: "KE",
+          name: "Kenya",
           currency: "KES",
           locale: "en-KE",
         }),
@@ -282,28 +281,142 @@ describe.sequential(
         );
       expect((await service.listStores(a))[0].id).toBe(storeA.id);
     });
-    it("does not offer inactive or unsupported platform countries", async () => {
+    it("seeds only reference data without creating any store markets", async () => {
+      const [before] = await db.select({ n: count() }).from(storeMarkets);
+      await seedCountries(db);
+      const [after] = await db.select({ n: count() }).from(storeMarkets);
+      expect(after.n).toBe(before.n);
+      expect(await service.listCountries(a)).toHaveLength(
+        countryCatalog.length,
+      );
       await expect(
         service.addMarket(a, { storeId: storeA.id, countryCode: "ZZ" }),
-      ).rejects.toMatchObject({ code: "UNSUPPORTED_COUNTRY" });
-      await db
-        .insert(countryDefinitions)
-        .values({
-          code: "ZA",
-          name: "South Africa",
-          currencyCode: "ZAR",
-          currencySymbol: "R",
-          defaultLocale: "en-ZA",
-          callingCode: "+27",
-          active: false,
-        })
-        .onConflictDoNothing();
+      ).rejects.toMatchObject({ code: "COUNTRY_NOT_FOUND" });
+    });
+    it("adds Rwanda, Angola and a non-African country from the comprehensive catalog", async () => {
+      for (const [countryCode, currency, locale] of [
+        ["RW", "RWF", "rw-RW"],
+        ["AO", "AOA", "pt-AO"],
+        ["US", "USD", "en-US"],
+      ]) {
+        expect(
+          await service.addMarket(a, { storeId: storeA.id, countryCode }),
+        ).toMatchObject({ countryCode, currency, locale });
+      }
+    });
+    it("allows different stores to independently add Kenya", async () => {
+      const other = await service.addMarket(b, {
+        storeId: storeB.id,
+        countryCode: "KE",
+      });
+      expect(other.id).not.toBe(kenya.id);
+      expect(other.organizationId).toBe(orgB.id);
+    });
+    it("snapshots defaults so reference changes do not alter existing markets", async () => {
+      const [definition] = await db
+        .select()
+        .from(countryDefinitions)
+        .where(eq(countryDefinitions.code, "RW"));
+      try {
+        await db
+          .update(countryDefinitions)
+          .set({
+            name: "Changed reference",
+            currencyCode: "USD",
+            defaultLocale: "en-RW",
+            callingCode: null,
+          })
+          .where(eq(countryDefinitions.code, "RW"));
+        expect(
+          (await service.listMarkets(a, storeA.id)).find(
+            (m) => m.countryCode === "RW",
+          ),
+        ).toMatchObject({
+          countryName: "Rwanda",
+          currency: "RWF",
+          locale: "rw-RW",
+          callingCode: "+250",
+        });
+      } finally {
+        await db
+          .update(countryDefinitions)
+          .set(definition)
+          .where(eq(countryDefinitions.code, "RW"));
+      }
+    });
+    it("rejects canonical countries through the custom fallback", async () => {
+      for (const name of [
+        "Kenya",
+        "ke",
+        "KEN",
+        "Rwanda",
+        "USA",
+        "Ivory Coast",
+      ]) {
+        await expect(
+          service.addCustomMarket(a, {
+            storeId: storeA.id,
+            name,
+            currency: "USD",
+            locale: "en-US",
+          }),
+        ).rejects.toMatchObject({ code: "CANONICAL_COUNTRY_REQUIRED" });
+      }
+    });
+    it("supports a scoped custom fallback without changing the catalog or allowing duplicates", async () => {
+      const input = {
+        storeId: storeA.id,
+        name: "Special island region",
+        currency: "USD",
+        locale: "en-US",
+      };
+      const [before] = await db.select({ n: count() }).from(countryDefinitions);
+      const market = await service.addCustomMarket(a, input);
+      expect(market).toMatchObject({
+        countryCode: null,
+        customKey: "special island region",
+        name: input.name,
+      });
       expect(
-        (await service.supportedCountries(a)).some((c) => c.code === "ZA"),
-      ).toBe(false);
+        (await service.listMarkets(a, storeA.id)).some(
+          (m) => m.id === market.id,
+        ),
+      ).toBe(true);
+      await service.setMarketStatus(a, {
+        storeId: storeA.id,
+        marketId: market.id,
+        status: "inactive",
+      });
       await expect(
-        service.addMarket(a, { storeId: storeA.id, countryCode: "ZA" }),
-      ).rejects.toMatchObject({ code: "UNSUPPORTED_COUNTRY" });
+        service.addCustomMarket(a, { ...input, name: "SPECIAL-island region" }),
+      ).rejects.toMatchObject({ code: "CONFLICT" });
+      await expect(
+        service.addCustomMarket(a, { ...input, storeId: storeB.id }),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(
+        service.setMarketStatus(b, {
+          storeId: storeB.id,
+          marketId: market.id,
+          status: "active",
+        }),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      expect(
+        await service.addCustomMarket(b, { ...input, storeId: storeB.id }),
+      ).toMatchObject({ organizationId: orgB.id });
+      const [after] = await db.select({ n: count() }).from(countryDefinitions);
+      expect(after.n).toBe(before.n);
+    });
+    it("rejects ambiguous market identities at the database boundary", async () => {
+      await expect(
+        db.insert(storeMarkets).values({
+          organizationId: orgA.id,
+          storeId: storeA.id,
+          name: "Ambiguous",
+          countryCode: null,
+          currency: "USD",
+          locale: "en-US",
+        }),
+      ).rejects.toMatchObject({ cause: { code: "23514" } });
     });
   },
 );

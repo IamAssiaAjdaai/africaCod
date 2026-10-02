@@ -2,7 +2,7 @@
 
 An Africa-first cash-on-delivery commerce workspace. This checkpoint implements **Account → Organization → Store → Add Markets** only.
 
-A store starts with **zero markets**. Platform country definitions describe supported countries; only an explicit **Add Market** action creates a store market. No Products, Orders, Apps, fulfillment, analytics, AI, or integrations are implemented.
+A store starts with **zero markets**. Platform country definitions are reference data for a comprehensive country/territory catalog; only an explicit **Add Market** action creates a store market. No Products, Orders, Apps, fulfillment, analytics, AI, or integrations are implemented.
 
 ## Local setup
 
@@ -34,9 +34,9 @@ If `pnpm` is not on your PATH, `corepack pnpm` is equivalent. In restricted envi
 2. Create an organization, e.g. **Assia Commerce**. You become its **Owner**.
 3. Click **Create your first store**. Enter **Glow Beauty** and an unused address such as `glow-beauty`. No country is requested.
 4. Click **Create store**. The store detail must show **No markets yet** and **Add the countries where you want to sell.**
-5. Click **Add Market**, select **Kenya**, and click **Add selected market**.
+5. Click **Add Market**, search for and select **Kenya**, and click **Add selected market**.
 6. Verify the row shows **Kenya / KES / en-KE / Active**. Reload; it persists.
-7. Add **Ghana** independently. Kenya is no longer offered in the picker.
+7. Search for and add **Rwanda** (RWF/rw-RW), **Angola** (AOA/pt-AO), or **Ghana** independently. Kenya is no longer offered in the picker.
 8. Click **Deactivate** for Kenya. Its row remains, marked **Inactive**. **Activate** restores the same record.
 9. Sign out using the sidebar icon. Log in again and verify your stores.
 10. In a separate browser profile, create another account/organization. Paste the first store URL; it must return the unavailable-page screen, with no store data.
@@ -56,7 +56,7 @@ pnpm test:e2e
 
 `pnpm test` runs fast authentication-boundary, validation, and country-catalog tests. `pnpm test:integration` applies the real migration and tests commerce operations against PostgreSQL. It requires `TEST_DATABASE_URL` to point to a database whose name ends in `_test`, and cleans up only its own tenant fixtures. Compose creates `africacod_test` on its first initialization. If you use an existing volume without that database, create it with `docker compose exec postgres createdb -U africacod africacod_test`.
 
-The Playwright suite covers the complete happy path, reload persistence, duplicate-picker prevention, Ghana, activation/deactivation, sign-out/login, authentication redirects, tenant URL isolation, and mobile layout. It creates uniquely named accounts/stores in the local app database and leaves them for inspection; use a disposable database in CI. It starts the production server if needed, so run `pnpm build` before `pnpm test:e2e`. A running local dev server can also be reused. On macOS versions unsupported by Playwright’s bundled Chromium, use an installed Chrome:
+The Playwright suite covers the complete happy path, reload persistence, duplicate-picker prevention, searchable Kenya/Ghana/Rwanda/Angola selection, activation/deactivation, sign-out/login, authentication redirects, tenant URL isolation, and mobile layout. It creates uniquely named accounts/stores in the local app database and leaves them for inspection; use a disposable database in CI. It starts the production server if needed, so run `pnpm build` before `pnpm test:e2e`. A running local dev server can also be reused. On macOS versions unsupported by Playwright’s bundled Chromium, use an installed Chrome:
 
 ```sh
 PLAYWRIGHT_CHROME_CHANNEL=chrome pnpm test:e2e
@@ -75,7 +75,7 @@ Generate a new migration after schema edits using `pnpm db:generate`. Apply migr
 | `packages/db`         | Drizzle PostgreSQL schema, SQL migration, seed and Docker initialization                   |
 | `packages/domain`     | Organization/store/market operations with persisted-membership authorization               |
 | `packages/auth`       | Better Auth email/password, session and client configuration                               |
-| `packages/markets`    | Extensible initial country catalog                                                         |
+| `packages/markets`    | Comprehensive ISO-based country/territory reference catalog                                |
 | `packages/ui`         | Shared original branding, badges and page headings                                         |
 | `packages/validation` | Zod input schemas; browser-supplied tenant/currency data are ignored                       |
 | `packages/shared`     | Root environment loading and validation, default locale boundary                           |
@@ -90,12 +90,16 @@ Nine tables: Better Auth `users`, `sessions`, `accounts`, `verifications`; busin
 - Every store lookup and market read/update includes organization scope. Cross-tenant reads return a generic not-found result. Server actions authenticate separately from the route layout.
 - A composite market foreign key `(store_id, organization_id)` references the same pair on stores, preventing database-level tenant mismatches.
 - Public store identifiers are **globally unique** lowercase slugs (3–63 characters), with reserved names, validated at the boundary and enforced by PostgreSQL. These are identifiers; no public storefront is built yet.
-- `(store_id, country_code)` is unique, including inactive records; deactivation is a status update, never deletion. Currency and locale are snapshots from the selected active country definition.
+- `(store_id, country_code)` is unique, including inactive records; deactivation is a status update, never deletion. Name, currency, locale, and calling code are snapshots from the selected country definition. These market-owned settings can evolve independently of reference data; the schema does not bind them to current catalog defaults.
 - Stable market IDs provide a future attachment point for market-specific offers, address configuration, shipping, fulfillment and COD rules. No tables for those future domains exist.
 - Better Auth owns password hashing and session cookies. No custom auth cryptography. Email verification/delivery, password reset, social login and two-factor authentication are outside this checkpoint. Authentication uses Better Auth’s in-process rate limiter; a shared limiter is not introduced for a single-process local checkpoint.
 - English UI strings live in the web presentation layer; ISO codes and BCP 47 locales are data. No country-specific branching in the business service. A full translation catalog is deferred.
 
-Initial country catalog: Kenya (KE/KES), Ghana (GH/GHS), Guinea (GN/GNF), Côte d’Ivoire (CI/XOF), Senegal (SN/XOF), Cameroon (CM/XAF), Tanzania (TZ/TZS), Uganda (UG/UGX), Nigeria (NG/NGN), Morocco (MA/MAD).
+The catalog uses pinned MIT-licensed [countries-list 3.4.1](https://github.com/annexare/Countries): all 249 standard ISO 3166-1 countries/territories plus Ascension Island (AC), Tristan da Cunha (TA), and Kosovo (XK), for 252 entries. Supplemental codes are included explicitly and do not claim standard ISO assignment. The first listed currency and language provide defaults; locales use BCP 47 language-country tags. Existing ten-country defaults are preserved. Antarctica uses `XXX` (no currency), `en-AQ` as a fallback locale, and no calling code. Calling codes are nullable when unavailable. Defaults describe initial settings, not fulfillment availability. No country availability allowlist remains in the service.
+
+The seed inserts reference definitions only, never StoreMarkets. Store creation inserts no markets regardless of catalog size. The searchable picker filters available countries by name or ISO code and excludes markets already attached to that store, including inactive markets.
+
+Custom fallback UI is **deferred**. `CommerceService.addCustomMarket` prepares the authorized service boundary for a genuinely absent market: explicit name/currency/locale and optional calling code, with no global catalog insertion. Canonical names, native names, known aliases, and ISO alpha-2/alpha-3 codes must use catalog selection instead. Canonical markets retain `(store_id, country_code)` uniqueness; custom markets have a null country code and a normalized `custom_key`, unique per store even when inactive. A database check requires exactly one identity type. Stable IDs, editable snapshot columns, status preservation, and tenant constraints apply to both types. Market-specific configuration UI and Products remain outside this checkpoint.
 
 Reference implementations: [Better Auth Next.js integration](https://better-auth.com/docs/integrations/next), [Drizzle adapter](https://better-auth.com/docs/adapters/drizzle), [Drizzle migrations](https://orm.drizzle.team/docs/migrations).
 

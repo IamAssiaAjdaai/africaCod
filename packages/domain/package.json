@@ -11,12 +11,12 @@
   "dependencies": {
     "@africacod/db": "workspace:*",
     "@africacod/validation": "workspace:*",
-    "drizzle-orm": "^0.45.1"
+    "drizzle-orm": "^0.45.1",
+    "@africacod/markets": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
     "@types/node": "^22.19.0",
-    "@africacod/markets": "workspace:*",
     "@africacod/shared": "workspace:*"
   }
 }

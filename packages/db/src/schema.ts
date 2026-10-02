@@ -1,6 +1,8 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   foreignKey,
+  check,
   index,
   pgEnum,
   pgTable,
@@ -112,8 +114,7 @@ export const countryDefinitions = pgTable("country_definitions", {
   currencyCode: varchar("currency_code", { length: 3 }).notNull(),
   currencySymbol: text("currency_symbol").notNull(),
   defaultLocale: text("default_locale").notNull(),
-  callingCode: text("calling_code").notNull(),
-  active: boolean("active").default(true).notNull(),
+  callingCode: text("calling_code"),
 });
 export const stores = pgTable(
   "stores",
@@ -141,9 +142,12 @@ export const storeMarkets = pgTable(
       .notNull()
       .references(() => organizations.id),
     storeId: uuid("store_id").notNull(),
-    countryCode: varchar("country_code", { length: 2 })
-      .notNull()
-      .references(() => countryDefinitions.code),
+    countryCode: varchar("country_code", { length: 2 }).references(
+      () => countryDefinitions.code,
+    ),
+    name: text("name").notNull(),
+    customKey: text("custom_key"),
+    callingCode: text("calling_code"),
     currency: varchar("currency", { length: 3 }).notNull(),
     locale: text("locale").notNull(),
     status: marketStatus("status").default("active").notNull(),
@@ -156,6 +160,11 @@ export const storeMarkets = pgTable(
       foreignColumns: [stores.id, stores.organizationId],
     }),
     unique("market_store_country_unique").on(t.storeId, t.countryCode),
+    unique("market_store_custom_unique").on(t.storeId, t.customKey),
+    check(
+      "market_identity_check",
+      sql`(${t.countryCode} IS NOT NULL AND ${t.customKey} IS NULL) OR (${t.countryCode} IS NULL AND ${t.customKey} IS NOT NULL AND length(${t.customKey}) > 0)`,
+    ),
     index("markets_org_store_idx").on(t.organizationId, t.storeId),
   ],
 );

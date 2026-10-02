@@ -15,6 +15,13 @@
       "when": 1790939340701,
       "tag": "0001_multiple_organization_memberships",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790940394898,
+      "tag": "0002_comprehensive_market_catalog",
+      "breakpoints": true
     }
   ]
 }

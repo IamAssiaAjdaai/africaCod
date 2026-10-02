@@ -11,7 +11,7 @@ async function register(page: Page, suffix: string) {
   await page.getByRole("button", { name: "Create organization" }).click();
   await expect(page).toHaveURL(/\/stores$/);
 }
-test("sign up → organization → zero-market store → Kenya; preserves deactivated markets", async ({
+test("sign up → organization → zero-market store → searchable countries; preserves deactivated markets", async ({
   page,
 }) => {
   const suffix = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
@@ -30,6 +30,7 @@ test("sign up → organization → zero-market store → Kenya; preserves deacti
     .click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Search countries").fill("Kenya");
   await dialog.getByText("Kenya", { exact: true }).click();
   await dialog.getByRole("button", { name: "Add selected market" }).click();
   await expect(dialog).not.toBeVisible();
@@ -40,11 +41,29 @@ test("sign up → organization → zero-market store → Kenya; preserves deacti
   await expect(kenya).toContainText("KES");
   await page.getByRole("button", { name: "Add Market", exact: true }).click();
   await expect(dialog.getByText("Kenya", { exact: true })).toHaveCount(0);
+  await dialog.getByLabel("Search countries").fill("Ghana");
   await dialog.getByText("Ghana", { exact: true }).click();
   await dialog.getByRole("button", { name: "Add selected market" }).click();
   await expect(
     page.getByRole("row").filter({ hasText: "Ghana" }),
   ).toContainText("GHS");
+  for (const [query, name, currency] of [
+    ["rWaNdA", "Rwanda", "RWF"],
+    ["Angola", "Angola", "AOA"],
+  ]) {
+    await page.getByRole("button", { name: "Add Market", exact: true }).click();
+    await dialog.getByLabel("Search countries").fill("No such country");
+    await expect(
+      dialog.getByText("No countries found. Try another name or country code."),
+    ).toBeVisible();
+    await dialog.getByLabel("Search countries").fill(query);
+    await dialog.getByText(name, { exact: true }).click();
+    await dialog.getByRole("button", { name: "Add selected market" }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect(page.getByRole("row").filter({ hasText: name })).toContainText(
+      currency,
+    );
+  }
   await page
     .getByRole("button", { name: "Deactivate Kenya", exact: true })
     .click();

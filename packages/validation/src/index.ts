@@ -37,3 +37,21 @@ export const marketStatusInput = z.object({
   marketId: z.uuid(),
   status: z.enum(["active", "inactive"]),
 });
+
+export const customMarketInput = z.object({
+  storeId: z.uuid(),
+  name: z.string().trim().min(2).max(100),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  locale: z.string().refine((value) => {
+    try {
+      return Intl.getCanonicalLocales(value).length === 1;
+    } catch {
+      return false;
+    }
+  }, "Use a valid BCP 47 locale."),
+  callingCode: z
+    .string()
+    .regex(/^\+\d{1,4}$/)
+    .nullable()
+    .default(null),
+});

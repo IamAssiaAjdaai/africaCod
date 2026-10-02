@@ -13,3 +13,5 @@ export function getDatabase(): Database {
   return connection.db;
 }
 export * from "./schema";
+
+export { seedCountries } from "./catalog-seed";
