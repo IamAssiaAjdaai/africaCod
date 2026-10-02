@@ -1286,3 +1286,44 @@ export const sheetsTestRows = pgTable(
   },
   (t) => [unique("sheets_row_mapping").on(t.connectionId, t.orderNumber)],
 );
+
+// Anonymous first-party observations, separate from immutable commerce truth.
+export const visitorEvents = pgTable(
+  "visitor_events",
+  {
+    id: uuid("id").primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    storeId: uuid("store_id").notNull(),
+    productId: uuid("product_id"),
+    marketToken: varchar("market_token", { length: 120 }),
+    type: varchar("type", { length: 30 }).notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    foreignKey({
+      name: "visitor_store_tenant_fk",
+      columns: [t.storeId, t.organizationId],
+      foreignColumns: [stores.id, stores.organizationId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "visitor_product_store_tenant_fk",
+      columns: [t.productId, t.storeId, t.organizationId],
+      foreignColumns: [products.id, products.storeId, products.organizationId],
+    }).onDelete("cascade"),
+    check(
+      "visitor_type_valid",
+      sql`${t.type} IN ('store_view','product_view','checkout_started')`,
+    ),
+    check(
+      "visitor_product_required",
+      sql`${t.type} = 'store_view' OR ${t.productId} IS NOT NULL`,
+    ),
+    index("visitor_store_time_idx").on(
+      t.organizationId,
+      t.storeId,
+      t.occurredAt,
+    ),
+  ],
+);

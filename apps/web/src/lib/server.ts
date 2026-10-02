@@ -1,4 +1,5 @@
 import "server-only";
+import { VisitorService } from "@africacod/domain";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAuth } from "@africacod/auth";
@@ -69,4 +70,8 @@ export function tracking() {
 }
 export function analytics() {
   return new AnalyticsService(getDatabase());
+}
+
+export function visitors() {
+  return new VisitorService(getDatabase());
 }

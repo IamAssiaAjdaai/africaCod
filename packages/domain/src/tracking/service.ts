@@ -1,3 +1,4 @@
+import { VisitorService } from "../visitors";
 import { createHash } from "node:crypto";
 import { and, eq, sql, asc, desc } from "drizzle-orm";
 import { z } from "zod";
@@ -176,7 +177,7 @@ export class TrackingService extends OperationsService {
             settings,
             secretEncrypted,
             revision: (old?.revision ?? 0) + 1,
-            enabledAt: new Date(),
+            enabledAt: sql`clock_timestamp()`,
             lastSuccess: null,
             lastError:
               mode === "blocked"
@@ -367,25 +368,14 @@ export class TrackingService extends OperationsService {
     market: string | undefined,
     eventId: string,
   ) {
-    z.uuid().parse(eventId);
-    const product = await this.getPublicProduct(storeSlug, productSlug, market);
-    if (!product.selected)
-      throw new DomainError("NOT_FOUND", "Select an available market.");
-    const [s] = await this.db
-      .select()
-      .from(stores)
-      .where(eq(stores.slug, storeSlug));
-    await this.db
-      .insert(commerceEvents)
-      .values({
-        id: `view:${eventId}`,
-        organizationId: s.organizationId,
-        storeId: s.id,
-        type: "product_viewed",
-        occurredAt: new Date(),
-      })
-      .onConflictDoNothing();
+    await new VisitorService(this.db).capture(storeSlug, {
+      eventId,
+      type: "product_view",
+      productSlug,
+      market,
+    });
   }
+
   async runOne(organizationId?: string) {
     await this.materialize(organizationId);
     return this.db.transaction(async (tx) => {

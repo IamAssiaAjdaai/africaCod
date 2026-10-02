@@ -1,3 +1,4 @@
+import { VisitorService } from "@africacod/domain";
 import { createDatabase } from "@africacod/db";
 import { ProviderService, TrackingService } from "@africacod/domain";
 import { getDatabaseEnvironment } from "@africacod/shared";
@@ -10,6 +11,8 @@ const tracking = new TrackingService(db, {
   testMode: process.env.TRACKING_TEST_MODE === "1",
   encryptionKey: process.env.INTEGRATION_CREDENTIALS_KEY,
 });
+const visitors = new VisitorService(db);
+let lastVisitorPrune = 0;
 let stopping = false;
 for (const signal of ["SIGINT", "SIGTERM"] as const)
   process.on(signal, () => {
@@ -19,6 +22,10 @@ console.info("Provider worker running; production ShipCOD remains blocked.");
 try {
   do {
     try {
+      if (Date.now() - lastVisitorPrune > 86400000) {
+        await visitors.prune();
+        lastVisitorPrune = Date.now();
+      }
       const providerWorked = await service.runOne();
       const trackingWorked = await tracking.runOne();
       if (!providerWorked && !trackingWorked)

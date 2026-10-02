@@ -15,3 +15,4 @@ export * from "./integrations/providers/contract";
 export * from "./tracking/service";
 export * from "./tracking/policy";
 export * from "./analytics";
+export * from "./visitors";

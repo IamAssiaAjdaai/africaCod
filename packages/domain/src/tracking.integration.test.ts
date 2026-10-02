@@ -4,6 +4,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { fileURLToPath } from "node:url";
 import {
   createDatabase,
+  visitorEvents,
   seedCountries,
   user,
   organizations,
@@ -41,6 +42,7 @@ import {
 } from "@africacod/db";
 import "@africacod/shared";
 import { defaultPageConfig } from "./storefront";
+import { VisitorService } from "./visitors";
 import { TrackingService } from "./tracking/service";
 import { AnalyticsService } from "./analytics";
 import { browserEvents, leadEventId } from "./tracking/policy";
@@ -233,6 +235,119 @@ async function receipts(id: string) {
     .where(eq(trackingTestReceipts.connectionId, id));
 }
 describe.sequential("COD tracking, exports and analytics", () => {
+  it("captures anonymous first-party observations idempotently without changing orders or revenue", async () => {
+    const visitors = new VisitorService(db);
+    const before = await analytics.analytics(a);
+    const eventId = crypto.randomUUID();
+    const input = { eventId, type: "store_view", market: "KE" };
+    await visitors.capture(slug, input);
+    await visitors.capture(slug, input);
+    await visitors.capture(slug, {
+      eventId: crypto.randomUUID(),
+      type: "product_view",
+      productSlug,
+      market: "KE",
+    });
+    await visitors.capture(slug, {
+      eventId: crypto.randomUUID(),
+      type: "checkout_started",
+      productSlug,
+      market: "KE",
+    });
+    const rows = await visitors.observations(
+      a,
+      storeId,
+      new Date(Date.now() - 60000),
+      new Date(Date.now() + 60000),
+    );
+    expect(Object.fromEntries(rows.map((r) => [r.type, r.count]))).toEqual({
+      store_view: 1,
+      product_view: 1,
+      checkout_started: 1,
+    });
+    expect((await analytics.analytics(a)).metrics).toEqual(before.metrics);
+    const [stored] = await db
+      .select()
+      .from(visitorEvents)
+      .where(eq(visitorEvents.id, eventId));
+    expect(Object.keys(stored).sort()).toEqual(
+      [
+        "id",
+        "organizationId",
+        "storeId",
+        "productId",
+        "marketToken",
+        "type",
+        "occurredAt",
+      ].sort(),
+    );
+    await expect(
+      visitors.capture(slug, {
+        ...input,
+        eventId: crypto.randomUUID(),
+        organizationId: orgB,
+      }),
+    ).rejects.toThrow();
+    await expect(
+      visitors.capture(slug, {
+        ...input,
+        eventId: crypto.randomUUID(),
+        phone: "0712345678",
+      }),
+    ).rejects.toThrow();
+    await expect(
+      visitors.capture(slug, {
+        ...input,
+        eventId: crypto.randomUUID(),
+        type: "checkout_submitted",
+      }),
+    ).rejects.toThrow();
+    await expect(
+      visitors.capture(slug, {
+        ...input,
+        eventId: crypto.randomUUID(),
+        market: "AO",
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      visitors.capture(slug, {
+        eventId: crypto.randomUUID(),
+        type: "product_view",
+        productSlug: "unpublished",
+        market: "KE",
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      visitors.observations(b, storeId, new Date(0), new Date()),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      db.insert(visitorEvents).values({
+        id: crypto.randomUUID(),
+        organizationId: orgB,
+        storeId,
+        productId,
+        type: "product_view",
+      }),
+    ).rejects.toThrow();
+    const oldId = crypto.randomUUID();
+    await db.insert(visitorEvents).values({
+      id: oldId,
+      organizationId: orgA,
+      storeId,
+      type: "store_view",
+      occurredAt: new Date(Date.now() - 31 * 86400000),
+    });
+    await visitors.prune();
+    expect(
+      await db.select().from(visitorEvents).where(eq(visitorEvents.id, oldId)),
+    ).toHaveLength(0);
+    expect(
+      await db
+        .select()
+        .from(visitorEvents)
+        .where(eq(visitorEvents.id, eventId)),
+    ).toHaveLength(1);
+  });
   it("starts disabled, enforces tenant access and encrypts secrets without returning them", async () => {
     expect(await service.publicTracking(slug)).toEqual([]);
     const c = await setup("meta", { enabled: false });
