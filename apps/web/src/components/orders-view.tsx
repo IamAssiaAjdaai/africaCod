@@ -258,6 +258,8 @@ export async function OrdersView({
                     nextCallbackAt,
                     agentName,
                     fulfillmentStatus,
+                    fulfillmentMode,
+                    shipmentProvider,
                     shipmentStatus,
                   }) => (
                     <tr key={order.id}>
@@ -309,6 +311,12 @@ export async function OrdersView({
                       <td>
                         {fulfillmentStatus ?? "Not created"}
                         <div className="muted">
+                          {fulfillmentMode === "provider"
+                            ? "ShipCOD"
+                            : "Manual"}
+                        </div>
+                        <div className="muted">
+                          {shipmentProvider && `${shipmentProvider} · `}
                           {shipmentStatus ?? "No shipment"}
                         </div>
                       </td>
@@ -353,6 +361,7 @@ export async function OrdersView({
                           />
                         )}
                         {mode === "fulfillment" &&
+                          fulfillmentMode === "manual" &&
                           ["ready", "processing"].includes(
                             fulfillmentStatus ?? "",
                           ) &&

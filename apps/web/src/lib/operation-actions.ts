@@ -6,7 +6,7 @@ import {
   shipmentTransitions,
   fulfillmentTransitions,
 } from "@africacod/domain";
-import { operations, requireSession } from "./server";
+import { operations, providers, requireSession } from "./server";
 export type OperationState = {
   error?: string;
   success?: string;
@@ -70,7 +70,23 @@ export async function operationAction(
           )
           .parse(data.get("target")),
       );
-    else throw new DomainError("INVALID_INPUT", "Unknown operation.");
+    else if (intent === "provider-send")
+      await providers().requestHandoff(user.id, orderId);
+    else if (intent === "provider-fallback")
+      await providers().manualFallback(user.id, orderId);
+    else if (intent === "provider-sync") {
+      const detail = await providers().getOperations(user.id, orderId);
+      if (detail.shipment)
+        await providers().requestSync(user.id, detail.shipment.id);
+    } else if (intent === "provider-simulate") {
+      const detail = await providers().getOperations(user.id, orderId);
+      if (detail.shipment)
+        await providers().simulateStatus(
+          user.id,
+          detail.shipment.id,
+          String(data.get("rawStatus")),
+        );
+    } else throw new DomainError("INVALID_INPUT", "Unknown operation.");
     for (const path of [
       `/orders/${orderId}`,
       "/orders",
@@ -90,7 +106,7 @@ export async function operationAction(
         error: error.issues[0]?.message ?? "Check the form.",
         requestKey,
       };
-    console.error("Operation failed", error);
+    console.error("Operation failed");
     return {
       error: "Could not record the operation. Please retry.",
       requestKey,

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { PageHeading, Badge } from "@africacod/ui";
 import { formatMoney } from "@africacod/shared/money";
-import { operations, requireOrganization } from "@/lib/server";
+import { ProviderOperations } from "@/components/provider-operations";
+import { providers, providerTestMode, requireOrganization } from "@/lib/server";
 import { OrderOperations } from "@/components/order-operations";
 import { found } from "@/lib/catalog-pages";
 export default async function OrderDetail({
@@ -11,9 +12,12 @@ export default async function OrderDetail({
 }) {
   const { session } = await requireOrganization();
   const { orderId } = await params;
-  const service = operations();
+  const service = providers();
   const data = await found(service.getOperations(session.user.id, orderId));
-  const agents = await service.listAgents(session.user.id);
+  const [agents, integration] = await Promise.all([
+    service.listAgents(session.user.id),
+    service.integrationDetails(session.user.id, orderId),
+  ]);
   const { order, items, attribution, store } = data;
   const timeline = [
     ...data.events.map((e) => ({
@@ -34,7 +38,7 @@ export default async function OrderDetail({
     ...data.shipmentEvents.map((e) => ({
       id: e.id,
       at: e.occurredAt,
-      label: `Shipment event · Manual · ${e.fromStatus ?? "none"} → ${e.toStatus}`,
+      label: `Shipment event · ${e.source === "poll" ? "ShipCOD" : "Manual"} · ${e.fromStatus ?? "none"} → ${e.toStatus}`,
     })),
   ].sort((a, b) => a.at.getTime() - b.at.getTime());
   return (
@@ -111,6 +115,7 @@ export default async function OrderDetail({
         ))}
       </section>
       <OrderOperations data={data} agents={agents} />
+      <ProviderOperations info={integration} testMode={providerTestMode()} />
       <div className="order-summary">
         <section className="panel">
           <h2>Timeline</h2>

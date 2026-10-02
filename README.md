@@ -1,8 +1,8 @@
 # AfricaCod
 
-An Africa-first cash-on-delivery commerce workspace. Checkpoint 1 provides **Account → Organization → Store → Add Markets**. Checkpoint 2 adds **Categories → Products → Product Media → Basic Variants → Market Offers**. Checkpoint 3 adds **Published COD product pages → Market-aware checkout → Orders inbox/detail**. Checkpoint 4 adds **CMS Pages → Store branding/navigation → Public store/category browsing → Apps discovery**. Checkpoint 5 adds **Confirmation → Callbacks → Manual Fulfillment → Shipment lifecycle → Operational metrics**.
+An Africa-first cash-on-delivery commerce workspace. Checkpoint 1 provides **Account → Organization → Store → Add Markets**. Checkpoint 2 adds **Categories → Products → Product Media → Basic Variants → Market Offers**. Checkpoint 3 adds **Published COD product pages → Market-aware checkout → Orders inbox/detail**. Checkpoint 4 adds **CMS Pages → Store branding/navigation → Public store/category browsing → Apps discovery**. Checkpoint 5 adds **Confirmation → Callbacks → Manual Fulfillment → Shipment lifecycle → Operational metrics**. Checkpoint 6 adds **encrypted Store connections → provider mappings → durable handoff worker → status polling → manual fallback**, with a deterministic ShipCOD test adapter. **Production ShipCOD: BLOCKED pending official API documentation/access.**
 
-A store starts with **zero markets**. Platform country definitions are reference data for a comprehensive country/territory catalog; only an explicit **Add Market** action creates a store market. External couriers, separate analytics, AI, inventory, integrations, payments, settlement reconciliation and agency workflows remain deferred.
+A store starts with **zero markets**. Platform country definitions are reference data for a comprehensive country/territory catalog; only an explicit **Add Market** action creates a store market. Live couriers, separate analytics, AI, inventory, other integrations, payments, settlement reconciliation and agency workflows remain deferred.
 
 ## Local setup
 
@@ -56,7 +56,7 @@ pnpm test:e2e
 
 `pnpm test` runs fast authentication-boundary, validation, country-catalog, money, and image-signature tests. `pnpm test:integration` applies the real migration and tests commerce operations against PostgreSQL. It requires `TEST_DATABASE_URL` to point to a database whose name ends in `_test`, and cleans up only its own tenant fixtures. Compose creates `africacod_test` on its first initialization. If you use an existing volume without that database, create it with `docker compose exec postgres createdb -U africacod africacod_test`.
 
-The Playwright suite additionally covers the full Checkpoint 2 workflow with image upload, variant, Beauty/Hair assignment, Kenya/Ghana pricing, product-list persistence, mobile editor layout and foreign product/category/media denial. The original suite covers reload persistence, duplicate-picker prevention, searchable Kenya/Ghana/Rwanda/Angola selection, activation/deactivation, sign-out/login, authentication redirects, tenant URL isolation, and mobile layout. It creates uniquely named accounts/stores in the local app database and leaves them for inspection; use a disposable database in CI. It starts the production server if needed, so run `pnpm build` before `pnpm test:e2e`. A running local dev server can also be reused. On macOS versions unsupported by Playwright’s bundled Chromium, use an installed Chrome:
+The Playwright suite additionally covers the full Checkpoint 2 workflow with image upload, variant, Beauty/Hair assignment, Kenya/Ghana pricing, product-list persistence, mobile editor layout and foreign product/category/media denial. The original suite covers reload persistence, duplicate-picker prevention, searchable Kenya/Ghana/Rwanda/Angola selection, activation/deactivation, sign-out/login, authentication redirects, tenant URL isolation, and mobile layout. It creates uniquely named accounts/stores in the local app database and leaves them for inspection; use a disposable database in CI. It starts its own production server with explicit test-adapter settings, so run `pnpm build` before `pnpm test:e2e` and stop any existing server on port 3000 first. Reusing a development server is disabled to keep provider mode/encryption settings deterministic. On macOS versions unsupported by Playwright’s bundled Chromium, use an installed Chrome:
 
 ```sh
 PLAYWRIGHT_CHROME_CHANNEL=chrome pnpm test:e2e
@@ -210,9 +210,9 @@ Grids show products only with an active Product, a published ProductPage and an 
 
 ### Apps foundation
 
-`/apps` is authenticated discovery, organized into Marketing, Data, Communication and Fulfillment. Meta, TikTok, Google Ads, Google Sheets, WhatsApp and a clearly unimplemented fulfillment-provider placeholder are all **Coming soon**. Configuration buttons are disabled. There is no installation, OAuth, credential collection, event sending or connection mutation.
+`/apps` is authenticated discovery, organized into Marketing, Data, Communication and Fulfillment. Meta, TikTok, Google Ads, Google Sheets and WhatsApp remain **Coming soon**. Checkpoint 6 replaces the fulfillment placeholder with ShipCOD, COD in Africa, WeGoo and Haulstow. Only ShipCOD has a configuration framework; it is labeled **Available (test adapter)** only under explicit test mode. Production remains blocked; all other providers remain Coming soon.
 
-The immutable platform app catalog has stable IDs, categories, descriptions and explicit status vocabulary. These IDs form the future Store → App Connection attachment point. AppsService validates organization membership and optional Store ownership, even though no store-scoped connection records exist yet. No speculative credential or connection tables are added. Future implementations must supply actual server-owned connection/configuration state before exposing Available or Connected status.
+The immutable platform app catalog has stable IDs, categories and descriptions. AppsService validates organization membership and optional Store ownership. Store-scoped ShipCOD connection status comes from server-owned configuration, with credentials omitted from browser DTOs. Planned entries never pretend to connect.
 
 ### Schema, checks and manual verification
 
@@ -225,11 +225,11 @@ Migration `0005_storefront_cms_branding.sql` adds `content_pages`, its independe
 5. Open `/s/{storeSlug}?market=KE`. Verify branding, About navigation and Hair Growth Serum at **KES 3,990.00**. Open the About page and verify its published content.
 6. Edit and save the CMS draft; refresh the public page and verify content/SEO/navigation have not changed.
 7. Open `?market=GH`; verify **GHS 399.00**. Browse Beauty → Hair, open the product card and complete the existing Kenya COD checkout. The order appears in Orders with its original snapshots.
-8. Open **Apps** and verify every integration is Coming soon with no connection/install action.
+8. Open **Apps** and verify planned integrations remain Coming soon. ShipCOD opens its clearly labeled configuration/production-blocked screen.
 
 New tests cover CMS creation/publication/unpublication, frozen title/address/SEO/navigation snapshots, draft and public address conflicts, independent stores, tenant denials, branding/logo validation, active-market/offer/publication filtering, category hierarchy and public privacy. Parser unit tests cover all supported formatting and unsafe links/HTML. Browser coverage verifies branding/logo, CMS formatting and metadata, navigation, private draft edits, Kenya/Ghana grids, category/product browsing, Apps status and COD-to-Orders regression. Existing Checkpoint 1–3 tests remain in the full quality gate.
 
-Deferred beyond the implemented checkpoints: external couriers, external app integrations/OAuth/credentials, WhatsApp messaging, advertising APIs/events, AI, profit analytics, inventory, payments and agency mode. Also deferred are an advanced theme/page builder, full Markdown syntax, CMS deletion/search tooling and production storage/abuse controls. The storefront/CMS/Apps foundation remains independent of manual order operations.
+Deferred beyond the implemented checkpoints: live external couriers, other external app integrations/OAuth, WhatsApp messaging, advertising APIs/events, AI, profit analytics, inventory, payments and agency mode. Also deferred are an advanced theme/page builder, full Markdown syntax, CMS deletion/search tooling and production storage/abuse controls. The storefront/CMS/Apps foundation remains independent of manual order operations.
 
 ## Checkpoint 5: confirmation and manual logistics
 
@@ -271,10 +271,67 @@ Migration `0006_order_operations.sql` extends `order_status`, adds assignment/co
 
 Existing **Owner/Admin** permissions cover assignment, confirmation and manual fulfillment. Both derive authorization from persisted membership on every service/action. No new agent role or invitation/RBAC UI is introduced; a dedicated restricted Confirmation Agent role is deferred until member administration exists. Cross-tenant Order detail, attempts, fulfillment/shipment access, assignment and events are rejected by service boundaries and composite constraints.
 
-`ShipmentProvider` in `packages/domain/src/lifecycle.ts` defines only a future adapter contract: credential validation, create/status lookup, normalized status mapping and webhook verification/parsing. There is no provider implementation, credentials table, OAuth, webhook route or polling job. Apps continue to label all external integrations Coming soon.
+Checkpoint 6 now supplies the provider-neutral adapter boundary under `packages/domain/src/integrations/providers`. `ShipmentProvider` remains a type alias for compatibility. Manual workflows still use the same Order/Fulfillment/Shipment state machines.
 
 ### Verification
 
 New unit tests cover derived confirmation state, callback timing and terminal/retryable logistics rules. Integration tests cover attempt idempotency, callbacks and superseding schedules, atomic confirmation/history, reasoned cancellation, assignment isolation, fulfillment preconditions/uniqueness/failure recovery, shipment preconditions and transitions, immutable history updates, tenant constraints and snapshot-based Delivered Revenue. Browser coverage creates a Kenya COD order, records No Answer/Callback, checks its overdue queue, confirms, creates manual fulfillment/shipment, advances to Delivered and verifies original KES 3,990.00 revenue. It changes the current offer to KES 4,490.00, then confirms and returns a second Order through Refused → Returned; both commercial Orders remain confirmed and delivered revenue stays unchanged. All Checkpoint 1–4 tests remain in the quality gate.
 
-Deferred: real couriers/provider connections, webhook/poll handling, WhatsApp automation, advertising/Google integrations, AI, inventory, payments, settlement reconciliation, profit analytics and agency mode. Separate Analytics/breakdowns, dedicated agent RBAC/member administration, fulfillment reversal and confirmation reversal are also deferred. Checkpoint 5 stops at manual operational lifecycle workflows.
+Deferred: live couriers, documented provider webhooks, WhatsApp automation, advertising/Google integrations, AI, inventory, payments, settlement reconciliation, profit analytics and agency mode. Separate Analytics/breakdowns, dedicated agent RBAC/member administration, fulfillment reversal and confirmation reversal are also deferred. Checkpoint 5 stops at manual operational lifecycle workflows.
+
+## Checkpoint 6: provider fulfillment framework
+
+**Production ShipCOD is BLOCKED pending official API access/documentation.** The account owner has no API material. ShipCOD’s [official FAQ](https://shipcod.delivery/faq/) verifies coverage in **Kenya, Uganda and Tanzania**, checked 2026-10-02. Coverage is the only verified provider behavior used here. We have no verified shipment endpoint, authentication format, product-ID format, request/response schema, idempotency guarantee, raw status vocabulary or webhook authentication contract. No production endpoints or webhook contracts have been fabricated, and no request reaches ShipCOD.
+
+The implemented adapter is a **deterministic test fixture**. Its API key/secret are `mock-key` / `mock-secret`, its external IDs start `test-shipcod-`, and its tracking numbers start `TEST-`. It runs only when **both the web process and worker** explicitly set `PROVIDER_TEST_MODE=1`. The default is `0`; production configuration is rejected, and the production adapter fails closed. Test controls appear only in test mode and require authenticated tenant access. Do not use test mode for a live merchant store.
+
+### Connection and mapping
+
+Migration `0007_provider_fulfillment.sql` adds seven tables: `provider_connections`, `provider_connection_markets`, `provider_product_mappings`, `provider_jobs`, `provider_attempts`, `provider_status_events`, and `provider_test_shipments` (33 total). Existing Fulfillment/Shipment records gain optional provider relationships and synchronization metadata. Composite tenant/store foreign keys and provider relationship triggers enforce ownership. Status-event history is append-only. Products have no ShipCOD-specific columns.
+
+Apps → ShipCOD selects a Store, saves API key/secret, explicitly enables existing active StoreMarkets and queues a connection test. Saving resets validation; the worker validates the saved revision before Connected (test adapter) can appear. Credentials use AES-256-GCM with random nonces, a versioned envelope and organization/Store/connection associated data. A separate **32-byte base64 `PROVIDER_CREDENTIALS_KEY`** is mandatory for credential operations; generate it with `openssl rand -base64 32`. Keep it in the server/worker environment, preserve it across restarts and back it up securely. There is no auth-secret fallback or key rotation UI. Browser responses omit ciphertext and secrets; saved password fields are blank. Leaving both fields blank retains the encrypted values. Failure messages and logs omit credentials and provider request/response payloads.
+
+Provider enablement never creates StoreMarkets. Ghana and any other catalog/custom market remain valid Store markets regardless of ShipCOD coverage. Unsupported/inactive markets cannot be enabled for this adapter. Provider product IDs/SKUs are saved in connection-scoped mappings; an optional variant mapping overrides the base product mapping. Source tracking is a **mock-only snapshot option**; real support is unverified. No live test-order action is offered.
+
+### Handoff and recovery
+
+Checkout always creates a commercially `new` Order without provider jobs. Confirmation also does not send it. An operator must create Fulfillment, review market/connection/mapping/customer checks, and choose **Send to ShipCOD**. The browser commits a durable PostgreSQL job and immutable commercial/customer/mapping snapshot; the worker makes the adapter call afterwards. Offer or mapping edits do not change a queued snapshot. One creation request key per Fulfillment survives retries. The existing unique Order/Fulfillment/Shipment constraints prevent duplicate local Shipments.
+
+Run the worker separately with the same environment as the web app:
+
+```sh
+pnpm --filter @africacod/worker dev
+# Process at most one available job and exit, for diagnostics:
+pnpm exec tsx apps/worker/src/index.ts --once
+```
+
+`pnpm dev` starts web and worker through Turbo. Jobs have committed attempt records, two-minute leases and session advisory locks held across adapter calls. Concurrent workers cannot claim the same call; a crashed session releases its lock. The test adapter persists idempotency results separately, so a crash after a simulated remote response reuses the same external shipment. Expired attempts are recorded as unacknowledged failures before recovery. A future adapter without verified remote idempotency must put an ambiguous creation into **investigation**, never blindly retry it. The production adapter remains disabled until that contract is settled.
+
+Known failures pause the job with a safe error. **Retry ShipCOD handoff** explicitly requeues the same request/snapshot; **Use manual fulfillment** cancels a pending/failed job before restoring manual mode. Processing, completed or uncertain remote creates cannot fall back automatically because a shipment might already exist. Investigation requires operator reconciliation; no speculative force-reset action is implemented. Disconnected/invalid/unsupported/unmapped orders can still use the unchanged manual workflow. Provider Shipments cannot be edited with manual status buttons. Orders remain confirmed throughout independent delivery states.
+
+### Status synchronization
+
+No webhook route is implemented without a documented authenticity contract. The adapter exposes status lookup instead. The worker polls nonterminal Shipments every **30 minutes**; an authenticated **Sync provider status** action can request an earlier check. Delivered, returned and cancelled Shipments are never polled. The job resolves tenant ownership from stored connection/Shipment relationships. Normalized changes must follow the existing Shipment transition graph, append a ShipmentEvent and retain raw status plus synchronization metadata. Provider events deduplicate by connection/event identifier; provider response identifiers must match the stored Shipment.
+
+These mappings describe **mock fixtures only**, not real ShipCOD statuses:
+
+| Raw fixture status      | Internal Shipment status |
+| ----------------------- | ------------------------ |
+| `mock_created`          | `created`                |
+| `mock_shipped`          | `shipped`                |
+| `mock_out_for_delivery` | `out_for_delivery`       |
+| `mock_delivery_failed`  | `delivery_failed`        |
+| `mock_delivered`        | `delivered`              |
+| `mock_refused`          | `refused`                |
+| `mock_returned`         | `returned`               |
+| `mock_cancelled`        | `cancelled`              |
+
+Unknown raw values and known values that would skip/violate a transition are preserved in status events with an investigation disposition and safe error. They do not change the normalized Shipment or Order. Acknowledged duplicate events do not append duplicate ShipmentEvents or delivery revenue. Once an investigation is resolved, another status lookup can process a valid transition; uncertain shipment creation still requires reconciliation. Debug tables contain identifiers/statuses only, not customer payloads; only the necessary handoff snapshot contains customer delivery data.
+
+### Verification and limits
+
+Provider unit/integration tests cover authenticated encryption, default production blocking, valid/invalid credentials, secret omission, explicit Kenya enablement, Ghana rejection, mapping requirements, confirmed-only handoff, immutable price snapshots, crash recovery/idempotency, failed attempts/retries, polling/duplicate events, unknown/invalid transitions, terminal behavior, manual fallback and cross-tenant read/edit/use/trigger denials. The browser scenario runs the real worker process against the deterministic adapter: Glow Beauty → Kenya → Hair Growth Serum mapping → COD checkout → confirmation → queued handoff → created/shipped/out-for-delivery/delivered. It changes the offer after checkout and verifies **original KES 3,990 Delivered Revenue**, plus a failed handoff followed by manual recovery. Playwright supplies explicit test mode and an isolated fixture encryption key to its child web/worker processes; production credentials are unnecessary.
+
+Before a live ShipCOD release, obtain official account/API material, verify credentials and coverage, implement the real create/status contract, settle remote idempotency and ambiguous-create reconciliation, document actual raw status mappings, and add authenticated webhooks only if documented. COD in Africa, WeGoo and Haulstow remain catalog entries only. No second provider, agency mode, Products changes, payments or settlement logic is added in this checkpoint.
+
+Checkpoint 6 local validation: all seven quality gates passed (`typecheck`, `lint`, `format:check`, `test`, `test:integration`, `build`, `test:e2e`): **29 unit tests, 88 PostgreSQL integration tests and 9 browser tests**, including all previous checkpoint scenarios. Browser tests used installed Chrome on this macOS host. A fresh disposable database migration also produced all 33 tables successfully.

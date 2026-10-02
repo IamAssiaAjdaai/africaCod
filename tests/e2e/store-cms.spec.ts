@@ -334,10 +334,12 @@ test("Storefront CMS navigation, branding, Apps discovery and COD remain market-
   await expect(
     page.getByRole("heading", { name: "Apps", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".app-card")).toHaveCount(6);
-  await expect(page.locator(".app-card .badge")).toHaveText(
-    Array(6).fill("Coming soon"),
-  );
+  await expect(page.locator(".app-card")).toHaveCount(9);
+  await expect(page.locator(".app-card .badge")).toHaveText([
+    ...Array(5).fill("Coming soon"),
+    "Available (test adapter)",
+    ...Array(3).fill("Coming soon"),
+  ]);
   for (const button of await page
     .getByRole("button", { name: "Configuration unavailable" })
     .all())

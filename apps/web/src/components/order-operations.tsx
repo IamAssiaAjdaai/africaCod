@@ -145,7 +145,7 @@ export function OrderOperations({
         <section className="panel">
           <h2>Fulfillment</h2>
           <p>
-            Mode: Manual ·{" "}
+            Mode: {fulfillment?.mode === "provider" ? "ShipCOD" : "Manual"} ·{" "}
             <strong data-testid="fulfillment-state">
               {fulfillment?.status ?? "Not created"}
             </strong>
@@ -162,7 +162,7 @@ export function OrderOperations({
               Confirm this order before creating fulfillment.
             </p>
           )}
-          {fulfillment &&
+          {fulfillment?.mode === "manual" &&
             fulfillmentTransitions[fulfillment.status].map((target) => (
               <OperationForm
                 key={target}
@@ -182,7 +182,7 @@ export function OrderOperations({
           {shipment ? (
             <>
               <p>
-                Manual ·{" "}
+                {shipment.providerKey === "manual" ? "Manual" : "ShipCOD"} ·{" "}
                 <strong data-testid="shipment-state">{shipment.status}</strong>
               </p>
               <p>Tracking: {shipment.trackingNumber ?? "Not provided"}</p>
@@ -196,17 +196,22 @@ export function OrderOperations({
                   Open tracking
                 </a>
               )}
-              {shipmentTransitions[shipment.status].map((target) => (
-                <OperationForm
-                  key={target}
-                  orderId={order.id}
-                  intent="shipment-transition"
-                  label={`Mark ${target.replaceAll("_", " ")}`}
-                >
-                  <input type="hidden" name="shipmentId" value={shipment.id} />
-                  <input type="hidden" name="target" value={target} />
-                </OperationForm>
-              ))}
+              {shipment.providerKey === "manual" &&
+                shipmentTransitions[shipment.status].map((target) => (
+                  <OperationForm
+                    key={target}
+                    orderId={order.id}
+                    intent="shipment-transition"
+                    label={`Mark ${target.replaceAll("_", " ")}`}
+                  >
+                    <input
+                      type="hidden"
+                      name="shipmentId"
+                      value={shipment.id}
+                    />
+                    <input type="hidden" name="target" value={target} />
+                  </OperationForm>
+                ))}
               {shipment.deliveredAt && (
                 <p>Delivered: {shipment.deliveredAt.toISOString()}</p>
               )}
@@ -214,7 +219,7 @@ export function OrderOperations({
                 <p>Returned: {shipment.returnedAt.toISOString()}</p>
               )}
             </>
-          ) : fulfillment &&
+          ) : fulfillment?.mode === "manual" &&
             ["pending", "ready", "processing"].includes(fulfillment.status) ? (
             <OperationForm
               orderId={order.id}

@@ -9,6 +9,7 @@ import {
   ContentService,
   AppsService,
   OperationsService,
+  ProviderService,
 } from "@africacod/domain";
 import { getDatabase } from "@africacod/db";
 export function commerce() {
@@ -43,4 +44,14 @@ export function apps() {
 
 export function operations() {
   return new OperationsService(getDatabase());
+}
+
+export function providerTestMode() {
+  return process.env.PROVIDER_TEST_MODE === "1";
+}
+export function providers() {
+  return new ProviderService(getDatabase(), {
+    testMode: providerTestMode(),
+    encryptionKey: process.env.PROVIDER_CREDENTIALS_KEY,
+  });
 }

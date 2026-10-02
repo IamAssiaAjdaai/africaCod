@@ -21,9 +21,13 @@ export default defineConfig({
     },
   ],
   webServer: {
+    env: {
+      PROVIDER_TEST_MODE: "1",
+      PROVIDER_CREDENTIALS_KEY: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+    },
     command: "corepack pnpm --filter @africacod/web start",
     url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120000,
   },
 });
