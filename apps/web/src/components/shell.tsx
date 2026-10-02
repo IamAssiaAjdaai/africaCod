@@ -23,6 +23,8 @@ const navigation = [
   { href: "/categories", label: "Categories", icon: FolderTree },
   { href: "/orders", label: "Orders", icon: Package },
   { href: "/stores", label: "Stores", icon: Store },
+  { href: "/pages", label: "Pages", icon: FolderTree },
+  { href: "/apps", label: "Apps", icon: Package },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 export function Shell({
@@ -93,7 +95,7 @@ export function Shell({
             <div key={href}>
               {href === "/products" && <p className="nav-caption">COMMERCE</p>}
               {href === "/stores" && <p className="nav-caption">STORE</p>}
-              {href === "/settings" && <p className="nav-caption">PLATFORM</p>}
+              {href === "/apps" && <p className="nav-caption">PLATFORM</p>}
               <Link
                 key={href}
                 href={href}

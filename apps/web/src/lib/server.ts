@@ -6,6 +6,8 @@ import {
   CommerceService,
   CatalogService,
   StorefrontService,
+  ContentService,
+  AppsService,
 } from "@africacod/domain";
 import { getDatabase } from "@africacod/db";
 export function commerce() {
@@ -29,4 +31,11 @@ export function catalog() {
 
 export function storefront() {
   return new StorefrontService(getDatabase());
+}
+
+export function site() {
+  return new ContentService(getDatabase());
+}
+export function apps() {
+  return new AppsService(getDatabase());
 }

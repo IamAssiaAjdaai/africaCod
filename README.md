@@ -1,8 +1,8 @@
 # AfricaCod
 
-An Africa-first cash-on-delivery commerce workspace. Checkpoint 1 provides **Account → Organization → Store → Add Markets**. Checkpoint 2 adds **Categories → Products → Product Media → Basic Variants → Market Offers**. Checkpoint 3 adds **Published COD product pages → Market-aware checkout → Orders inbox/detail**.
+An Africa-first cash-on-delivery commerce workspace. Checkpoint 1 provides **Account → Organization → Store → Add Markets**. Checkpoint 2 adds **Categories → Products → Product Media → Basic Variants → Market Offers**. Checkpoint 3 adds **Published COD product pages → Market-aware checkout → Orders inbox/detail**. Checkpoint 4 adds **CMS Pages → Store branding/navigation → Public store/category browsing → Apps discovery**.
 
-A store starts with **zero markets**. Platform country definitions are reference data for a comprehensive country/territory catalog; only an explicit **Add Market** action creates a store market. Confirmation, fulfillment, Pages CMS, Apps, analytics, AI, inventory, ad integrations and payments remain deferred.
+A store starts with **zero markets**. Platform country definitions are reference data for a comprehensive country/territory catalog; only an explicit **Add Market** action creates a store market. Confirmation, fulfillment, couriers, analytics, AI, inventory, external integrations, payments and agency workflows remain deferred.
 
 ## Local setup
 
@@ -146,7 +146,7 @@ Only this Store’s actual markets appear in pricing. Zero-market stores show **
 
 Local files require a persistent single-host disk. For production or multiple app instances, implement the same interface with durable S3-compatible storage (e.g. Cloudflare R2), inject it in place of `localMediaStorage`, and keep object keys private. No S3/R2 integration or credentials are introduced now. Failed database uploads clean up their newly written object. Failed physical removal can leave an inaccessible orphan after metadata deletion; an orphan cleanup job is deferred. Product media upload, preview, removal and move-earlier/move-later reordering are implemented.
 
-Deferred: variant-specific market pricing, inventory and option combinations; rich text editing; category deletion; external storage adapters and media processing; Pages CMS, Apps, fulfillment, analytics, AI and external integrations. Variants are descriptive product versions only; every market offer applies to the whole Product.
+Deferred: variant-specific market pricing, inventory and option combinations; rich text editing; category deletion; external storage adapters and media processing; Fulfillment, analytics, AI and external integrations. Variants are descriptive product versions only; every market offer applies to the whole Product.
 
 ## Checkpoint 3: published COD storefronts and Orders
 
@@ -180,4 +180,53 @@ Public media is served only from the currently published page at `/s/{storeSlug}
 
 Attribution captures UTM source/medium/campaign/content/term, fbclid, optional fbp/fbc, referrer, landing URL and server user agent. These are informational strings; no advertising API or Purchase event is sent. Same-origin JSON requests are required by the web boundary. Production abuse controls and external storage/media processing remain future deployment work.
 
-Tests cover publication isolation, eligibility, Kenya/Ghana prices, private-field projection, server price authority, concurrent idempotency, legitimate repeats, historical snapshots, rollback on invalid phone/address/variant, composite FKs, tenant denial, search/date/pagination and unpublish/retry behavior. Playwright covers merchant publication, draft preview, anonymous mobile media/selector/phone keyboard/validation/loading/double-submit/success, Kenya Orders snapshots/attribution and Ghana rendering. No later checkpoint is implemented.
+Tests cover publication isolation, eligibility, Kenya/Ghana prices, private-field projection, server price authority, concurrent idempotency, legitimate repeats, historical snapshots, rollback on invalid phone/address/variant, composite FKs, tenant denial, search/date/pagination and unpublish/retry behavior. Playwright covers merchant publication, draft preview, anonymous mobile media/selector/phone keyboard/validation/loading/double-submit/success, Kenya Orders snapshots/attribution and Ghana rendering. The Checkpoint 3 workflow remains covered by its original tests.
+
+## Checkpoint 4: CMS Pages and the public store
+
+Generic **Pages** belong to a Store and are separate from ProductPages. Authenticated routes are `/pages`, `/pages/new`, `/pages/{pageId}` and `/pages/{pageId}/preview`. Create a draft, add a title, store-scoped address, content and optional SEO metadata, then explicitly **Publish page**. **Unpublish page** immediately removes public access and navigation while retaining the draft and previous snapshot. Save never publishes automatically.
+
+The editor supports paragraphs, H2/H3, bold, italic, bullet/numbered lists and links using a small Markdown subset with formatting controls and a formatting preview. HTML is displayed as ordinary text. Links allow HTTP/HTTPS and local absolute paths; JavaScript/data/protocol-relative links do not become anchors. This is a focused informational-page editor, with no page builder, AI writer or arbitrary HTML execution.
+
+Publication snapshots the title, address, content, meta title/description and navigation preferences. Editing any of these draft fields leaves the live page unchanged until republished. Draft addresses are unique by `(store_id, slug)`; a separate unique published address protects existing public URLs while merchants change a draft address. Publishing an address already used by another published page returns a conflict. Unpublishing releases the published address. Pages cannot move between stores.
+
+Published pages appear at `/s/{storeSlug}/pages/{pageSlug}` only when the Store is active. Enable **Show in navigation when published**, optionally change the navigation label and order, then publish to include a page in the store header. About/Contact are examples, not hardcoded navigation entries. SEO metadata reads the published snapshot, never draft values.
+
+### Public storefront routes and behavior
+
+- `/s/{storeSlug}?market=KE` — public store home.
+- `/s/{storeSlug}/products?market=KE` — product grid, bounded to 24 products per page.
+- `/s/{storeSlug}/categories?market=KE` — existing active two-level category hierarchy.
+- `/s/{storeSlug}/category/{categorySlug}?market=KE` — parent category includes its subcategory products; a subcategory filters its own products.
+- `/s/{storeSlug}/pages/{pageSlug}` — published informational page.
+- `/s/{storeSlug}/logo` — validated logo image for an active Store.
+- Existing `/s/{storeSlug}/p/{productSlug}?market=KE` — published COD product page and checkout.
+
+One coherent storefront shell provides Home, Products, Categories and merchant-selected published Pages. Navigation carries the market parameter; the market selector changes the shareable URL and resets pagination. Only explicit active StoreMarkets appear; a store still starts with zero markets. One active supported-currency StoreMarket selects automatically. Multiple markets require customer selection. An invalid/inactive market stays unavailable without switching to another market. No country/IP inference is performed. An active market with no eligible products shows an empty state.
+
+Grids show products only with an active Product, a published ProductPage and an active same-store, same-market currency-matching ProductMarketOffer. Product card names, subtitles and image order come from the published ProductPage snapshot. Prices remain authoritative current market offers; private costs, drafts, tenant IDs, storage keys and unselected-market prices are omitted. Inactive parent categories also hide their subcategories from browsing. Product grids retain the existing Product/Offer/Category architecture. Store/Product/CMS routes have basic Next.js title/description metadata.
+
+**Store branding** on the Store detail lets merchants edit name, optional tagline and public contact email/phone and upload a logo. Branding edits do not change the store address or create markets. Logo uploads use the established 10 MB PNG/JPEG/WebP signature checks and provider-neutral MediaStorage boundary. Runtime files remain outside public assets. The public logo route checks Store activation; responses are not cached. Replacing a logo removes the previous object after the database update. No arbitrary external logo URL is accepted. External storage adapters, resizing and advanced themes remain deferred.
+
+### Apps foundation
+
+`/apps` is authenticated discovery, organized into Marketing, Data, Communication and Fulfillment. Meta, TikTok, Google Ads, Google Sheets, WhatsApp and a clearly unimplemented fulfillment-provider placeholder are all **Coming soon**. Configuration buttons are disabled. There is no installation, OAuth, credential collection, event sending or connection mutation.
+
+The immutable platform app catalog has stable IDs, categories, descriptions and explicit status vocabulary. These IDs form the future Store → App Connection attachment point. AppsService validates organization membership and optional Store ownership, even though no store-scoped connection records exist yet. No speculative credential or connection tables are added. Future implementations must supply actual server-owned connection/configuration state before exposing Available or Connected status.
+
+### Schema, checks and manual verification
+
+Migration `0005_storefront_cms_branding.sql` adds `content_pages`, its independent draft/published enum, tenant/store composite FK, store-scoped draft and published-address uniqueness, publication checks, navigation fields and index. Store gains optional tagline/contact fields and reuses its existing logo field for validated storage keys. There are now 21 tables; ProductPages, Orders, pricing and merchant-selected markets are unchanged.
+
+1. Sign in and open Glow Beauty with Kenya/Ghana and its published Hair Growth Serum offers.
+2. Save Store branding and optionally upload a logo.
+3. Open **Pages**, choose Glow Beauty, create **About Glow Beauty**, add formatted content, SEO text and enable navigation.
+4. Preview the saved draft, then publish it.
+5. Open `/s/{storeSlug}?market=KE`. Verify branding, About navigation and Hair Growth Serum at **KES 3,990.00**. Open the About page and verify its published content.
+6. Edit and save the CMS draft; refresh the public page and verify content/SEO/navigation have not changed.
+7. Open `?market=GH`; verify **GHS 399.00**. Browse Beauty → Hair, open the product card and complete the existing Kenya COD checkout. The order appears in Orders with its original snapshots.
+8. Open **Apps** and verify every integration is Coming soon with no connection/install action.
+
+New tests cover CMS creation/publication/unpublication, frozen title/address/SEO/navigation snapshots, draft and public address conflicts, independent stores, tenant denials, branding/logo validation, active-market/offer/publication filtering, category hierarchy and public privacy. Parser unit tests cover all supported formatting and unsafe links/HTML. Browser coverage verifies branding/logo, CMS formatting and metadata, navigation, private draft edits, Kenya/Ghana grids, category/product browsing, Apps status and COD-to-Orders regression. Existing Checkpoint 1–3 tests remain in the full quality gate.
+
+Deferred: confirmation, fulfillment, couriers, external app integrations/OAuth/credentials, WhatsApp messaging, advertising APIs/events, AI, profit analytics, inventory, payments and agency mode. Also deferred are an advanced theme/page builder, full Markdown syntax, CMS deletion/search tooling and production storage/abuse controls. Checkpoint 4 stops at an honest storefront/CMS/Apps foundation.

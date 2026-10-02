@@ -1,3 +1,4 @@
+import { BrandingEditor } from "@/components/content-editor";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -89,6 +90,7 @@ export default async function StoreDetail({
           Categories
         </Link>
       </div>
+      <BrandingEditor store={store} />
       <Markets storeId={store.id} markets={markets} countries={countries} />
     </>
   );
