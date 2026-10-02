@@ -78,13 +78,11 @@ export class CommerceService {
           .insert(organizations)
           .values(value)
           .returning();
-        await tx
-          .insert(memberships)
-          .values({
-            organizationId: organization.id,
-            userId: id,
-            role: "owner",
-          });
+        await tx.insert(memberships).values({
+          organizationId: organization.id,
+          userId: id,
+          role: "owner",
+        });
         return organization;
       });
     } catch (error) {
