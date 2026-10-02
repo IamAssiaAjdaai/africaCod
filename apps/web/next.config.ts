@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
     "@africacod/shared",
     "@africacod/validation",
   ],
+  outputFileTracingExcludes: { "/*": ["./.data/**/*"] },
   poweredByHeader: false,
+  experimental: { serverActions: { bodySizeLimit: "12mb" } },
 };
 export default nextConfig;

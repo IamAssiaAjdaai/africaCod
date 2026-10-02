@@ -2,7 +2,7 @@ import "server-only";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAuth } from "@africacod/auth";
-import { CommerceService } from "@africacod/domain";
+import { CommerceService, CatalogService } from "@africacod/domain";
 import { getDatabase } from "@africacod/db";
 export function commerce() {
   return new CommerceService(getDatabase());
@@ -17,4 +17,8 @@ export async function requireOrganization() {
   const organization = await commerce().organizationFor(session.user.id);
   if (!organization) redirect("/onboarding");
   return { session, organization };
+}
+
+export function catalog() {
+  return new CatalogService(getDatabase());
 }

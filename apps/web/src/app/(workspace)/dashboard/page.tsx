@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { ArrowRight, Globe2, Plus, Store, Building2 } from "lucide-react";
+import { ArrowRight, Globe2, Plus, Store, Package } from "lucide-react";
 import { PageHeading } from "@africacod/ui";
-import { commerce, requireOrganization } from "@/lib/server";
+import { commerce, catalog, requireOrganization } from "@/lib/server";
 export default async function Dashboard() {
-  const { session, organization } = await requireOrganization();
+  const { session } = await requireOrganization();
   const service = commerce();
   const stores = await service.listStores(session.user.id);
   const markets = (
@@ -11,6 +11,15 @@ export default async function Dashboard() {
       stores.map((store) => service.listMarkets(session.user.id, store.id)),
     )
   ).flat();
+  const data = await catalog().productListData(session.user.id);
+  const activeOffers = data.offers.filter(
+    (offer) =>
+      offer.status === "active" &&
+      data.markets.some(
+        (market) =>
+          market.id === offer.storeMarketId && market.status === "active",
+      ),
+  );
   const active = markets.filter((m) => m.status === "active");
   return (
     <>
@@ -57,13 +66,19 @@ export default async function Dashboard() {
         </div>
         <div className="stat-card">
           <span>
-            Your organization
-            <Building2 size={18} />
+            Products
+            <Package size={18} />
           </span>
-          <strong className="stat-name">{organization.name}</strong>
-          <small>
-            Your role: {organization.role === "owner" ? "Owner" : "Admin"}
-          </small>
+          <strong>{data.products.length.toString().padStart(2, "0")}</strong>
+          <small>Products across your stores</small>
+        </div>
+        <div className="stat-card">
+          <span>
+            Active offers
+            <Globe2 size={18} />
+          </span>
+          <strong>{activeOffers.length.toString().padStart(2, "0")}</strong>
+          <small>Active offers in active store markets</small>
         </div>
       </section>
       <section className="panel">

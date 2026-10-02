@@ -10,6 +10,8 @@ import {
   Menu,
   Plus,
   Settings,
+  Package,
+  FolderTree,
   Store,
   X,
 } from "lucide-react";
@@ -17,6 +19,8 @@ import { Brand } from "@africacod/ui";
 import { authClient } from "@africacod/auth/client";
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/products", label: "Products", icon: Package },
+  { href: "/categories", label: "Categories", icon: FolderTree },
   { href: "/stores", label: "Stores", icon: Store },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -83,20 +87,24 @@ export function Shell({
           </div>
           <ChevronDown size={15} />
         </div>
-        <p className="nav-caption">WORKSPACE</p>
         <nav>
           {navigation.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`sidebar-link ${path.startsWith(href) ? "selected" : ""}`}
-              onClick={() => setOpen(false)}
-              aria-current={path.startsWith(href) ? "page" : undefined}
-            >
-              <Icon size={19} />
-              {label}
-              {path.startsWith(href) && <span className="nav-dot" />}
-            </Link>
+            <div key={href}>
+              {href === "/products" && <p className="nav-caption">COMMERCE</p>}
+              {href === "/stores" && <p className="nav-caption">STORE</p>}
+              {href === "/settings" && <p className="nav-caption">PLATFORM</p>}
+              <Link
+                key={href}
+                href={href}
+                className={`sidebar-link ${path.startsWith(href) ? "selected" : ""}`}
+                onClick={() => setOpen(false)}
+                aria-current={path.startsWith(href) ? "page" : undefined}
+              >
+                <Icon size={19} />
+                {label}
+                {path.startsWith(href) && <span className="nav-dot" />}
+              </Link>
+            </div>
           ))}
         </nav>
         <div className="sidebar-grow">

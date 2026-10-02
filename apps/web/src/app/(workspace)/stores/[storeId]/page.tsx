@@ -75,6 +75,20 @@ export default async function StoreDetail({
           </div>
         </div>
       </section>
+      <div className="store-commerce-links">
+        <Link
+          className="button button-outline"
+          href={`/products?storeId=${store.id}`}
+        >
+          Products
+        </Link>
+        <Link
+          className="button button-outline"
+          href={`/categories?storeId=${store.id}`}
+        >
+          Categories
+        </Link>
+      </div>
       <Markets storeId={store.id} markets={markets} countries={countries} />
     </>
   );
