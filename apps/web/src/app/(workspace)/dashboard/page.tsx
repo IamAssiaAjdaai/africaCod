@@ -124,6 +124,9 @@ export default async function Dashboard() {
           </div>
         ))}
       </section>
+      <Link href="/analytics" className="button button-outline">
+        View full Analytics
+      </Link>
       <section className="panel" data-testid="delivered-revenue">
         <h2>Delivered Revenue</h2>
         {metrics.revenue.length ? (

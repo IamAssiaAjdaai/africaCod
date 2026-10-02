@@ -336,7 +336,8 @@ test("Storefront CMS navigation, branding, Apps discovery and COD remain market-
   ).toBeVisible();
   await expect(page.locator(".app-card")).toHaveCount(9);
   await expect(page.locator(".app-card .badge")).toHaveText([
-    ...Array(5).fill("Coming soon"),
+    ...Array(4).fill("Available (test adapter)"),
+    "Coming soon",
     "Available (test adapter)",
     ...Array(3).fill("Coming soon"),
   ]);

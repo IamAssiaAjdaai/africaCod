@@ -1,14 +1,18 @@
 "use client";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
+import { type BrowserConnection } from "@africacod/domain/tracking-policy";
+import { emitBrowserTracking } from "@/lib/browser-tracking";
 import Image from "next/image";
 import type { PublicProduct } from "@africacod/domain";
 import { formatMoney } from "@africacod/shared/money";
 export function PublicProductView({
   product,
   preview = false,
+  tracking = [],
 }: {
   product: PublicProduct;
   preview?: boolean;
+  tracking?: BrowserConnection[];
 }) {
   const selected = product.selected;
   const [quantity, setQuantity] = useState(1);
@@ -22,6 +26,23 @@ export function PublicProductView({
   const key = useRef<string | null>(null),
     busy = useRef(false);
   const config = selected?.checkout;
+  const viewed = useRef(false);
+  useEffect(() => {
+    if (preview || viewed.current || !selected) return;
+    viewed.current = true;
+    emitBrowserTracking(tracking, "view");
+    void fetch(
+      `/api/storefront/${product.storeSlug}/${product.productSlug}/view`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          market: selected.token,
+          eventId: crypto.randomUUID(),
+        }),
+      },
+    ).catch(() => {});
+  }, [preview, selected, tracking, product.storeSlug, product.productSlug]);
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy.current || !selected || preview) return;
@@ -70,6 +91,7 @@ export function PublicProductView({
       if (!response.ok)
         throw new Error(body.error || "Could not place your order.");
       setReceipt(body);
+      emitBrowserTracking(tracking, "checkout", body.orderNumber);
     } catch (error) {
       setError(
         error instanceof Error

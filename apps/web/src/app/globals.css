@@ -2824,3 +2824,26 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+.analytics-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+.analytics-filters .button {
+  align-self: end;
+}
+.stats-grid dd {
+  margin: 8px 0 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.analytics-table {
+  min-width: 1000px;
+}
+.analytics-table th,
+.analytics-table td {
+  white-space: nowrap;
+}

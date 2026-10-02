@@ -1,4 +1,4 @@
-import { storefront } from "@/lib/server";
+import { storefront, tracking } from "@/lib/server";
 import { found } from "@/lib/catalog-pages";
 import { PublicProductView } from "@/components/public-product";
 export default async function PublicPage({
@@ -21,6 +21,7 @@ export default async function PublicPage({
     <PublicProductView
       key={product.selected?.token ?? "choose"}
       product={product}
+      tracking={await tracking().publicTracking(storeSlug)}
     />
   );
 }

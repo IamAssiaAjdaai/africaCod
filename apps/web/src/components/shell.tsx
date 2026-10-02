@@ -25,6 +25,7 @@ const navigation = [
   { href: "/stores", label: "Stores", icon: Store },
   { href: "/pages", label: "Pages", icon: FolderTree },
   { href: "/fulfillment", label: "Fulfillment", icon: Package },
+  { href: "/analytics", label: "Analytics", icon: LayoutDashboard },
   { href: "/apps", label: "Apps", icon: Package },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

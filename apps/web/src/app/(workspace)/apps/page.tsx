@@ -5,6 +5,8 @@ import {
   requireOrganization,
   providerTestMode,
   providers,
+  tracking,
+  trackingTestMode,
 } from "@/lib/server";
 import { found } from "@/lib/catalog-pages";
 export default async function Apps({
@@ -30,12 +32,50 @@ export default async function Apps({
   const connection = selectedStoreId
     ? await providers().connectionForStore(session.user.id, selectedStoreId)
     : null;
+  const trackingConnections = selectedStoreId
+    ? await Promise.all(
+        ["meta", "tiktok", "google-ads", "google-sheets"].map((p) =>
+          tracking().connection(session.user.id, selectedStoreId, p),
+        ),
+      )
+    : [];
+  function connectionStatus(id: string) {
+    if (id === "shipcod") {
+      if (!providerTestMode()) return "Production API access required";
+      if (!connection) return "Available (test adapter)";
+      return connection.status === "connected" &&
+        connection.adapterMode === "mock"
+        ? "Connected (test adapter)"
+        : "Not connected (test adapter)";
+    }
+    if (!["meta", "tiktok", "google-ads", "google-sheets"].includes(id))
+      return "Coming soon";
+    const c = trackingConnections.find((c) => c?.provider === id);
+    if (!trackingTestMode() && id === "google-sheets")
+      return "Production setup required";
+    if (c) {
+      if (c.mode === "mock" && !trackingTestMode())
+        return "Not connected (test adapter disabled)";
+      if (c.enabled && c.lastSuccess && !c.lastError)
+        return c.mode === "mock" ? "Connected (test adapter)" : "Connected";
+      if (c.enabled && c.mode === "browser")
+        return "Configured (browser; receipt unverified)";
+      return c.mode === "mock"
+        ? "Not connected (test adapter)"
+        : "Not connected";
+    }
+    return trackingTestMode()
+      ? "Available (test adapter)"
+      : id === "meta"
+        ? "Available (Pixel + CAPI)"
+        : "Available (browser foundation)";
+  }
   return (
     <>
       <PageHeading
         eyebrow="PLATFORM"
         title="Apps"
-        description="Configure store fulfillment and explore planned integrations."
+        description="Configure store tracking, order exports and fulfillment."
       />
       {stores.length > 0 && (
         <form method="get" className="panel">
@@ -63,14 +103,7 @@ export default async function Apps({
                   <div className="section-heading">
                     <h3>{app.name}</h3>
                     <span className="badge badge-inactive">
-                      {app.id === "shipcod" && providerTestMode()
-                        ? connection?.status === "connected" &&
-                          connection.adapterMode === "mock"
-                          ? "Connected (test adapter)"
-                          : connection
-                            ? "Not connected (test adapter)"
-                            : "Available (test adapter)"
-                        : app.status}
+                      {connectionStatus(app.id)}
                     </span>
                   </div>
                   <p className="muted">{app.description}</p>
@@ -84,6 +117,18 @@ export default async function Apps({
                       }
                     >
                       Configure ShipCOD
+                    </Link>
+                  ) : [
+                      "meta",
+                      "tiktok",
+                      "google-ads",
+                      "google-sheets",
+                    ].includes(app.id) ? (
+                    <Link
+                      className="button button-outline"
+                      href={`/apps/${app.id}${selectedStoreId ? `?storeId=${selectedStoreId}` : ""}`}
+                    >
+                      Configure {app.name}
                     </Link>
                   ) : (
                     <button className="button button-outline" disabled>

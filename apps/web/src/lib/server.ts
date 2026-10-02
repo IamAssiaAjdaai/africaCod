@@ -10,6 +10,8 @@ import {
   AppsService,
   OperationsService,
   ProviderService,
+  TrackingService,
+  AnalyticsService,
 } from "@africacod/domain";
 import { getDatabase } from "@africacod/db";
 export function commerce() {
@@ -54,4 +56,17 @@ export function providers() {
     testMode: providerTestMode(),
     encryptionKey: process.env.PROVIDER_CREDENTIALS_KEY,
   });
+}
+
+export function trackingTestMode() {
+  return process.env.TRACKING_TEST_MODE === "1";
+}
+export function tracking() {
+  return new TrackingService(getDatabase(), {
+    testMode: trackingTestMode(),
+    encryptionKey: process.env.INTEGRATION_CREDENTIALS_KEY,
+  });
+}
+export function analytics() {
+  return new AnalyticsService(getDatabase());
 }
