@@ -465,3 +465,47 @@ Proxy imports only Edge-compatible request/response code and forwards a fresh re
 Regression checks browser-bundle shared/proxy/instrumentation and execute without Node globals, verify explicit root loading/process overrides/production skip, and verify preserved request body/context and rate-limit enforcement. The full browser gate also saturates an isolated checkout identity to confirm HTTP 429 independently of Idempotency-Key.
 
 Environment-boundary verification: all seven gates pass — typecheck, lint, format check, **65 unit tests**, **101 integration tests**, strict production `pnpm build` with both adapters disabled, and **12 Chrome E2E tests**. The complete build output contains zero occurrences of `process.cwd`, `node:fs`, `node:path` or Edge Runtime warning text. Actual production startup still rejects mock flags and missing `APP_ENV`. No warning suppression or public secret variables are introduced.
+
+### Checkpoint 9.1 — Store customization and operational dashboard
+
+Each Store has structured, Zod-validated **Draft and Published Store settings**. Open a Store → **Store Settings** → Appearance / Product Page / Navigation / Markets. Editing and media uploads never update the public Store. **Save Draft → Preview Store → Publish** is the customization workflow. Preview is authenticated, tenant-scoped, market-selectable and read-only: it emits no visitor events and cannot submit Orders. It includes published products, prices, categories and CMS pages with Draft Store presentation. Existing per-product Product Page drafts/publication remain independent.
+
+Publication locks the Store row, checks the saved revision and all Store-owned resources, then replaces the complete Published JSON snapshot atomically. A stale editor or failed resource validation preserves the previous live snapshot. Navigation rejects Draft CMS pages at publication and hides subsequently unpublished pages/inactive categories. Uploaded light/dark logos, favicon and hero images remain private; publication exposes only referenced media through validated image-delivery routes and responsive 320/640/960/1600px derivatives. Previously referenced media is retained privately so draft editing never deletes a live image. Legacy branding is migrated into the publication boundary; unknown legacy file sizes are nullable metadata, never a size-validation bypass for new uploads.
+
+Appearance supports identity/contact details, Modern/Minimal headers, Light/Dark/System themes, validated HEX colors, four self-hosted fonts (Geist, Inter, Poppins, Roboto), an optional announcement, hero and market-aware featured section (all/category/manual). No marketing claims are created by default. Structured navigation pickers cover Store Home, Products, Store Categories and published CMS Pages; safe HTTPS/local links, Header CTA and platform-validated social links are optional. Markets continue to use the searchable 252-country/territory catalog; reference countries never create StoreMarkets.
+
+Product Page defaults support Inline/Popup order forms, optional sticky CTA and quantity control, button styling and safe icon-based trust badges. Full name/phone stay required. Region/city/address requirements from the selected StoreMarket override presentation settings. Optional fields, accessible reorder buttons and at most eight custom Text/Textarea/Select fields are supported. Select options and all text/count limits are validated on the server against Published settings. Checkout remains authoritative for price, currency, active offer, variant, quantity, market address/phone rules and idempotency.
+
+Custom values are persisted transactionally in `orders.custom_field_snapshots`: stable ID, original label, field type and submitted value. This bounded, typed snapshot is historical Order truth, independent of current Store settings. WhatsApp and notes are also Order snapshots. Renaming/disabling/deleting a field or changing options cannot alter existing Orders. Order Detail displays these values as escaped text; merchant HTML/JavaScript/CSS/SVG injection is unavailable. Legacy Checkpoint 9 checkout hashes remain valid when no new values are submitted; custom-field key order is canonicalized so equivalent retries resolve to the original receipt.
+
+The Dashboard provides Today / Yesterday / Last 7 Days / Last 30 Days / Custom (up to 366 UTC days), optional Store filtering, daily Visitors/Orders/Deliveries, a COD funnel and grouped Product / Ad Platform / Market performance. Its server-side SQL aggregates return counts and currency-separated historical revenue, rather than loading all Orders into the browser. Existing operational queues remain available below the date-filtered overview.
+
+Definitions:
+
+- **Visitors:** consented `store_view` + `product_view` observations in range, not unique people. Checkout-start observations are excluded. First-party observations are retained for 30 days; older ranges may have incomplete visitor coverage.
+- **Total Orders:** Orders created in range, regardless of current outcome.
+- **Processing:** Orders created in range whose commercial status is new/confirmed and shipment is absent, created, shipped or out for delivery. Cancelled/failed/refused/returned/delivered outcomes are excluded.
+- **Delivered KPI / daily Deliveries:** shipments currently delivered with a delivery timestamp in range, including Orders created earlier.
+- **Funnel and performance tables:** Order creation cohort in range, with historical confirmation/shipping timestamps and current shipment outcomes. Delivery rate is delivered/cohort Orders. Visitor-to-Order conversion is directional because observations are not unique customers.
+- **Delivered Revenue:** original Order totals (Product performance uses original Item totals) for currently delivered shipments in the cohort. Currency totals remain separate; returned/refused outcomes are excluded. Submitted COD value is never treated as revenue or profit.
+- **Ad platforms:** recorded attribution grouped into Meta/TikTok/Google/Direct/Other; absent or nonconsented attribution is **Unknown**, not guessed as Direct.
+
+Schema migration: `0014_store_settings_publication` adds one Store media table, Store draft/published/revision/timestamp columns, bounded custom Order snapshots and optional-field snapshots. A partial organization/delivery-date Shipment index supports the new event-date query; existing Order and visitor indexes support range/cohort queries. No automatic Markets, inventory, billing, agency features or deployment are added.
+
+Checkpoint 9.1 final verification (2026-10-03):
+
+| Check                   | Result                                                                    |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `pnpm typecheck`        | Passed; 9 workspace tasks                                                 |
+| `pnpm lint`             | Passed; zero lint warnings                                                |
+| `pnpm format:check`     | Passed                                                                    |
+| `pnpm test`             | 94 passed across 20 files                                                 |
+| `pnpm test:integration` | 119 passed across 9 files                                                 |
+| `pnpm build`            | Passed under strict production configuration; both test adapters disabled |
+| `pnpm test:e2e`         | 13 Chrome tests passed; all previous workflows retained                   |
+
+Fresh installation and upgrade from Checkpoint 9 both passed: 43 tables, 252 reference countries, no automatically created StoreMarkets, and preserved legacy branding/logo ownership. Actual production startup rejected mock adapters and missing `APP_ENV`. The complete build output contains no `process.cwd`, `node:fs`, `node:path`, Edge Runtime warning text or other warning text.
+
+Browser verification covers Dashboard, Store Settings, authenticated Store Preview, public Store, Product Page and popup checkout at 375/768/1280px, with no document horizontal overflow and zero automated accessibility violations in the checked regions. Keyboard tab navigation, reorder alternatives, native dialog Escape/focus behavior, telephone keyboard hints, historical custom-field receipt/detail and real Dashboard data are covered.
+
+The browser server still logs the pre-existing Next.js “destination stream closed early” navigation diagnostics, also present in the Checkpoint 9/environment-boundary logs. They were not suppressed; all browser assertions pass, including the client-error check. Monitor them during staging acceptance. No deployment or live external-provider activation was performed.

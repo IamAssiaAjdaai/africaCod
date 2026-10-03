@@ -73,7 +73,7 @@ Status: **production beta candidate; deployment is conditional on external infra
 
 ## Testing
 
-- [x] READY — all seven quality gates executed successfully: 65 unit, 101 integration and 12 Chrome E2E tests; strict zero-mock production build; fresh/CP8-upgrade migrations and repeat reference seed; S3 SDK roundtrip/derivation/deletion; actual startup rejection of mocks and missing deployment identity. The environment-boundary build has no Edge warnings for process.cwd, node:fs or node:path; browser bundling tests prevent Node imports from returning to shared/proxy/instrumentation. Two disposable fresh-database staging smoke tests pass with required consent, S3 transport and both mock adapters disabled, including manual COD lifecycle and intercepted OAuth redirect.
+- [x] READY — Checkpoint 9/environment-boundary baseline: all seven quality gates executed successfully: 65 unit, 101 integration and 12 Chrome E2E tests; strict zero-mock production build; fresh/CP8-upgrade migrations and repeat reference seed; S3 SDK roundtrip/derivation/deletion; actual startup rejection of mocks and missing deployment identity. The environment-boundary build has no Edge warnings for process.cwd, node:fs or node:path; browser bundling tests prevent Node imports from returning to shared/proxy/instrumentation. Two disposable fresh-database staging smoke tests pass with required consent, S3 transport and both mock adapters disabled, including manual COD lifecycle and intercepted OAuth redirect.
 - [x] Formal accessibility review uses axe WCAG 2 A/AA and 2.1 AA checks across merchant screens, storefront checkout and Order detail, alongside keyboard focus/Escape/mobile menu/labels/errors and 375/768/1280-pixel overflow regression. This is automated and targeted keyboard verification, not formal WCAG certification.
 - [ ] External live service receipts, deployed TLS/proxy configuration, backup restore and platform alerts cannot be certified by local CI. See actual execution results in README and audit.
 
@@ -98,3 +98,32 @@ Status: **production beta candidate; deployment is conditional on external infra
 - [TikTok standard events](https://ads.tiktok.com/resources/help/article/standard-events-parameters?lang=en), [Google Ads conversions](https://developers.google.com/tag-platform/devguides/conversions).
 - [R2 S3 compatibility](https://developers.cloudflare.com/r2/api/s3/api/), [Sharp decoding limits](https://sharp.pixelplumbing.com/api-constructor/).
 - [Meta deduplication](https://developers.facebook.com/documentation/ads-commerce/conversions-api/deduplicate-pixel-and-server-events), [customer data](https://developers.facebook.com/documentation/ads-commerce/conversions-api/parameters/customer-information-parameters), [server events](https://developers.facebook.com/documentation/ads-commerce/conversions-api/parameters/server-event), [custom data](https://developers.facebook.com/documentation/ads-commerce/conversions-api/parameters/custom-data), [API transport/version](https://developers.facebook.com/documentation/ads-commerce/conversions-api/using-the-api). Documentation review succeeded; live account receipt validation remains external.
+
+## Checkpoint 9.1 publication and customization boundary
+
+Store settings are scoped per Store, with explicit Save Draft / authenticated read-only Preview / atomic Publish. Public routes and checkout use only Published settings; stale revisions and invalid resources fail without replacing the live snapshot. Preview disables checkout and observations and has noindex metadata. CMS navigation is checked both when publishing settings and when rendering, so later page unpublication cannot expose a Draft page.
+
+Store assets remain in the existing private storage architecture, validated and normalized before upload. Responsive delivery rechecks the published reference or authenticated Store ownership on every request. Legacy logos are adopted as Store-owned assets; old drafts/publications never cause private objects to become directly accessible. Unreferenced assets remain private; automated orphan-media cleanup and full publication history are deferred.
+
+Custom order-field values are bounded, server-validated against Published configuration and persisted as historical ID/label/type/value snapshots in the same checkout transaction. Core market phone/address, offer, price, quantity, variant and idempotency validation remains authoritative. No merchant arbitrary code or external font execution is supported. Fonts are self-hosted open-source packages; browser scripts remain limited to existing explicit Apps integrations.
+
+Dashboard definitions and limits are documented in README. Period delivery activity and creation-cohort performance are distinct. Revenue uses historical commercial snapshots and remains separated by currency; refused/returned shipments are excluded. Visitors are consented observations, not unique users, and older-than-30-day visitor coverage is incomplete by design. Unknown attribution stays Unknown. Queries aggregate in PostgreSQL, with a partial delivered-date index and existing tenant/date indexes.
+
+Staging remains a separate, explicitly authorized deployment step. Existing infrastructure, private bucket, trusted proxy, credentials, backups and operational acceptance requirements still apply; ShipCOD live activation remains blocked pending official account/API documentation.
+
+Private Store previews use a separate authenticated route group and the same Store shell as public rendering, without nesting storefront main landmarks inside the merchant workspace. Dialogs use native modal focus trapping and Escape behavior; settings tabs support arrow/Home/End navigation and reorder buttons are keyboard accessible. Color inputs include textual HEX values, validation errors are announced, and custom-field values are never rendered as HTML.
+
+Checkout request bodies remain streamed and bounded at 128 KiB, accommodating eight bounded custom fields, optional notes and UTF-8 attribution. Server schemas enforce the individual field/count limits before persistence; rate limiting and origin/idempotency checks remain in place.
+
+Checkout hash compatibility is preserved for pre-9.1 Orders: absent new values do not change the old request digest. Custom-field keys are sorted before hashing; changing submitted values still conflicts, while equivalent retries continue to return the historical receipt after settings edits.
+
+### Checkpoint 9.1 verification record — 2026-10-03
+
+- [x] Final sequential quality gate: typecheck, zero-warning lint, format check, 94 unit tests, 119 integration tests, strict zero-mock production build and 13 Chrome E2E tests all passed.
+- [x] Fresh database and Checkpoint 9 upgrade: 43 tables, 252 reference countries, zero automatic StoreMarkets, legacy branding/private logo preservation.
+- [x] Production startup rejects mock adapters and missing deployment identity. Build output has no Edge warnings for `process.cwd`, `node:fs` or `node:path`, and no other warning text.
+- [x] Responsive checks at 375/768/1280px for Dashboard, Store Settings, private Preview, public Store, Product Page and checkout; no document horizontal overflow, with automated accessibility checks passing. Existing workflows and market-specific prices remain green.
+- [x] Historical custom-field snapshots, old checkout-key compatibility, canonical custom-field retry hashes, failed-publication preservation and tenant/private-media boundaries are covered by regression tests.
+- [ ] Staging acceptance must monitor the pre-existing Next.js closed-stream navigation diagnostics. Browser tests pass, including client-error assertions; diagnostics remain visible and were not suppressed.
+
+Recommend proceeding to a separately authorized staging deployment once the existing infrastructure/credential/backup checklist is satisfied. Keep ShipCOD disabled pending official API material and live acceptance. No deployment was performed by this checkpoint.
