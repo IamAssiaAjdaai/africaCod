@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
@@ -499,6 +500,40 @@ describe("Store draft publication and checkout boundaries", () => {
       }),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
   });
+  it("preserves Checkpoint 9 idempotency hashes after the additive settings migration", async () => {
+    const f = await fixture();
+    const order = await checkout(f);
+    const legacyHash = createHash("sha256")
+      .update(
+        JSON.stringify({
+          productId: f.product.id,
+          marketId: f.market.id,
+          variantId: null,
+          quantity: payload.quantity,
+          name: payload.name,
+          phone: order.phone,
+          region: payload.region,
+          city: payload.city,
+          address: payload.address,
+        }),
+      )
+      .digest("hex");
+    expect(order.requestHash).toBe(legacyHash);
+    expect(
+      await ops.checkout(
+        f.store.slug,
+        f.product.slug,
+        order.checkoutIdempotencyKey,
+        payload,
+      ),
+    ).toMatchObject({ orderNumber: order.orderNumber });
+    await expect(
+      ops.checkout(f.store.slug, f.product.slug, order.checkoutIdempotencyKey, {
+        ...payload,
+        notes: "New delivery instructions",
+      }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
   it("custom Text, Textarea and Select snapshot original labels and values", async () => {
     const f = await fixture();
     const ids = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()];
@@ -534,6 +569,14 @@ describe("Store draft publication and checkout boundaries", () => {
       .select()
       .from(schema.orders)
       .where(eq(schema.orders.orderNumber, receipt.orderNumber));
+    expect(
+      await ops.checkout(f.store.slug, f.product.slug, key, {
+        ...input,
+        customFields: Object.fromEntries(
+          Object.entries(input.customFields).reverse(),
+        ),
+      }),
+    ).toEqual(receipt);
     expect(order.customFieldSnapshots.map((s) => s.value)).toEqual([
       "Gift",
       "Please ring the bell",

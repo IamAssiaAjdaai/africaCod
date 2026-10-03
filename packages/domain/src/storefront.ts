@@ -429,9 +429,18 @@ export class StorefrontService extends CatalogService {
             region: value.region,
             city: value.city,
             address: value.address,
-            whatsapp: value.whatsapp,
-            notes: value.notes,
-            customFields: value.customFields,
+            // Preserve Checkpoint 9 hashes for requests without new values.
+            ...(value.whatsapp ? { whatsapp: value.whatsapp } : {}),
+            ...(value.notes ? { notes: value.notes } : {}),
+            ...(Object.keys(value.customFields).length
+              ? {
+                  customFields: Object.fromEntries(
+                    Object.entries(value.customFields).sort(([a], [b]) =>
+                      a.localeCompare(b),
+                    ),
+                  ),
+                }
+              : {}),
           }),
         )
         .digest("hex");
