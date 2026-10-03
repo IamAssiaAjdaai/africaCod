@@ -1,32 +1,30 @@
+import { DomainError } from "@africacod/domain";
+import { ZodError } from "zod";
+import { DashboardOverview } from "@/components/dashboard-overview";
 import { formatMoney } from "@africacod/shared/money";
 import Link from "next/link";
-import { ArrowRight, Globe2, Plus, Store, Package } from "lucide-react";
+import { ArrowRight, Plus, Store } from "lucide-react";
 import { PageHeading } from "@africacod/ui";
 import {
   commerce,
-  catalog,
   operations,
-  analytics,
+  dashboard,
   requireOrganization,
 } from "@/lib/server";
-export default async function Dashboard() {
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    range?: string;
+    from?: string;
+    to?: string;
+    storeId?: string;
+  }>;
+}) {
+  const query = await searchParams;
   const { session } = await requireOrganization();
   const service = commerce();
   const stores = await service.listStores(session.user.id);
-  const markets = (
-    await Promise.all(
-      stores.map((store) => service.listMarkets(session.user.id, store.id)),
-    )
-  ).flat();
-  const data = await catalog().productListData(session.user.id);
-  const activeOffers = data.offers.filter(
-    (offer) =>
-      offer.status === "active" &&
-      data.markets.some(
-        (market) =>
-          market.id === offer.storeMarketId && market.status === "active",
-      ),
-  );
   const ops = operations();
   const [
     metrics,
@@ -49,9 +47,27 @@ export default async function Dashboard() {
       status: "confirmed",
       fulfillment: "none",
     }),
-    analytics().analytics(session.user.id, { range: "30d" }),
+    dashboard()
+      .overview(session.user.id, {
+        range: query.range ?? "7d",
+        from: query.from || undefined,
+        to: query.to || undefined,
+        storeId: query.storeId || undefined,
+      })
+      .catch((error: unknown) => {
+        if (
+          error instanceof ZodError ||
+          (error instanceof DomainError && error.code === "INVALID_INPUT")
+        )
+          return {
+            error:
+              error instanceof ZodError
+                ? "Choose a valid date range and Store."
+                : error.message,
+          };
+        throw error;
+      }),
   ]);
-  const active = markets.filter((m) => m.status === "active");
   return (
     <>
       <PageHeading
@@ -59,40 +75,46 @@ export default async function Dashboard() {
         title={`Welcome, ${session.user.name.split(" ")[0]}.`}
         description="Today’s work across your stores: confirm orders, follow up and prepare fulfillment."
       />
-      <section className="stats-grid">
-        <div className="stat-card">
-          <span>
-            Your stores
-            <Store size={18} />
-          </span>
-          <strong>{stores.length.toString().padStart(2, "0")}</strong>
-          <small>Brands in your organization</small>
-        </div>
-        <div className="stat-card">
-          <span>
-            Active markets
-            <Globe2 size={18} />
-          </span>
-          <strong>{active.length.toString().padStart(2, "0")}</strong>
-          <small>Countries you’ve chosen to reach</small>
-        </div>
-        <div className="stat-card">
-          <span>
-            Products
-            <Package size={18} />
-          </span>
-          <strong>{data.products.length.toString().padStart(2, "0")}</strong>
-          <small>Products across your stores</small>
-        </div>
-        <div className="stat-card">
-          <span>
-            Active offers
-            <Globe2 size={18} />
-          </span>
-          <strong>{activeOffers.length.toString().padStart(2, "0")}</strong>
-          <small>Active offers in active store markets</small>
-        </div>
-      </section>
+      <form method="get" className="dashboard-range panel">
+        <label>
+          Date range
+          <select name="range" defaultValue={query.range ?? "7d"}>
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="7d">Last 7 Days</option>
+            <option value="30d">Last 30 Days</option>
+            <option value="custom">Custom</option>
+          </select>
+        </label>
+        <label>
+          From (Custom)
+          <input name="from" type="date" defaultValue={query.from} />
+        </label>
+        <label>
+          To (Custom)
+          <input name="to" type="date" defaultValue={query.to} />
+        </label>
+        <label>
+          Store
+          <select name="storeId" defaultValue={query.storeId ?? ""}>
+            <option value="">All Stores</option>
+            {stores.map((store) => (
+              <option key={store.id} value={store.id}>
+                {store.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button className="button button-green">Apply range</button>
+      </form>
+      {"error" in performance ? (
+        <p className="form-error" role="alert">
+          {performance.error}
+        </p>
+      ) : (
+        <DashboardOverview data={performance} />
+      )}
+      <h2>Operational queues · all time</h2>
       <nav className="catalog-filters">
         <Link className="button button-outline" href="/orders/confirmation">
           Confirmation queue
@@ -205,53 +227,6 @@ export default async function Dashboard() {
           </section>
         ))}
       </div>
-      <section className="panel">
-        <div className="section-heading">
-          <h2>Market Performance</h2>
-          <Link className="text-link" href="/analytics?range=30d">
-            View Analytics →
-          </Link>
-        </div>
-        <p className="muted">
-          Last 30 UTC days · Order creation cohort, current shipment outcomes.
-        </p>
-        {performance.byMarket.length ? (
-          <div className="table-scroll">
-            <table className="markets-table">
-              <thead>
-                <tr>
-                  <th>Market</th>
-                  <th>Orders</th>
-                  <th>Delivered</th>
-                  <th>Delivery Rate</th>
-                  <th>Delivered Revenue</th>
-                </tr>
-              </thead>
-              <tbody>
-                {performance.byMarket.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.name}</td>
-                    <td>{row.metrics.orders}</td>
-                    <td>{row.metrics.delivered}</td>
-                    <td>{(row.metrics.deliveryRate * 100).toFixed(1)}%</td>
-                    <td>
-                      {Object.entries(row.metrics.revenue)
-                        .map(([currency, total]) =>
-                          formatMoney(total, currency),
-                        )
-                        .join(" · ") || "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="muted">
-            Market results appear after your first COD order.
-          </p>
-        )}
-      </section>
       <section className="panel">
         <div className="section-heading">
           <div>

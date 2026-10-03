@@ -22,5 +22,17 @@ export default async function StoreHome({
       pageParam(query.page),
     ),
   );
-  return <StoreGrid home data={data} />;
+  const featured = data.store.settings.featured.enabled
+    ? await found(
+        site().browseStore(
+          storeSlug,
+          marketParam(query.market),
+          undefined,
+          1,
+          undefined,
+          true,
+        ),
+      )
+    : undefined;
+  return <StoreGrid home data={data} featured={featured} />;
 }

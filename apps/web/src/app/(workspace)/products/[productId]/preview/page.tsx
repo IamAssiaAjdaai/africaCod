@@ -54,6 +54,7 @@ export default async function Preview({
       key={selected?.market.id ?? "choose"}
       preview
       product={{
+        settings: store.draftSettings,
         ...config,
         storeName: store.name,
         storeSlug: store.slug,

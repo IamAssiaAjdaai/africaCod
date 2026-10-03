@@ -3184,3 +3184,445 @@ summary {
   outline: 3px solid #194e3c;
   outline-offset: 3px;
 }
+
+/* Store publication settings: fixed classes and validated color tokens only. */
+.settings-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin: 1.5rem 0;
+}
+.settings-toolbar h1 {
+  margin: 0;
+}
+.settings-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 0.35rem;
+  padding: 0.4rem;
+  background: #eef2f0;
+  border-radius: 12px;
+  margin: 1.5rem 0;
+}
+.settings-tabs button {
+  flex: 1;
+  white-space: nowrap;
+  border: 0;
+  background: transparent;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
+}
+.settings-tabs button[aria-selected="true"] {
+  background: #173d33;
+  color: white;
+}
+.settings-fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.settings-card {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.3rem;
+}
+.settings-card h2 {
+  margin: 0;
+}
+.settings-card label {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+.settings-card input:not([type="checkbox"]):not([type="color"]),
+.settings-card select,
+.settings-card textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid #c9d6cf;
+  border-radius: 8px;
+  background: white;
+  color: #18352c;
+  font: inherit;
+}
+.settings-card textarea {
+  min-height: 90px;
+}
+.settings-grid,
+.settings-media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.settings-media {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px dashed #b9cec2;
+  border-radius: 10px;
+  min-width: 0;
+}
+.settings-media img {
+  object-fit: contain;
+  max-width: 100%;
+}
+.settings-toggle {
+  display: flex !important;
+  gap: 0.6rem !important;
+  align-items: center;
+}
+.settings-toggle input {
+  accent-color: #147d64;
+  width: 18px;
+  height: 18px;
+}
+.color-control {
+  display: flex;
+  gap: 0.6rem;
+}
+.color-control input[type="color"] {
+  width: 44px;
+  height: 42px;
+  border: 1px solid #c9d6cf;
+  border-radius: 8px;
+  background: white;
+  padding: 3px;
+}
+.settings-entry {
+  padding: 1rem;
+  border: 1px solid #d6e0d9;
+  border-radius: 10px;
+  display: grid;
+  gap: 0.75rem;
+}
+.settings-field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #d6e0d9;
+}
+.settings-field-row strong {
+  min-width: 95px;
+}
+.reorder-controls {
+  display: flex;
+  gap: 0.4rem;
+}
+.reorder-controls button {
+  padding: 0.4rem 0.7rem;
+  background: white;
+  border: 1px solid #afc5b9;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.store-announcement {
+  text-align: center;
+  padding: 0.7rem 1rem;
+  overflow-wrap: anywhere;
+}
+.store-announcement a {
+  color: inherit;
+}
+.storefront-shell {
+  --store-bg: #fff;
+  --store-surface: #f3f7f4;
+  --store-ink: #19372d;
+  background: var(--store-bg);
+  color: var(--store-ink);
+}
+.storefront-shell.theme-dark {
+  --store-bg: #12231e;
+  --store-surface: #20382e;
+  --store-ink: #edf6f0;
+  color-scheme: dark;
+}
+.store-logo-dark {
+  display: none;
+}
+.theme-dark .store-logo-dark {
+  display: block;
+}
+.theme-dark .store-logo-light {
+  display: none;
+}
+.storefront-shell .button-green {
+  background: var(--store-brand);
+  color: white;
+}
+.storefront-shell .store-header,
+.storefront-shell .store-footer,
+.storefront-shell .store-product-card,
+.storefront-shell .public-storefront,
+.storefront-shell .public-checkout,
+.storefront-shell .public-receipt {
+  background: var(--store-bg);
+  color: var(--store-ink);
+}
+.storefront-shell .store-hero {
+  background: var(--store-surface);
+  color: var(--store-ink);
+}
+.storefront-shell .muted {
+  color: inherit;
+  opacity: 0.8;
+}
+.storefront-shell input,
+.storefront-shell select,
+.storefront-shell textarea {
+  background: var(--store-bg);
+  color: var(--store-ink);
+}
+.header-minimal .store-header {
+  box-shadow: none;
+  border-bottom: 1px solid currentColor;
+}
+.header-minimal .store-header nav {
+  font-size: 0.9rem;
+}
+.configured-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 240px;
+}
+.hero-image {
+  position: absolute;
+  inset: 0;
+}
+.hero-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hero-copy {
+  position: relative;
+  background: var(--store-bg);
+  opacity: 0.96;
+  padding: 1.5rem;
+  border-radius: 12px;
+  max-width: 580px;
+}
+.store-featured {
+  margin-bottom: 2rem;
+}
+.store-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.order-custom-fields dt {
+  font-weight: 700;
+  margin-top: 0.8rem;
+}
+.order-custom-fields dd {
+  margin: 0.25rem 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.checkout-dialog {
+  width: min(560px, calc(100% - 24px));
+  max-height: 90dvh;
+  padding: 1rem;
+  border: 0;
+  border-radius: 14px;
+  color: var(--store-ink);
+  background: var(--store-bg);
+}
+.checkout-dialog::backdrop {
+  background: rgb(8 30 21 / 0.7);
+}
+.checkout-dialog .public-checkout {
+  padding: 1rem;
+  margin: 0;
+}
+.dialog-close {
+  display: block;
+  margin-left: auto;
+}
+.trust-badge-list {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  padding: 0;
+  gap: 0.75rem;
+}
+.trust-badge-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid #b8c9bf;
+  border-radius: 8px;
+  padding: 0.6rem;
+}
+@media (prefers-color-scheme: dark) {
+  .storefront-shell.theme-system {
+    --store-bg: #12231e;
+    --store-surface: #20382e;
+    --store-ink: #edf6f0;
+    color-scheme: dark;
+  }
+  .theme-system .store-logo-dark {
+    display: block;
+  }
+  .theme-system .store-logo-light {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .settings-toolbar {
+    flex-direction: column;
+  }
+  .settings-grid,
+  .settings-media-grid {
+    grid-template-columns: 1fr;
+  }
+  .settings-toolbar .form-actions {
+    flex-wrap: wrap;
+  }
+  .settings-tabs button {
+    flex: none;
+  }
+  .configured-hero {
+    padding: 1rem;
+  }
+  .hero-copy {
+    padding: 1rem;
+  }
+  .settings-field-row {
+    gap: 0.6rem;
+  }
+}
+.dashboard-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
+}
+.dashboard-range label {
+  display: grid;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 145px;
+}
+.dashboard-range select,
+.dashboard-range input {
+  font: inherit;
+  padding: 0.6rem;
+  border: 1px solid #bacdc1;
+  border-radius: 8px;
+  width: 100%;
+  background: white;
+}
+.period-stat {
+  border-top: 3px solid #147d64;
+}
+.period-stat small {
+  line-height: 1.5;
+}
+.operational-overview > .panel {
+  margin: 1.2rem 0;
+}
+.overview-chart {
+  display: block;
+  width: 100%;
+  min-height: 170px;
+}
+.overview-chart text {
+  font-size: 16px;
+  fill: #466454;
+}
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.chart-legend span {
+  border-bottom: 3px solid;
+  padding: 0.2rem 0.3rem;
+  font-size: 0.85rem;
+}
+.chart-visitors {
+  color: #326d9d;
+}
+.chart-orders {
+  color: #a45b1d;
+}
+.chart-deliveries {
+  color: #147d64;
+}
+.cod-funnel {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  list-style: none;
+  padding: 0;
+  gap: 0.75rem;
+}
+.cod-funnel li {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 10px;
+  background: #f0f5f1;
+}
+.cod-funnel strong {
+  font-size: 1.7rem;
+}
+.cod-funnel small {
+  color: #47604f;
+}
+@media (max-width: 760px) {
+  .cod-funnel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .overview-chart {
+    min-height: 130px;
+  }
+}
+.font-geist {
+  font-family: "Geist", sans-serif;
+}
+.font-inter {
+  font-family: "Inter", sans-serif;
+}
+.font-poppins {
+  font-family: "Poppins", sans-serif;
+}
+.font-roboto {
+  font-family: "Roboto", sans-serif;
+}
+.storefront-shell button,
+.storefront-shell input,
+.storefront-shell select,
+.storefront-shell textarea {
+  font-family: inherit;
+}
+.public-product-grid {
+  padding-bottom: 5rem;
+}
+.storefront-shell {
+  --muted: var(--store-ink);
+  --green: var(--store-brand);
+}
+.storefront-shell .public-no-image,
+.storefront-shell .store-product-placeholder {
+  background: var(--store-surface);
+  color: var(--store-ink);
+}
+.storefront-shell .public-sticky {
+  background: var(--store-bg);
+  color: var(--store-ink);
+}
+.settings-field-row > label:not(.settings-toggle) {
+  max-width: 100px;
+}
+
+/* Period KPIs share equal-width tracks in the responsive grid. */
+.period-stat:last-child {
+  grid-column: auto;
+}

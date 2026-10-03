@@ -1,6 +1,6 @@
 "use client";
 import { useTrackingConsent } from "./tracking-consent";
-import { useEffect, useRef } from "react";
+import { type CSSProperties, useEffect, useRef } from "react";
 import { captureVisitor } from "@/lib/visitor-capture";
 import Link from "next/link";
 import Image from "next/image";
@@ -9,9 +9,11 @@ import type { PublicStore } from "@africacod/domain";
 export function StoreShell({
   store,
   children,
+  previewBase,
 }: {
   store: PublicStore;
   children: React.ReactNode;
+  previewBase?: string;
 }) {
   const query = useSearchParams();
   const pathname = usePathname();
@@ -27,6 +29,7 @@ export function StoreShell({
   useEffect(() => {
     const identity = `${pathname}:${selected?.token ?? ""}`;
     if (
+      previewBase ||
       !consent.analytics ||
       observed.current === identity ||
       pathname !== `/s/${store.slug}`
@@ -34,30 +37,98 @@ export function StoreShell({
       return;
     observed.current = identity;
     captureVisitor(store.slug, "store_view", selected?.token);
-  }, [pathname, selected?.token, store.slug, consent.analytics]);
-  const link = (path: string) =>
-    path + (market !== null ? `?market=${encodeURIComponent(market)}` : "");
+  }, [pathname, selected?.token, store.slug, consent.analytics, previewBase]);
+  const link = (path: string) => {
+    if (path.startsWith("https://")) return path;
+    const target =
+      previewBase && path.startsWith(`/s/${store.slug}`)
+        ? path.replace(`/s/${store.slug}`, previewBase)
+        : path;
+    return (
+      target +
+      (market !== null
+        ? `${target.includes("?") ? "&" : "?"}market=${encodeURIComponent(market)}`
+        : "")
+    );
+  };
+  const settings = store.settings;
+  const navLink = (item: { id: string; label: string; url: string }) => (
+    <Link
+      key={item.id}
+      href={link(item.url)}
+      target={item.url.startsWith("https://") ? "_blank" : undefined}
+      rel={item.url.startsWith("https://") ? "noopener noreferrer" : undefined}
+    >
+      {item.label}
+    </Link>
+  );
   return (
-    <div className="storefront-shell">
+    <div
+      className={`storefront-shell theme-${settings.theme.mode} font-${settings.theme.font} header-${settings.theme.header}`}
+      style={{ "--store-brand": settings.theme.color } as CSSProperties}
+    >
+      {settings.announcement.enabled && settings.announcement.text && (
+        <div
+          className="store-announcement"
+          style={{
+            backgroundColor: settings.announcement.background,
+            color: settings.announcement.color,
+          }}
+        >
+          {settings.announcement.link ? (
+            <a href={settings.announcement.link} rel="noopener noreferrer">
+              {settings.announcement.text}
+            </a>
+          ) : (
+            settings.announcement.text
+          )}
+        </div>
+      )}
       <a className="skip-link" href="#store-content">
         Skip to Store content
       </a>
       <header className="store-header">
         <div className="store-header-top">
           <Link className="store-logo-name" href={link(`/s/${store.slug}`)}>
+            {settings.identity.logoDark && (
+              <Image
+                className="store-logo-dark"
+                unoptimized
+                src={`${settings.identity.logoDark}?w=320`}
+                width={48}
+                height={48}
+                alt={`${store.name} dark logo`}
+              />
+            )}
             {store.logoUrl ? (
               <Image
                 unoptimized
-                src={store.logoUrl}
+                className={
+                  settings.identity.logoDark ? "store-logo-light" : undefined
+                }
+                src={`${store.logoUrl}?w=320`}
                 width={48}
                 height={48}
                 alt={`${store.name} logo`}
               />
             ) : (
-              <span className="store-avatar">{store.name.slice(0, 1)}</span>
+              <span
+                className={`store-avatar ${settings.identity.logoDark ? "store-logo-light" : ""}`}
+              >
+                {store.name.slice(0, 1)}
+              </span>
             )}
             <strong>{store.name}</strong>
           </Link>
+          {settings.navigation.cta.enabled && settings.navigation.cta.url && (
+            <a
+              className="button button-green"
+              href={link(settings.navigation.cta.url)}
+              rel="noopener noreferrer"
+            >
+              {settings.navigation.cta.label}
+            </a>
+          )}
           <label>
             Store market
             <select
@@ -88,32 +159,44 @@ export function StoreShell({
           </p>
         )}
         <nav aria-label="Store navigation">
-          <Link
-            aria-current={pathname === `/s/${store.slug}` ? "page" : undefined}
-            href={link(`/s/${store.slug}`)}
-          >
-            Home
-          </Link>
-          <Link
-            aria-current={pathname.endsWith("/products") ? "page" : undefined}
-            href={link(`/s/${store.slug}/products`)}
-          >
-            Products
-          </Link>
-          <Link
-            aria-current={pathname.includes("/categor") ? "page" : undefined}
-            href={link(`/s/${store.slug}/categories`)}
-          >
-            Categories
-          </Link>
-          {store.pages.map((page) => (
-            <Link
-              key={page.slug}
-              href={link(`/s/${store.slug}/pages/${page.slug}`)}
-            >
-              {page.label}
-            </Link>
-          ))}
+          {settings.navigation.header.length ? (
+            settings.navigation.header.map(navLink)
+          ) : (
+            <>
+              <Link
+                aria-current={
+                  pathname === `/s/${store.slug}` ? "page" : undefined
+                }
+                href={link(`/s/${store.slug}`)}
+              >
+                Home
+              </Link>
+              <Link
+                aria-current={
+                  pathname.endsWith("/products") ? "page" : undefined
+                }
+                href={link(`/s/${store.slug}/products`)}
+              >
+                Products
+              </Link>
+              <Link
+                aria-current={
+                  pathname.includes("/categor") ? "page" : undefined
+                }
+                href={link(`/s/${store.slug}/categories`)}
+              >
+                Categories
+              </Link>
+              {store.pages.map((page) => (
+                <Link
+                  key={page.slug}
+                  href={link(`/s/${store.slug}/pages/${page.slug}`)}
+                >
+                  {page.label}
+                </Link>
+              ))}
+            </>
+          )}
         </nav>
       </header>
       <div id="store-content" tabIndex={-1}>
@@ -121,6 +204,28 @@ export function StoreShell({
       </div>
       <footer className="store-footer">
         <strong>{store.name}</strong>
+        {settings.navigation.footer.length > 0 && (
+          <nav aria-label="Footer navigation">
+            {settings.navigation.footer.map(navLink)}
+          </nav>
+        )}
+        <nav aria-label="Social links">
+          {Object.entries(settings.navigation.social).flatMap(
+            ([platform, url]) =>
+              url
+                ? [
+                    <a
+                      key={platform}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {platform[0].toUpperCase() + platform.slice(1)}
+                    </a>,
+                  ]
+                : [],
+          )}
+        </nav>
         {store.tagline && <p>{store.tagline}</p>}
         <div>
           {store.contactEmail && (

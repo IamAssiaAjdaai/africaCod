@@ -6,11 +6,16 @@ type Browse = Awaited<ReturnType<ContentService["browseStore"]>>;
 export function StoreGrid({
   data,
   home = false,
+  featured,
+  previewBase,
 }: {
   data: Browse;
   home?: boolean;
+  featured?: Browse;
+  previewBase?: string;
 }) {
-  const base = `/s/${data.store.slug}`;
+  const base = previewBase ?? `/s/${data.store.slug}`;
+  const settings = data.store.settings;
   const market = data.selected
     ? `?market=${encodeURIComponent(data.selected.token)}`
     : "";
@@ -22,14 +27,49 @@ export function StoreGrid({
   return (
     <main className="store-browse">
       {home ? (
-        <section className="store-hero">
-          <p className="eyebrow">{data.store.name}</p>
-          <h1>{data.store.tagline || `Welcome to ${data.store.name}`}</h1>
-          <p>
-            Choose your delivery market. Explore products available where you
-            are.
-          </p>
-        </section>
+        settings.hero.enabled && (
+          <section className="store-hero configured-hero">
+            {(
+              [settings.identity.heroLight, settings.identity.heroDark] as const
+            ).map(
+              (url, index) =>
+                url && (
+                  <picture
+                    className={
+                      index
+                        ? "hero-image store-logo-dark"
+                        : `hero-image ${settings.identity.heroDark ? "store-logo-light" : ""}`
+                    }
+                    key={url}
+                  >
+                    <source
+                      srcSet={[320, 640, 960, 1600]
+                        .map((w) => `${url}?w=${w} ${w}w`)
+                        .join(", ")}
+                      sizes="100vw"
+                    />
+                    <Image
+                      src={`${url}?w=960`}
+                      width={1600}
+                      height={800}
+                      alt=""
+                      unoptimized
+                      priority
+                    />
+                  </picture>
+                ),
+            )}
+            <div className="hero-copy">
+              <h1>{settings.hero.title || data.store.name}</h1>
+              {settings.hero.subtitle && <p>{settings.hero.subtitle}</p>}
+              {settings.hero.ctaLabel && settings.hero.ctaUrl && (
+                <a className="button button-green" href={settings.hero.ctaUrl}>
+                  {settings.hero.ctaLabel}
+                </a>
+              )}
+            </div>
+          </section>
+        )
       ) : (
         <div className="page-heading">
           <div>
@@ -37,6 +77,48 @@ export function StoreGrid({
             <h1>{data.category?.name ?? "Products"}</h1>
           </div>
         </div>
+      )}
+      {home && !settings.hero.enabled && <h1>{data.store.name}</h1>}
+      {home && featured?.selected && (
+        <section
+          className="store-featured"
+          aria-label={settings.featured.title}
+        >
+          <h2>{settings.featured.title}</h2>
+          {featured.products.length ? (
+            <div className="store-product-grid">
+              {featured.products.slice(0, 8).map((p) => (
+                <Link
+                  className="store-product-card"
+                  key={p.slug}
+                  href={`${base}/p/${p.slug}${market}`}
+                >
+                  {p.imageUrl && (
+                    <Image
+                      unoptimized
+                      src={`${p.imageUrl}?w=320`}
+                      width={320}
+                      height={320}
+                      alt={p.imageAlt}
+                    />
+                  )}
+                  <div>
+                    <h3>{p.name}</h3>
+                    <strong>
+                      {formatMoney(
+                        p.priceMinor,
+                        p.currency,
+                        featured.selected!.locale,
+                      )}
+                    </strong>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p>No featured products available in this market.</p>
+          )}
+        </section>
       )}
       {home && data.store.categories.some((c) => !c.parentSlug) && (
         <nav className="store-category-links" aria-label="Browse categories">

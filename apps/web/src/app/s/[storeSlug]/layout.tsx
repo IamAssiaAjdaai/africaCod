@@ -40,6 +40,9 @@ export async function generateMetadata({
   const store = await found(site().getPublicStore(storeSlug));
   return {
     title: { default: store.name, template: `%s | ${store.name}` },
+    icons: store.settings.identity.favicon
+      ? { icon: `${store.settings.identity.favicon}?w=320` }
+      : undefined,
     description: store.tagline ?? `Shop ${store.name} with cash on delivery.`,
   };
 }

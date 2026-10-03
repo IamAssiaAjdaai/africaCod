@@ -167,26 +167,30 @@ test("Storefront CMS navigation, branding, Apps discovery and COD remain market-
     .getByRole("link", { name: "Open public page" })
     .getAttribute("href"))!;
 
-  await page.goto(storeUrl);
+  await page.goto(`${storeUrl}/settings`);
   await page
-    .getByRole("textbox", { name: "Tagline", exact: true })
+    .getByLabel("Tagline", { exact: true })
+    .fill("Everyday care, delivered to your door.");
+  await page.getByLabel("Show Hero Section", { exact: true }).check();
+  await page
+    .getByLabel("Hero Title", { exact: true })
     .fill("Everyday care, delivered to your door.");
   await page
-    .getByRole("textbox", { name: "Public contact email" })
+    .getByLabel("Contact email", { exact: true })
     .fill("hello@glow.example");
   await page
-    .getByRole("button", { name: "Save branding", exact: true })
-    .click();
-  await expect(
-    page.getByRole("status").filter({ hasText: "Store branding saved." }),
-  ).toBeVisible();
-  await page
-    .getByLabel("Store logo", { exact: true })
+    .getByLabel("Light Mode logo", { exact: true })
     .setInputFiles({ name: "glow.png", mimeType: "image/png", buffer: bytes });
-  await page.getByRole("button", { name: "Upload logo", exact: true }).click();
   await expect(
-    page.getByRole("status").filter({ hasText: "Logo saved." }),
-  ).toBeVisible();
+    page.getByRole("button", { name: "Save Draft", exact: true }),
+  ).toBeEnabled();
+  await expect(page.getByAltText("Light Mode logo")).toBeVisible();
+  await page.getByRole("button", { name: "Save Draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Draft saved");
+  await page.getByRole("button", { name: "Publish", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "Store settings published",
+  );
   await page.goto(`/pages/new?storeId=${storeId}`);
   await page
     .getByRole("textbox", { name: "Title", exact: true })

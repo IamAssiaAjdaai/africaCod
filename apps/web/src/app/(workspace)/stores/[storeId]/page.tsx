@@ -1,4 +1,3 @@
-import { BrandingEditor } from "@/components/content-editor";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -45,7 +44,7 @@ export default async function StoreDetail({
       <nav className="section-nav" aria-label="Store sections">
         <a href="#store-overview">Overview</a>
         <a href="#store-markets">Markets</a>
-        <a href="#store-branding">Branding</a>
+        <Link href={`/stores/${store.id}/settings`}>Store Settings</Link>
         <a href="#storefront">Storefront</a>
         <a href="#store-apps">Apps</a>
       </nav>
@@ -100,9 +99,12 @@ export default async function StoreDetail({
       <div id="store-markets">
         <Markets storeId={store.id} markets={markets} countries={countries} />
       </div>
-      <div id="store-branding">
-        <BrandingEditor store={store} />
-      </div>
+      <Link
+        className="button button-green"
+        href={`/stores/${store.id}/settings`}
+      >
+        Store Settings
+      </Link>
       <section id="storefront" className="panel">
         <h2>Storefront</h2>
         <p className="muted">

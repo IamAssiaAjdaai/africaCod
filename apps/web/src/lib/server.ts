@@ -7,6 +7,8 @@ import { redirect } from "next/navigation";
 import { getAuth } from "@africacod/auth";
 import {
   GoogleSheetsService,
+  StoreSettingsService,
+  DashboardService,
   CommerceService,
   CatalogService,
   StorefrontService,
@@ -110,4 +112,11 @@ export function googleSheets() {
     process.env.INTEGRATION_CREDENTIALS_KEY,
     googleConfig(),
   );
+}
+
+export function storeSettings() {
+  return new StoreSettingsService(getDatabase());
+}
+export function dashboard() {
+  return new DashboardService(getDatabase());
 }

@@ -1,5 +1,7 @@
 "use client";
-import { useRef, useState, useEffect } from "react";
+import { Banknote, Truck, ShieldCheck, RotateCcw } from "lucide-react";
+import { defaultStoreSettings } from "@africacod/validation";
+import { type CSSProperties, useRef, useState, useEffect } from "react";
 import { type BrowserConnection } from "@africacod/domain/tracking-policy";
 import { useTrackingConsent } from "./tracking-consent";
 import { captureVisitor } from "@/lib/visitor-capture";
@@ -17,6 +19,23 @@ export function PublicProductView({
   tracking?: BrowserConnection[];
 }) {
   const selected = product.selected;
+  const settings = product.settings ?? defaultStoreSettings();
+  const pageSettings = settings.productPage;
+  const dialog = useRef<HTMLDialogElement>(null);
+  const errorNode = useRef<HTMLParagraphElement>(null);
+  const buttonLabel = pageSettings.buttonLabel ?? product.ctaLabel;
+  const buttonStyle = {
+    backgroundColor: pageSettings.buttonBackground ?? settings.theme.color,
+    color: pageSettings.buttonColor ?? "#ffffff",
+  } as CSSProperties;
+  function openOrder() {
+    if (pageSettings.mode === "popup") dialog.current?.showModal();
+    else
+      document
+        .getElementById("cod-checkout")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   const [quantity, setQuantity] = useState(1);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -27,8 +46,14 @@ export function PublicProductView({
   } | null>(null);
   const receiptHeading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
-    if (receipt) receiptHeading.current?.focus();
+    if (receipt) {
+      dialog.current?.close();
+      receiptHeading.current?.focus();
+    }
   }, [receipt]);
+  useEffect(() => {
+    if (error) errorNode.current?.focus();
+  }, [error]);
   const key = useRef<string | null>(null),
     busy = useRef(false);
   const config = selected?.checkout;
@@ -105,6 +130,13 @@ export function PublicProductView({
             address: data.get("address") ?? "",
             variantId: data.get("variantId") || null,
             quantity,
+            whatsapp: data.get("whatsapp") ?? "",
+            notes: data.get("notes") ?? "",
+            customFields: Object.fromEntries(
+              pageSettings.customFields
+                .filter((f) => f.enabled)
+                .map((f) => [f.id, String(data.get(`custom:${f.id}`) ?? "")]),
+            ),
             attribution,
           }),
         },
@@ -126,6 +158,192 @@ export function PublicProductView({
       setPending(false);
     }
   }
+  const checkoutForm =
+    selected && config ? (
+      <form
+        id="cod-checkout"
+        className="catalog-form public-checkout"
+        onFocus={() => {
+          if (preview || !consent.analytics || checkoutStarted.current) return;
+          checkoutStarted.current = true;
+          captureVisitor(
+            product.storeSlug,
+            "checkout_started",
+            selected.token,
+            product.productSlug,
+          );
+        }}
+        onSubmit={submit}
+        aria-describedby={error ? "checkout-error" : undefined}
+      >
+        <h2>Your delivery details</h2>
+        <p className="muted">{product.trustMessage}</p>
+        {product.variants.length > 0 && (
+          <label>
+            Variant
+            <select name="variantId" disabled={pending}>
+              <option value="">No preference</option>
+              {product.variants.map((variant) => (
+                <option key={variant.id} value={variant.id}>
+                  {variant.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {pageSettings.quantity && (
+          <label>
+            Quantity
+            <input
+              disabled={pending}
+              name="quantity"
+              type="number"
+              min={1}
+              max={20}
+              required
+              value={quantity}
+              onChange={(e) => setQuantity(Number(e.target.value))}
+            />
+          </label>
+        )}
+        {[...pageSettings.fields, ...pageSettings.customFields]
+          .sort((a, b) => a.order - b.order)
+          .map((field) => {
+            if ("type" in field) {
+              if (!field.enabled) return null;
+              return (
+                <label key={field.id}>
+                  {field.label}
+                  {field.type === "textarea" ? (
+                    <textarea
+                      name={`custom:${field.id}`}
+                      required={field.required}
+                      disabled={pending}
+                      maxLength={2000}
+                    />
+                  ) : field.type === "select" ? (
+                    <select
+                      name={`custom:${field.id}`}
+                      required={field.required}
+                      disabled={pending}
+                    >
+                      <option value="">Choose an option</option>
+                      {field.options.map((option) => (
+                        <option key={option}>{option}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      name={`custom:${field.id}`}
+                      required={field.required}
+                      disabled={pending}
+                      maxLength={500}
+                    />
+                  )}
+                </label>
+              );
+            }
+            const authoritative =
+              field.id === "name" ||
+              field.id === "phone" ||
+              (field.id === "region" && config.regionRequired) ||
+              (field.id === "city" && config.cityRequired) ||
+              (field.id === "address" && config.addressRequired);
+            if (!field.enabled && !authoritative) return null;
+            const required = authoritative || field.required;
+            const label = {
+              name: "Full name",
+              phone: config.phoneLabel,
+              region: config.regionLabel,
+              city: config.cityLabel,
+              address: config.addressLabel,
+              whatsapp: "WhatsApp",
+              notes: "Notes",
+            }[field.id];
+            const autoComplete = {
+              name: "name",
+              phone: "tel",
+              region: "address-level1",
+              city: "address-level2",
+              address: "street-address",
+              whatsapp: "off",
+              notes: "off",
+            }[field.id];
+            return (
+              <label key={field.id}>
+                {label}
+                {field.id === "address" || field.id === "notes" ? (
+                  <textarea
+                    name={field.id}
+                    disabled={pending}
+                    required={required}
+                    autoComplete={autoComplete}
+                    minLength={
+                      required ? (field.id === "address" ? 5 : 1) : undefined
+                    }
+                    maxLength={field.id === "notes" ? 2000 : 500}
+                  />
+                ) : (
+                  <input
+                    name={field.id}
+                    disabled={pending}
+                    required={required}
+                    autoComplete={autoComplete}
+                    type={
+                      field.id === "phone" || field.id === "whatsapp"
+                        ? "tel"
+                        : "text"
+                    }
+                    inputMode={
+                      field.id === "phone" || field.id === "whatsapp"
+                        ? "tel"
+                        : undefined
+                    }
+                    minLength={required ? 2 : undefined}
+                    maxLength={
+                      field.id === "phone" || field.id === "whatsapp" ? 40 : 150
+                    }
+                  />
+                )}
+              </label>
+            );
+          })}
+        <div className="public-total">
+          <span>
+            Total · Delivery fee:{" "}
+            {formatMoney(0, selected.currency, config.locale)}
+          </span>
+          <strong>
+            {Number.isSafeInteger(quantity) && quantity > 0 && quantity <= 20
+              ? formatMoney(
+                  BigInt(selected.priceMinor) * BigInt(quantity),
+                  selected.currency,
+                  config.locale,
+                )
+              : "—"}
+          </strong>
+        </div>
+        {error && (
+          <p
+            className="form-error"
+            role="alert"
+            id="checkout-error"
+            ref={errorNode}
+            tabIndex={-1}
+          >
+            {error}
+          </p>
+        )}
+        <button
+          className="button button-green public-submit"
+          style={buttonStyle}
+          disabled={pending || preview}
+        >
+          {pending ? "Placing order…" : buttonLabel}
+        </button>
+        <p className="muted">Payment is due on delivery.</p>
+      </form>
+    ) : null;
   return (
     <main className="public-storefront">
       <header className="public-brand">
@@ -268,148 +486,57 @@ export function PublicProductView({
                   </button>
                 </section>
               ) : (
-                <form
-                  id="cod-checkout"
-                  className="catalog-form public-checkout"
-                  onFocus={() => {
-                    if (
-                      preview ||
-                      !consent.analytics ||
-                      checkoutStarted.current
-                    )
-                      return;
-                    checkoutStarted.current = true;
-                    captureVisitor(
-                      product.storeSlug,
-                      "checkout_started",
-                      selected.token,
-                      product.productSlug,
-                    );
-                  }}
-                  onSubmit={submit}
-                  aria-describedby={error ? "checkout-error" : undefined}
-                >
-                  <h2>Your delivery details</h2>
-                  <p className="muted">{product.trustMessage}</p>
-                  {product.variants.length > 0 && (
-                    <label>
-                      Variant
-                      <select name="variantId" disabled={pending}>
-                        <option value="">No preference</option>
-                        {product.variants.map((variant) => (
-                          <option key={variant.id} value={variant.id}>
-                            {variant.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                <>
+                  {pageSettings.mode === "popup" ? (
+                    <>
+                      <button
+                        type="button"
+                        className="button button-green public-submit"
+                        style={buttonStyle}
+                        onClick={openOrder}
+                      >
+                        {buttonLabel}
+                      </button>
+                      <dialog
+                        ref={dialog}
+                        className="checkout-dialog"
+                        aria-label="Cash on delivery order"
+                      >
+                        <button
+                          type="button"
+                          className="button button-outline dialog-close"
+                          onClick={() => dialog.current?.close()}
+                        >
+                          Close order form
+                        </button>
+                        {checkoutForm}
+                      </dialog>
+                    </>
+                  ) : (
+                    checkoutForm
                   )}
-                  <label>
-                    Quantity
-                    <input
-                      disabled={pending}
-                      name="quantity"
-                      type="number"
-                      min={1}
-                      max={20}
-                      required
-                      value={quantity}
-                      onChange={(e) => setQuantity(Number(e.target.value))}
-                    />
-                  </label>
-                  <label>
-                    Full name
-                    <input
-                      name="name"
-                      autoComplete="name"
-                      required
-                      disabled={pending}
-                      minLength={2}
-                      maxLength={150}
-                    />
-                  </label>
-                  <label>
-                    {config.phoneLabel}
-                    <input
-                      name="phone"
-                      disabled={pending}
-                      type="tel"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      required
-                      maxLength={40}
-                      placeholder={
-                        config.callingCode
-                          ? `+${config.callingCode}…`
-                          : "International phone number"
-                      }
-                    />
-                  </label>
-                  <div className="form-row">
-                    <label>
-                      {config.regionLabel}
-                      <input
-                        disabled={pending}
-                        name="region"
-                        autoComplete="address-level1"
-                        required={config.regionRequired}
-                        minLength={config.regionRequired ? 2 : undefined}
-                        maxLength={150}
-                      />
-                    </label>
-                    <label>
-                      {config.cityLabel}
-                      <input
-                        disabled={pending}
-                        name="city"
-                        autoComplete="address-level2"
-                        required={config.cityRequired}
-                        minLength={config.cityRequired ? 2 : undefined}
-                        maxLength={150}
-                      />
-                    </label>
-                  </div>
-                  <label>
-                    {config.addressLabel}
-                    <textarea
-                      disabled={pending}
-                      name="address"
-                      autoComplete="street-address"
-                      required={config.addressRequired}
-                      minLength={config.addressRequired ? 5 : undefined}
-                      maxLength={500}
-                    />
-                  </label>
-                  <div className="public-total">
-                    <span>
-                      Total · Delivery fee:{" "}
-                      {formatMoney(0, selected.currency, config.locale)}
-                    </span>
-                    <strong>
-                      {Number.isSafeInteger(quantity) &&
-                      quantity > 0 &&
-                      quantity <= 20
-                        ? formatMoney(
-                            BigInt(selected.priceMinor) * BigInt(quantity),
-                            selected.currency,
-                            config.locale,
-                          )
-                        : "—"}
-                    </strong>
-                  </div>
-                  {error && (
-                    <p className="form-error" role="alert" id="checkout-error">
-                      {error}
-                    </p>
+                  {pageSettings.trustBadges && (
+                    <ul className="trust-badge-list">
+                      {[...pageSettings.badges]
+                        .filter((b) => b.enabled)
+                        .sort((a, b) => a.order - b.order)
+                        .map((b) => {
+                          const Icon = {
+                            cash: Banknote,
+                            truck: Truck,
+                            shield: ShieldCheck,
+                            return: RotateCcw,
+                          }[b.icon];
+                          return (
+                            <li key={b.id}>
+                              <Icon size={18} aria-hidden="true" />
+                              {b.label}
+                            </li>
+                          );
+                        })}
+                    </ul>
                   )}
-                  <button
-                    className="button button-green public-submit"
-                    disabled={pending || preview}
-                  >
-                    {pending ? "Placing order…" : product.ctaLabel}
-                  </button>
-                  <p className="muted">Payment is due on delivery.</p>
-                </form>
+                </>
               )}
             </>
           )}
@@ -421,7 +548,7 @@ export function PublicProductView({
           )}
         </section>
       </div>
-      {selected && !receipt && (
+      {selected && !receipt && pageSettings.sticky && (
         <div className="public-sticky">
           <span>
             {formatMoney(
@@ -430,9 +557,14 @@ export function PublicProductView({
               config!.locale,
             )}
           </span>
-          <a href="#cod-checkout" className="button button-green">
-            {pending ? "Placing order…" : product.ctaLabel}
-          </a>
+          <button
+            type="button"
+            onClick={openOrder}
+            style={buttonStyle}
+            className="button button-green"
+          >
+            {pending ? "Placing order…" : buttonLabel}
+          </button>
         </div>
       )}
     </main>

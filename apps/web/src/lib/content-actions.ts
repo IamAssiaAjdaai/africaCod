@@ -73,7 +73,10 @@ export async function brandingAction(
     });
     revalidatePath(`/stores/${storeId}`);
     revalidatePath("/stores");
-    return { success: "Store branding saved." };
+    return {
+      success:
+        "Branding draft saved. Publish Store settings to update the public Store.",
+    };
   } catch (error) {
     return failure(error);
   }
@@ -99,7 +102,10 @@ export async function logoAction(
       mediaStorage(),
     );
     revalidatePath(`/stores/${storeId}`);
-    return { success: "Logo saved." };
+    return {
+      success:
+        "Logo draft saved. Publish Store settings to update the public Store.",
+    };
   } catch (error) {
     return failure(error);
   }

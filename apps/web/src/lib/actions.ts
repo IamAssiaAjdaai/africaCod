@@ -55,6 +55,7 @@ export async function addMarketAction(
       countryCode: data.get("countryCode"),
     });
     revalidatePath(`/stores/${market.storeId}`);
+    revalidatePath(`/stores/${market.storeId}/settings`);
     revalidatePath("/dashboard");
     return { success: "Market added." };
   } catch (error) {
@@ -73,6 +74,7 @@ export async function setMarketStatusAction(
       status: data.get("status"),
     });
     revalidatePath(`/stores/${market.storeId}`);
+    revalidatePath(`/stores/${market.storeId}/settings`);
     revalidatePath("/dashboard");
     return {
       success:

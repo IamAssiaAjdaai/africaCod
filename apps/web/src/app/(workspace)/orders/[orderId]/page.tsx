@@ -84,6 +84,37 @@ export default async function OrderDetail({
           market within 24 hours. The order was accepted.
         </p>
       )}
+      {(order.customFieldSnapshots.length > 0 ||
+        order.whatsapp ||
+        order.notes) && (
+        <section className="panel" aria-label="Additional order details">
+          <h2>Additional order details</h2>
+          <dl className="order-custom-fields">
+            {order.whatsapp && (
+              <>
+                <dt>WhatsApp</dt>
+                <dd>{order.whatsapp}</dd>
+              </>
+            )}
+            {order.notes && (
+              <>
+                <dt>Notes</dt>
+                <dd>{order.notes}</dd>
+              </>
+            )}
+            {order.customFieldSnapshots.map((field) => (
+              <div key={field.id}>
+                <dt>{field.label}</dt>
+                <dd>{field.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="muted">
+            Captured at checkout. Later Store field edits do not change these
+            values.
+          </p>
+        </section>
+      )}
       <nav className="section-nav" aria-label="Order sections">
         <a href="#customer">Customer & Address</a>
         <a href="#items">Items</a>

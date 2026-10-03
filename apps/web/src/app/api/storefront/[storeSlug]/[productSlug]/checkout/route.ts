@@ -20,14 +20,15 @@ async function handlePOST(
     );
   let raw: string;
   try {
-    raw = await boundedText(request, 16384);
+    // Bounded maximum accommodates eight 2,000-character custom fields, notes and Unicode attribution.
+    raw = await boundedText(request, 131072);
   } catch {
     return Response.json(
       { error: "Checkout details are too long." },
       { status: 413 },
     );
   }
-  if (raw.length > 16384)
+  if (raw.length > 131072)
     return Response.json(
       { error: "Checkout details are too long." },
       { status: 413 },

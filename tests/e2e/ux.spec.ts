@@ -289,6 +289,7 @@ test("coherent merchant navigation and mobile customer checkout", async ({
     .analyze();
   expect.soft(checkoutAccessibility.violations, "Public checkout").toEqual([]);
   await customer
+    .locator("#cod-checkout")
     .getByRole("button", { name: "Order with cash on delivery", exact: true })
     .click();
   await expect(
