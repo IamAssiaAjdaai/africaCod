@@ -21,7 +21,6 @@ import {
   orderEvents,
   orderAttribution,
 } from "@africacod/db";
-import "@africacod/shared";
 import { StorefrontService, defaultPageConfig } from "./storefront";
 const url = process.env.TEST_DATABASE_URL;
 if (!url || !new URL(url).pathname.endsWith("_test"))

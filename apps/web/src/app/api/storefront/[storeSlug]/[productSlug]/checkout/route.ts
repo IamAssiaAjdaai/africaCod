@@ -1,3 +1,4 @@
+import { withRateLimit } from "@/lib/rate-limit";
 import { boundedText } from "@/lib/request-body";
 import { readConsent, consentCookieName } from "@/lib/consent";
 import { logEvent } from "@africacod/shared";
@@ -5,7 +6,7 @@ import { DomainError } from "@africacod/domain";
 import { cookies } from "next/headers";
 import { ZodError } from "zod";
 import { storefront } from "@/lib/server";
-export async function POST(
+async function handlePOST(
   request: Request,
   { params }: { params: Promise<{ storeSlug: string; productSlug: string }> },
 ) {
@@ -93,3 +94,6 @@ export async function POST(
     );
   }
 }
+
+export const runtime = "nodejs";
+export const POST = withRateLimit("checkout", handlePOST);

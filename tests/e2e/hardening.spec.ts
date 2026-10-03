@@ -67,4 +67,26 @@ test("Auth accessibility, safe health endpoints and security headers", async ({
     data: "x".repeat(2000),
   });
   expect(oversize.status()).toBe(413);
+  // A separate staging proxy identity keeps this saturation check independent
+  // of merchant lifecycle traffic. Unknown storefront requests create no Orders.
+  for (let attempt = 0; attempt < 31; attempt++) {
+    const limited = await request.post(
+      "/api/storefront/unknown/unknown/checkout",
+      {
+        headers: {
+          Origin: "http://localhost:3100",
+          "x-real-ip": "192.0.2.55",
+          "Idempotency-Key": crypto.randomUUID(),
+        },
+        data: {},
+      },
+    );
+    if (attempt < 30) expect([400, 404]).toContain(limited.status());
+    else {
+      expect(limited.status()).toBe(429);
+      expect(limited.headers()["retry-after"]).toBe("60");
+      expect(limited.headers()["cache-control"]).toBe("no-store");
+      expect(limited.headers()["x-request-id"]).toMatch(/^[a-f0-9-]{36}$/);
+    }
+  }
 });

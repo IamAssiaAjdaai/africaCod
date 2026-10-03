@@ -1,4 +1,5 @@
-import "../packages/shared/src/index";
+import { loadRootEnvironment } from "../packages/shared/src/node";
+loadRootEnvironment();
 const testUrl = process.env.TEST_DATABASE_URL;
 const applicationUrl = process.env.DATABASE_URL;
 if (process.env.APP_ENV === "production" || !testUrl || !applicationUrl)

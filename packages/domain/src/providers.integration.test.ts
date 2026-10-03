@@ -33,7 +33,6 @@ import {
   providerStatusEvents,
   providerTestShipments,
 } from "@africacod/db";
-import "@africacod/shared";
 import { defaultPageConfig } from "./storefront";
 import { ProviderService } from "./integrations/service";
 import { DatabaseMockRemote } from "./integrations/mock-remote";

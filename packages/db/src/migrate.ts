@@ -1,7 +1,9 @@
+import { loadRootEnvironment } from "@africacod/shared/node";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { fileURLToPath } from "node:url";
 import { createDatabase } from "./index";
 import { getDatabaseEnvironment } from "@africacod/shared";
+loadRootEnvironment();
 const { db, client } = createDatabase(getDatabaseEnvironment().DATABASE_URL);
 try {
   await migrate(db, {

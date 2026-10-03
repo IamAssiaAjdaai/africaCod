@@ -16,7 +16,6 @@ import {
   productMarketOffers,
   contentPages,
 } from "@africacod/db";
-import "@africacod/shared";
 import { ContentService } from "./content";
 import { AppsService } from "./apps";
 import { defaultPageConfig } from "./storefront";

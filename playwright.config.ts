@@ -23,6 +23,7 @@ export default defineConfig({
   webServer: {
     env: {
       APP_ENV: "staging",
+      CLIENT_IP_HEADER: "x-real-ip",
       PORT: "3100",
       BETTER_AUTH_URL: "http://localhost:3100",
       CONSENT_MODE: "merchant-managed",

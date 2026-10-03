@@ -1,3 +1,4 @@
+import { withRateLimit } from "@/lib/rate-limit";
 import { getAuth } from "@africacod/auth";
 import { logEvent } from "@africacod/shared";
 import { boundedText, BodyTooLarge } from "@/lib/request-body";
@@ -18,7 +19,7 @@ async function handle(request: Request) {
 export function GET(request: Request) {
   return handle(request);
 }
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   let body: string;
   try {
     body = await boundedText(request, 16384);
@@ -39,3 +40,6 @@ export async function POST(request: Request) {
     }),
   );
 }
+
+export const runtime = "nodejs";
+export const POST = withRateLimit("auth", handlePOST);

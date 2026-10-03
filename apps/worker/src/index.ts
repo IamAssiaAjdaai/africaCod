@@ -1,3 +1,4 @@
+import { loadRootEnvironment } from "@africacod/shared/node";
 import { logEvent } from "@africacod/shared";
 import { AbuseService } from "@africacod/domain";
 import { oauthStates } from "@africacod/db";
@@ -7,6 +8,7 @@ import { VisitorService } from "@africacod/domain";
 import { createDatabase } from "@africacod/db";
 import { ProviderService, TrackingService } from "@africacod/domain";
 import { getDatabaseEnvironment } from "@africacod/shared";
+loadRootEnvironment();
 const runtime = runtimeEnvironment();
 const { db, client } = createDatabase(getDatabaseEnvironment().DATABASE_URL);
 const service = new ProviderService(db, {

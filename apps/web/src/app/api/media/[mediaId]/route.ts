@@ -1,9 +1,10 @@
+import { withRateLimit } from "@/lib/rate-limit";
 import { DomainError } from "@africacod/domain";
 import { logEvent } from "@africacod/shared";
 import { z } from "zod";
 import { catalog, readSession } from "@/lib/server";
 import { mediaStorage } from "@/lib/media-storage";
-export async function GET(
+async function handleGET(
   _request: Request,
   { params }: { params: Promise<{ mediaId: string }> },
 ) {
@@ -51,3 +52,6 @@ export async function GET(
     });
   }
 }
+
+export const runtime = "nodejs";
+export const GET = withRateLimit("media", handleGET);

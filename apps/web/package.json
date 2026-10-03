@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "tsx src/cli.ts dev",
     "build": "tsx src/cli.ts build",
     "start": "tsx src/cli.ts start",
     "typecheck": "tsc --noEmit"

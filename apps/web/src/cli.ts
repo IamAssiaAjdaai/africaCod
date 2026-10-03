@@ -1,8 +1,10 @@
+import { loadRootEnvironment } from "@africacod/shared/node";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { runtimeEnvironment, logEvent } from "@africacod/shared";
 // Next.js may initialize instrumentation lazily. Validate before starting its CLI/listener.
+loadRootEnvironment();
 const env = runtimeEnvironment();
 process.env.APP_ENV = env.APP_ENV;
 const require = createRequire(resolve(process.cwd(), "package.json"));

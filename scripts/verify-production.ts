@@ -1,9 +1,11 @@
+import { loadRootEnvironment } from "../packages/shared/src/node";
 import { randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import {
   validateRuntime,
   getDatabaseEnvironment,
 } from "../packages/shared/src/index";
+loadRootEnvironment();
 const database = new URL(getDatabaseEnvironment().DATABASE_URL);
 database.searchParams.set("sslmode", "require");
 const env = {

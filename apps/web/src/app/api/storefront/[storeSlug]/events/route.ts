@@ -1,9 +1,10 @@
+import { withRateLimit } from "@/lib/rate-limit";
 import { boundedText, BodyTooLarge } from "@/lib/request-body";
 import { cookies } from "next/headers";
 import { readConsent, consentCookieName } from "@/lib/consent";
 import { NextResponse } from "next/server";
 import { visitors } from "@/lib/server";
-export async function POST(
+async function handlePOST(
   request: Request,
   { params }: { params: Promise<{ storeSlug: string }> },
 ) {
@@ -38,3 +39,6 @@ export async function POST(
     );
   }
 }
+
+export const runtime = "nodejs";
+export const POST = withRateLimit("observation", handlePOST);

@@ -40,7 +40,6 @@ import {
   sheetsTestRows,
   trackingAttempts,
 } from "@africacod/db";
-import "@africacod/shared";
 import { defaultPageConfig } from "./storefront";
 import { VisitorService } from "./visitors";
 import { TrackingService } from "./tracking/service";

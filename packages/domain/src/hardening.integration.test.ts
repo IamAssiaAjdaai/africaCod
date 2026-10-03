@@ -12,7 +12,6 @@ import {
   trackingConnections,
   rateLimitBuckets,
 } from "@africacod/db";
-import "@africacod/shared";
 import { GoogleSheetsService } from "./tracking/oauth";
 import { AbuseService, abuseKey } from "./abuse";
 const url = process.env.TEST_DATABASE_URL;

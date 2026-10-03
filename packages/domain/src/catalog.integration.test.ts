@@ -16,7 +16,6 @@ import {
   productMedia,
   productMarketOffers,
 } from "@africacod/db";
-import "@africacod/shared";
 import { CatalogService, type MediaStorage } from "./index";
 const testUrl = process.env.TEST_DATABASE_URL;
 if (!testUrl || !new URL(testUrl).pathname.endsWith("_test"))

@@ -1,9 +1,11 @@
+import { loadRootEnvironment } from "../packages/shared/src/node";
 import { randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 import { migrate } from "../packages/db/node_modules/drizzle-orm/postgres-js/migrator";
 import { createDatabase, seedCountries } from "../packages/db/src/index";
 import { getDatabaseEnvironment } from "../packages/shared/src/index";
+loadRootEnvironment();
 const url = new URL(getDatabaseEnvironment().DATABASE_URL);
 if (
   process.env.APP_ENV === "production" ||

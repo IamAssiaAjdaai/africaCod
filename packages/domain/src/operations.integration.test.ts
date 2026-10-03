@@ -26,7 +26,6 @@ import {
   shipments,
   shipmentEvents,
 } from "@africacod/db";
-import "@africacod/shared";
 import { defaultPageConfig } from "./storefront";
 import { OperationsService } from "./operations";
 const url = process.env.TEST_DATABASE_URL;

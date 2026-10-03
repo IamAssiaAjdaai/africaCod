@@ -1,3 +1,4 @@
+import { loadRootEnvironment } from "../packages/shared/src/node";
 import {
   mkdtemp,
   mkdir,
@@ -12,6 +13,7 @@ import { migrate } from "../packages/db/node_modules/drizzle-orm/postgres-js/mig
 import { createDatabase, seedCountries } from "../packages/db/src/index";
 import { getDatabaseEnvironment } from "../packages/shared/src/index";
 import { sql } from "../packages/db/node_modules/drizzle-orm";
+loadRootEnvironment();
 const url = new URL(getDatabaseEnvironment().DATABASE_URL);
 if (
   process.env.APP_ENV === "production" ||

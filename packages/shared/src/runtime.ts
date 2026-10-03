@@ -89,7 +89,7 @@ export function validateRuntime(source: Record<string, string | undefined>) {
         env.GOOGLE_CLIENT_SECRET.length < 16) ||
       env.PROVIDER_CREDENTIALS_KEY === env.INTEGRATION_CREDENTIALS_KEY ||
       [env.INTEGRATION_CREDENTIALS_KEY, env.PROVIDER_CREDENTIALS_KEY].some(
-        (v) => new Set(Buffer.from(v!, "base64")).size < 8,
+        (v) => new Set(atob(v!)).size < 8,
       )
     )
       throw new Error("Production secrets must be independently generated.");

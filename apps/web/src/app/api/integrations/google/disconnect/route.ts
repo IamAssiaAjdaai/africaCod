@@ -1,6 +1,7 @@
+import { withRateLimit } from "@/lib/rate-limit";
 import { boundedText } from "@/lib/request-body";
 import { requireSession, googleSheets } from "@/lib/server";
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   if (request.headers.get("origin") !== new URL(request.url).origin)
     return new Response("Invalid origin", { status: 403 });
   const { user } = await requireSession();
@@ -20,3 +21,6 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const runtime = "nodejs";
+export const POST = withRateLimit("action", handlePOST);

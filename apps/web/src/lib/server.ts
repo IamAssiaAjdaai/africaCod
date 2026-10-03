@@ -1,3 +1,4 @@
+import { enforceActionRateLimit } from "./rate-limit";
 import { runtimeEnvironment, logEvent } from "@africacod/shared";
 import "server-only";
 import { VisitorService } from "@africacod/domain";
@@ -30,6 +31,7 @@ export async function readSession() {
   }
 }
 export async function requireSession() {
+  await enforceActionRateLimit();
   const session = await readSession();
   if (!session) redirect("/sign-in");
   return session;

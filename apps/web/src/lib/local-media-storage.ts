@@ -2,7 +2,6 @@ import "server-only";
 import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { MediaStorage } from "@africacod/domain";
-import "@africacod/shared";
 // Runtime uploads stay within this app’s data directory, outside public assets.
 const directory = join(process.cwd(), ".data", "media");
 function path(key: string) {

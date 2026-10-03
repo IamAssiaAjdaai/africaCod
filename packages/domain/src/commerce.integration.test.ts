@@ -13,7 +13,6 @@ import {
   storeMarkets,
 } from "@africacod/db";
 import { countryCatalog } from "@africacod/markets";
-import "@africacod/shared";
 import { CommerceService } from "./index";
 const testUrl = process.env.TEST_DATABASE_URL;
 if (!testUrl || !new URL(testUrl).pathname.endsWith("_test"))

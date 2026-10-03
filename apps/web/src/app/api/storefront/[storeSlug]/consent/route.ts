@@ -1,9 +1,10 @@
+import { withRateLimit } from "@/lib/rate-limit";
 import { boundedText } from "@/lib/request-body";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { runtimeEnvironment } from "@africacod/shared";
 import { consentCookieName, encodeConsent } from "@/lib/consent";
-export async function POST(
+async function handlePOST(
   request: Request,
   { params }: { params: Promise<{ storeSlug: string }> },
 ) {
@@ -46,3 +47,6 @@ export async function POST(
     );
   }
 }
+
+export const runtime = "nodejs";
+export const POST = withRateLimit("action", handlePOST);
