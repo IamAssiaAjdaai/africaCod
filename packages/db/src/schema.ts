@@ -2,7 +2,10 @@ import type {
   PageConfig,
   CheckoutConfiguration,
   PublishedContent,
+  StoreSettings,
+  OrderFieldSnapshot,
 } from "@africacod/validation";
+import { defaultStoreSettings } from "@africacod/validation";
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -134,6 +137,19 @@ export const stores = pgTable(
       .references(() => organizations.id),
     name: varchar("name", { length: 100 }).notNull(),
     slug: varchar("slug", { length: 63 }).notNull().unique(),
+    draftSettings: jsonb("draft_settings")
+      .$type<StoreSettings>()
+      .notNull()
+      .default(defaultStoreSettings()),
+    publishedSettings: jsonb("published_settings")
+      .$type<StoreSettings>()
+      .notNull()
+      .default(defaultStoreSettings()),
+    settingsRevision: integer("settings_revision").notNull().default(0),
+    publishedRevision: integer("published_revision").notNull().default(0),
+    settingsPublishedAt: timestamp("settings_published_at", {
+      withTimezone: true,
+    }),
     logo: text("logo"),
     tagline: varchar("tagline", { length: 200 }),
     contactEmail: varchar("contact_email", { length: 200 }),
@@ -142,6 +158,10 @@ export const stores = pgTable(
     ...dates(),
   },
   (t) => [
+    check(
+      "store_settings_revisions_valid",
+      sql`${t.settingsRevision} >= 0 AND ${t.publishedRevision} >= 0 AND ${t.publishedRevision} <= ${t.settingsRevision}`,
+    ),
     unique("stores_id_org_unique").on(t.id, t.organizationId),
     index("stores_org_idx").on(t.organizationId),
   ],
@@ -475,6 +495,12 @@ export const orders = pgTable(
     region: text("region").notNull(),
     city: text("city").notNull(),
     address: text("address").notNull(),
+    customFieldSnapshots: jsonb("custom_field_snapshots")
+      .$type<OrderFieldSnapshot[]>()
+      .notNull()
+      .default([]),
+    whatsapp: text("whatsapp").notNull().default(""),
+    notes: text("notes").notNull().default(""),
     subtotalMinor: bigint("subtotal_minor", { mode: "number" }).notNull(),
     shippingFeeMinor: bigint("shipping_fee_minor", { mode: "number" })
       .default(0)
@@ -489,6 +515,10 @@ export const orders = pgTable(
     ...dates(),
   },
   (t) => [
+    check(
+      "order_custom_fields_bounded",
+      sql`jsonb_typeof(${t.customFieldSnapshots}) = 'array' AND jsonb_array_length(${t.customFieldSnapshots}) <= 8`,
+    ),
     unique("order_store_idempotency_unique").on(
       t.storeId,
       t.checkoutIdempotencyKey,
@@ -872,6 +902,9 @@ export const shipments = pgTable(
     ...dates(),
   },
   (t) => [
+    index("shipments_org_delivered_date_idx")
+      .on(t.organizationId, t.deliveredAt)
+      .where(sql`${t.status} = 'delivered'`),
     unique("shipment_id_org_unique").on(t.id, t.organizationId),
     unique("shipment_provider_external_unique").on(
       t.providerConnectionId,
@@ -1417,5 +1450,30 @@ export const oauthStates = pgTable(
       foreignColumns: [stores.id, stores.organizationId],
     }),
     index("oauth_expiry_idx").on(t.expiresAt),
+  ],
+);
+
+export const storeAssets = pgTable(
+  "store_assets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    storeId: uuid("store_id").notNull(),
+    storageKey: text("storage_key").notNull().unique(),
+    mimeType: text("mime_type").notNull(),
+    bytes: integer("bytes"),
+    ...dates(),
+  },
+  (t) => [
+    foreignKey({
+      name: "store_asset_tenant_fk",
+      columns: [t.storeId, t.organizationId],
+      foreignColumns: [stores.id, stores.organizationId],
+    }),
+    index("store_assets_store_org_idx").on(t.storeId, t.organizationId),
+    check(
+      "store_asset_valid",
+      sql`(${t.bytes} IS NULL OR ${t.bytes} BETWEEN 1 AND 10485760) AND ${t.mimeType} IN ('image/png','image/jpeg','image/webp')`,
+    ),
   ],
 );

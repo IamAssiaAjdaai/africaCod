@@ -186,6 +186,12 @@ export const checkoutInput = z.object({
   address: z.string().trim().max(500).default(""),
   variantId: z.uuid().nullable().default(null),
   quantity: z.number().int().min(1).max(20),
+  whatsapp: z.string().trim().max(40).default(""),
+  notes: z.string().trim().max(2000).default(""),
+  customFields: z
+    .record(z.uuid(), z.string().max(2000))
+    .refine((v) => Object.keys(v).length <= 8)
+    .default({}),
   attribution: attributionInput.default({
     marketingConsent: false,
     utmSource: null,
@@ -256,3 +262,5 @@ export type ProviderHandoffSnapshot = {
   }[];
   source?: string;
 };
+
+export * from "./store-settings";

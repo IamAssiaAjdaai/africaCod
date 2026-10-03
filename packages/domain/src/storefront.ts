@@ -31,6 +31,8 @@ import {
   pageConfigInput,
   orderFiltersInput,
   type PageConfig,
+  storeSettingsInput,
+  snapshotOrderFields,
 } from "@africacod/validation";
 import { currencyDecimals } from "@africacod/shared/money";
 import { CatalogService } from "./catalog";
@@ -297,7 +299,8 @@ export class StorefrontService extends CatalogService {
     const config = page.publishedConfig!;
     // Explicit projection: no cost, tenant IDs, storage keys or prices for unselected markets.
     return {
-      storeName: store.name,
+      settings: storeSettingsInput.parse(store.publishedSettings),
+      storeName: store.publishedSettings.identity.name ?? store.name,
       storeSlug,
       productSlug,
       productName: config.productName,
@@ -426,6 +429,9 @@ export class StorefrontService extends CatalogService {
             region: value.region,
             city: value.city,
             address: value.address,
+            whatsapp: value.whatsapp,
+            notes: value.notes,
+            customFields: value.customFields,
           }),
         )
         .digest("hex");
@@ -503,6 +509,27 @@ export class StorefrontService extends CatalogService {
           .limit(1);
         if (!variant) throw unavailable();
       }
+      const [settingsRow] = await tx
+        .select({ settings: stores.publishedSettings })
+        .from(stores)
+        .where(eq(stores.id, store.id))
+        .for("share");
+      const settings = storeSettingsInput.parse(settingsRow.settings);
+      let customFieldSnapshots;
+      try {
+        customFieldSnapshots = snapshotOrderFields(
+          settings,
+          value.customFields,
+        );
+        for (const field of settings.productPage.fields)
+          if (field.enabled && field.required && !value[field.id].trim())
+            throw new Error(`${field.id} is required.`);
+      } catch (error) {
+        throw new DomainError(
+          "INVALID_INPUT",
+          error instanceof Error ? error.message : "Check order fields.",
+        );
+      }
       const total = BigInt(offer.priceMinor) * BigInt(value.quantity);
       if (total > BigInt(Number.MAX_SAFE_INTEGER))
         throw new DomainError("INVALID_INPUT", "Order total is too large.");
@@ -557,6 +584,9 @@ export class StorefrontService extends CatalogService {
           region: value.region,
           city: value.city,
           address: value.address,
+          whatsapp: value.whatsapp,
+          notes: value.notes,
+          customFieldSnapshots,
           subtotalMinor: Number(total),
           shippingFeeMinor: 0,
           totalMinor: Number(total),

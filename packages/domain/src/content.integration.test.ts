@@ -9,6 +9,7 @@ import {
   organizations,
   memberships,
   stores,
+  storeAssets,
   storeMarkets,
   categories,
   products,
@@ -16,6 +17,7 @@ import {
   productMarketOffers,
   contentPages,
 } from "@africacod/db";
+import { StoreSettingsService } from "./store-settings";
 import { ContentService } from "./content";
 import { AppsService } from "./apps";
 import { defaultPageConfig } from "./storefront";
@@ -150,6 +152,7 @@ afterAll(async () => {
       products,
       categories,
       storeMarkets,
+      storeAssets,
       stores,
       memberships,
     ])
@@ -350,6 +353,8 @@ describe.sequential(
         slug: "stolen",
         logo: "https://untrusted.example/logo",
       });
+      const current = await new StoreSettingsService(db).settings(a, storeId);
+      await new StoreSettingsService(db).publish(a, storeId, current.revision);
       const store = await service.getPublicStore(slug);
       expect(store).toMatchObject({
         name: "Glow Beauty",
@@ -388,13 +393,18 @@ describe.sequential(
         ),
       );
       await service.uploadStoreLogo(a, storeId, png, "image/png", storage);
+      const current = await new StoreSettingsService(db).settings(a, storeId);
+      await new StoreSettingsService(db).publish(a, storeId, current.revision);
       const first = await service.getPublicLogo(slug);
       expect(files.has(first.storageKey)).toBe(true);
-      expect((await service.getPublicStore(slug)).logoUrl).toBe(
-        `/s/${slug}/logo`,
+      expect((await service.getPublicStore(slug)).logoUrl).toEqual(
+        expect.stringContaining(`/s/${slug}/assets/`),
       );
       await service.uploadStoreLogo(a, storeId, png, "image/png", storage);
-      expect(files.has(first.storageKey)).toBe(false);
+      expect(files.has(first.storageKey)).toBe(true);
+      expect((await service.getPublicLogo(slug)).storageKey).toBe(
+        first.storageKey,
+      );
     });
     it("denies foreign page, branding, logo and store-scoped app operations", async () => {
       await Promise.all(

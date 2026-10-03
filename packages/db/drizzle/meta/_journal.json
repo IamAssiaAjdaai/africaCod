@@ -99,6 +99,13 @@
       "when": 1790979330812,
       "tag": "0013_provider_job_order_tenant",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791053829802,
+      "tag": "0014_store_settings_publication",
+      "breakpoints": true
     }
   ]
 }

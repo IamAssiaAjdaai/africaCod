@@ -1,5 +1,5 @@
-import { logEvent } from "@africacod/shared";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { StoreSettingsService } from "./store-settings";
+import { and, asc, desc, eq, sql, inArray } from "drizzle-orm";
 import { z } from "zod";
 import {
   stores,
@@ -14,11 +14,13 @@ import {
   contentPageInput,
   brandingInput,
   type PublishedContent,
+  storeSettingsInput,
+  type StoreSettings,
 } from "@africacod/validation";
 import { currencyDecimals } from "@africacod/shared/money";
 import { StorefrontService, marketToken } from "./storefront";
 import { DomainError } from "./commerce";
-import { validateImage, type MediaStorage } from "./media";
+import { type MediaStorage } from "./media";
 function conflict(error: unknown): never {
   if (error && typeof error === "object") {
     if ("code" in error && error.code === "23505")
@@ -174,17 +176,17 @@ export class ContentService extends StorefrontService {
   async updateBranding(userId: string | null, storeId: string, input: unknown) {
     const store = await this.getStore(userId, z.uuid().parse(storeId));
     const value = brandingInput.parse(input);
-    const [updated] = await this.db
-      .update(stores)
-      .set({ ...value, updatedAt: new Date() })
-      .where(
-        and(
-          eq(stores.id, store.id),
-          eq(stores.organizationId, store.organizationId),
-        ),
-      )
-      .returning();
-    return updated;
+    const settingsService = new StoreSettingsService(this.db);
+    await settingsService.saveDraft(
+      userId,
+      storeId,
+      {
+        ...store.draftSettings,
+        identity: { ...store.draftSettings.identity, ...value },
+      },
+      store.settingsRevision,
+    );
+    return this.getStore(userId, storeId);
   }
   async uploadStoreLogo(
     userId: string | null,
@@ -194,69 +196,57 @@ export class ContentService extends StorefrontService {
     storage: MediaStorage,
   ) {
     const store = await this.getStore(userId, z.uuid().parse(storeId));
-    let image;
+    const settingsService = new StoreSettingsService(this.db);
+    let asset;
     try {
-      image = validateImage(bytes, mimeType);
+      asset = await settingsService.uploadAsset(
+        userId,
+        storeId,
+        bytes,
+        mimeType,
+        storage,
+      );
     } catch (error) {
       throw new DomainError(
         "INVALID_INPUT",
         error instanceof Error ? error.message : "Invalid image.",
       );
     }
-    const key = `${crypto.randomUUID()}.${image.extension}`;
-    await storage.put(key, bytes, image.mimeType);
-    let previous: string | null = null;
-    try {
-      await this.db.transaction(async (tx) => {
-        const [current] = await tx
-          .select()
-          .from(stores)
-          .where(
-            and(
-              eq(stores.id, store.id),
-              eq(stores.organizationId, store.organizationId),
-            ),
-          )
-          .for("update");
-        previous = current.logo;
-        await tx
-          .update(stores)
-          .set({ logo: key, updatedAt: new Date() })
-          .where(eq(stores.id, current.id));
-      });
-    } catch (error) {
-      await storage.remove(key).catch(() => {});
-      throw error;
-    }
-    if (previous)
-      await storage
-        .remove(previous)
-        .catch(() => logEvent("error", "old_store_logo_cleanup_failed"));
+    await settingsService.saveDraft(
+      userId,
+      storeId,
+      {
+        ...store.draftSettings,
+        identity: { ...store.draftSettings.identity, logoLight: asset.id },
+      },
+      store.settingsRevision,
+    );
   }
   async getPublicLogo(storeSlug: string) {
     const [store] = await this.db
-      .select({ logo: stores.logo })
+      .select({ settings: stores.publishedSettings })
       .from(stores)
       .where(and(eq(stores.slug, storeSlug), eq(stores.status, "active")))
       .limit(1);
-    if (!store?.logo || !/^[0-9a-f-]{36}\.(png|jpg|webp)$/.test(store.logo))
-      throw new DomainError("NOT_FOUND", "Logo not found.");
-    return {
-      storageKey: store.logo,
-      mimeType: store.logo.endsWith("png")
-        ? "image/png"
-        : store.logo.endsWith("webp")
-          ? "image/webp"
-          : "image/jpeg",
-    };
+    if (store?.settings.identity.logoLight)
+      return new StoreSettingsService(this.db).publicAsset(
+        storeSlug,
+        store.settings.identity.logoLight,
+      );
+    throw new DomainError("NOT_FOUND", "Logo not found.");
   }
-  async getPublicStore(storeSlug: string) {
+
+  async getPublicStore(storeSlug: string, previewUser?: string) {
     const [store] = await this.db
       .select()
       .from(stores)
       .where(and(eq(stores.slug, storeSlug), eq(stores.status, "active")))
       .limit(1);
     if (!store) throw new DomainError("NOT_FOUND", "Store not found.");
+    if (previewUser) await this.getStore(previewUser, store.id);
+    const settings = storeSettingsInput.parse(
+      previewUser ? store.draftSettings : store.publishedSettings,
+    );
     const [markets, pages, categoryRows] = await Promise.all([
       this.db
         .select({
@@ -276,7 +266,7 @@ export class ContentService extends StorefrontService {
         )
         .orderBy(asc(storeMarkets.name)),
       this.db
-        .select({ content: contentPages.publishedContent })
+        .select({ id: contentPages.id, content: contentPages.publishedContent })
         .from(contentPages)
         .where(
           and(
@@ -303,13 +293,78 @@ export class ContentService extends StorefrontService {
         )
         .orderBy(asc(categories.sortOrder), asc(categories.name)),
     ]);
+    const base = `/s/${store.slug}`;
+    const targetUrl = (
+      target: StoreSettings["navigation"]["cta"]["target"],
+    ): string | null => {
+      switch (target.kind) {
+        case "home":
+          return base;
+        case "products":
+          return `${base}/products`;
+        case "url":
+          return target.url;
+        case "category": {
+          const category = categoryRows.find(
+            (c) =>
+              c.id === target.id &&
+              c.status === "active" &&
+              (!c.parentId ||
+                categoryRows.some(
+                  (p) => p.id === c.parentId && p.status === "active",
+                )),
+          );
+          return category ? `${base}/category/${category.slug}` : null;
+        }
+        case "page": {
+          const page = pages.find((p) => p.id === target.id && p.content);
+          return page ? `${base}/pages/${page.content!.slug}` : null;
+        }
+      }
+    };
+    const resolveLinks = (links: StoreSettings["navigation"]["header"]) =>
+      links.flatMap((l) => {
+        const url = targetUrl(l.target);
+        return url ? [{ id: l.id, label: l.label, url }] : [];
+      });
+    const assetUrl = (id: string | null) =>
+      id
+        ? previewUser
+          ? `/api/stores/${store.id}/assets/${id}`
+          : `${base}/assets/${id}`
+        : null;
     return {
-      name: store.name,
+      settings: {
+        ...settings,
+        identity: {
+          ...settings.identity,
+          logoLight: assetUrl(settings.identity.logoLight),
+          logoDark: assetUrl(settings.identity.logoDark),
+          favicon: assetUrl(settings.identity.favicon),
+          heroLight: assetUrl(settings.identity.heroLight),
+          heroDark: assetUrl(settings.identity.heroDark),
+        },
+        navigation: {
+          ...settings.navigation,
+          header: resolveLinks(settings.navigation.header),
+          footer: resolveLinks(settings.navigation.footer),
+          cta: {
+            enabled: settings.navigation.cta.enabled,
+            label: settings.navigation.cta.label,
+            url: targetUrl(settings.navigation.cta.target),
+          },
+        },
+      },
+      name: settings.identity.name ?? store.name,
       slug: store.slug,
-      tagline: store.tagline,
-      logoUrl: store.logo ? `/s/${store.slug}/logo` : null,
-      contactEmail: store.contactEmail,
-      contactPhone: store.contactPhone,
+      tagline: settings.identity.tagline,
+      logoUrl:
+        assetUrl(settings.identity.logoLight) ??
+        (store.logo && !store.settingsPublishedAt
+          ? `/s/${store.slug}/logo`
+          : null),
+      contactEmail: settings.identity.contactEmail,
+      contactPhone: settings.identity.contactPhone,
       markets: markets
         .filter((m) => {
           try {
@@ -384,8 +439,10 @@ export class ContentService extends StorefrontService {
     requestedMarket?: string,
     categorySlug?: string,
     page = 1,
+    previewUser?: string,
+    featured = false,
   ) {
-    const store = await this.getPublicStore(storeSlug);
+    const store = await this.getPublicStore(storeSlug, previewUser);
     const selected =
       requestedMarket !== undefined
         ? store.markets.find((m) => m.token === requestedMarket)
@@ -468,6 +525,14 @@ export class ContentService extends StorefrontService {
           selected.token.startsWith("custom:")
             ? eq(storeMarkets.customKey, selected.token.slice(7))
             : eq(storeMarkets.countryCode, selected.token),
+          featured && store.settings.featured.mode === "manual"
+            ? store.settings.featured.productIds.length
+              ? inArray(products.id, store.settings.featured.productIds)
+              : sql`false`
+            : undefined,
+          featured && store.settings.featured.mode === "category"
+            ? sql`EXISTS (SELECT 1 FROM categories fc WHERE fc.id = ${store.settings.featured.categoryId} AND fc.store_id = ${stores.id} AND fc.organization_id = ${stores.organizationId} AND fc.status = 'active' AND (fc.parent_id IS NULL OR EXISTS (SELECT 1 FROM categories fp WHERE fp.id = fc.parent_id AND fp.status = 'active' AND fp.store_id = fc.store_id AND fp.organization_id = fc.organization_id))) AND (${products.categoryId} = ${store.settings.featured.categoryId} OR ${products.subcategoryId} = ${store.settings.featured.categoryId})`
+            : undefined,
           category
             ? sql`(${products.categoryId} IN (SELECT id FROM categories WHERE store_id = ${stores.id} AND slug = ${category.slug}) OR ${products.subcategoryId} IN (SELECT id FROM categories WHERE store_id = ${stores.id} AND slug = ${category.slug}))`
             : undefined,
