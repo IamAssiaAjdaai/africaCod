@@ -142,6 +142,7 @@ beforeAll(async () => {
     await service.savePageDraft(a, product.id, defaultPageConfig(product, []));
     if (published) await service.publishPage(a, product.id);
   }
+  await new StoreSettingsService(db).publish(a, storeId, 0);
 });
 afterAll(async () => {
   for (const org of [orgA, orgB].filter(Boolean)) {

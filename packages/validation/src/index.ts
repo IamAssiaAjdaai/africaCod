@@ -7,6 +7,7 @@ export const storeInput = z.object({
   slug: z
     .string()
     .trim()
+    .toLowerCase()
     .min(3)
     .max(63)
     .regex(

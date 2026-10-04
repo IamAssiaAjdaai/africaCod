@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   stores,
@@ -6,6 +6,8 @@ import {
   categories,
   contentPages,
   products,
+  storeMarkets,
+  productMarketOffers,
 } from "@africacod/db";
 import { storeSettingsInput } from "@africacod/validation";
 import { CatalogService } from "./catalog";
@@ -153,6 +155,31 @@ export class StoreSettingsService extends CatalogService {
       );
     return this.settings(userId, store.id);
   }
+  async setup(userId: string | null, storeId: string) {
+    const store = await this.getStore(userId, storeId);
+    const [markets, products, offers] = await Promise.all([
+      this.listMarkets(userId, storeId),
+      this.listProducts(userId, storeId),
+      this.listOffers(userId),
+    ]);
+    const activeMarkets = markets.filter((m) => m.status === "active");
+    const activeProducts = products.filter((p) => p.status === "active");
+    const pricing = offers.some(
+      (o) =>
+        o.storeId === storeId &&
+        o.status === "active" &&
+        activeMarkets.some((m) => m.id === o.storeMarketId) &&
+        activeProducts.some((p) => p.id === o.productId),
+    );
+    return {
+      market: !!activeMarkets.length,
+      product: !!products.length,
+      activeProduct: !!activeProducts.length,
+      pricing,
+      customized: store.settingsRevision > 0,
+      published: !!store.settingsPublishedAt,
+    };
+  }
   async publish(userId: string | null, storeId: string, revision: number) {
     const store = await this.getStore(userId, z.uuid().parse(storeId));
     await this.db.transaction(async (tx) => {
@@ -178,6 +205,30 @@ export class StoreSettingsService extends CatalogService {
         throw new DomainError(
           "INVALID_INPUT",
           "Activate this Store before publishing.",
+        );
+      const [ready] = await tx
+        .select({ id: productMarketOffers.id })
+        .from(productMarketOffers)
+        .innerJoin(products, eq(products.id, productMarketOffers.productId))
+        .innerJoin(
+          storeMarkets,
+          eq(storeMarkets.id, productMarketOffers.storeMarketId),
+        )
+        .where(
+          and(
+            eq(productMarketOffers.storeId, store.id),
+            eq(productMarketOffers.organizationId, store.organizationId),
+            eq(productMarketOffers.status, "active"),
+            eq(products.status, "active"),
+            eq(storeMarkets.status, "active"),
+          ),
+        )
+        .limit(1)
+        .for("share");
+      if (!ready)
+        throw new DomainError(
+          "INVALID_INPUT",
+          "Before publishing: add an active Market and an active Product with an active Market offer.",
         );
       const settings = storeSettingsInput.parse(current.draftSettings);
       const assetIds = assetSlots.flatMap((slot) =>
@@ -346,6 +397,7 @@ export class StoreSettingsService extends CatalogService {
         and(
           eq(stores.slug, slug),
           eq(stores.status, "active"),
+          isNotNull(stores.settingsPublishedAt),
           eq(storeAssets.id, z.uuid().parse(assetId)),
         ),
       );

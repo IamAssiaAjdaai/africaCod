@@ -10,6 +10,7 @@ import {
   or,
   sql,
   count,
+  isNotNull,
 } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -209,6 +210,7 @@ export class StorefrontService extends CatalogService {
     storeSlug: string,
     productSlug: string,
     requestedMarket?: string,
+    previewUser?: string,
   ) {
     const [resolved] = await this.db
       .select({ store: stores, product: products, page: productPages })
@@ -232,6 +234,7 @@ export class StorefrontService extends CatalogService {
           eq(stores.slug, storeSlug),
           eq(products.slug, productSlug),
           eq(stores.status, "active"),
+          previewUser ? undefined : isNotNull(stores.settingsPublishedAt),
           eq(products.status, "active"),
           eq(productPages.status, "published"),
         ),
@@ -239,6 +242,7 @@ export class StorefrontService extends CatalogService {
       .limit(1);
     if (!resolved?.page.publishedConfig) throw unavailable();
     const { store, product, page } = resolved;
+    if (previewUser) await this.getStore(previewUser, store.id);
     const [available, variants] = await Promise.all([
       this.db
         .select({
@@ -359,6 +363,7 @@ export class StorefrontService extends CatalogService {
           eq(stores.slug, storeSlug),
           eq(products.slug, productSlug),
           eq(stores.status, "active"),
+          isNotNull(stores.settingsPublishedAt),
           eq(products.status, "active"),
           eq(productPages.status, "published"),
         ),
@@ -384,7 +389,7 @@ export class StorefrontService extends CatalogService {
         .where(eq(stores.slug, storeSlug))
         .for("share")
         .limit(1);
-      if (!store) throw unavailable();
+      if (!store?.settingsPublishedAt) throw unavailable();
       const [product] = await tx
         .select()
         .from(products)

@@ -25,7 +25,8 @@ export class VisitorService extends ContentService {
       .select()
       .from(stores)
       .where(and(eq(stores.slug, storeSlug), eq(stores.status, "active")));
-    if (!store) throw new DomainError("NOT_FOUND", "Store unavailable.");
+    if (!store?.settingsPublishedAt)
+      throw new DomainError("NOT_FOUND", "Store unavailable.");
     if (value.market) {
       const markets = await this.db
         .select()

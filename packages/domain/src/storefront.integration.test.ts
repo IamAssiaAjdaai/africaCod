@@ -1,3 +1,4 @@
+import { StoreSettingsService } from "./store-settings";
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
@@ -107,6 +108,7 @@ beforeAll(async () => {
     })
   ).id;
   await service.savePageDraft(a, productId, defaultPageConfig(product, []));
+  await new StoreSettingsService(db).publish(a, storeId, 0);
 });
 afterAll(async () => {
   for (const org of [orgA, orgB].filter(Boolean)) {

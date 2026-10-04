@@ -1,3 +1,4 @@
+import { StoreSettingsService } from "./store-settings";
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
@@ -120,6 +121,7 @@ beforeAll(async () => {
   await service.createVariant(a, { productId, name: "50 ml", sku: "SERUM-50" });
   await service.savePageDraft(a, productId, defaultPageConfig(product, []));
   await service.publishPage(a, productId);
+  await new StoreSettingsService(db).publish(a, storeId, 0);
 });
 afterAll(async () => {
   for (const org of [orgA, orgB].filter(Boolean)) {

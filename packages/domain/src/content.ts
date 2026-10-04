@@ -1,5 +1,5 @@
 import { StoreSettingsService } from "./store-settings";
-import { and, asc, desc, eq, sql, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, sql, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import {
   stores,
@@ -242,7 +242,8 @@ export class ContentService extends StorefrontService {
       .from(stores)
       .where(and(eq(stores.slug, storeSlug), eq(stores.status, "active")))
       .limit(1);
-    if (!store) throw new DomainError("NOT_FOUND", "Store not found.");
+    if (!store || (!previewUser && !store.settingsPublishedAt))
+      throw new DomainError("NOT_FOUND", "Store not found.");
     if (previewUser) await this.getStore(previewUser, store.id);
     const settings = storeSettingsInput.parse(
       previewUser ? store.draftSettings : store.publishedSettings,
@@ -410,7 +411,12 @@ export class ContentService extends StorefrontService {
         })),
     };
   }
-  async getPublicContentPage(storeSlug: string, pageSlug: string) {
+  async getPublicContentPage(
+    storeSlug: string,
+    pageSlug: string,
+    previewUser?: string,
+  ) {
+    if (previewUser) await this.getPublicStore(storeSlug, previewUser);
     const [row] = await this.db
       .select({ content: contentPages.publishedContent })
       .from(stores)
@@ -425,6 +431,7 @@ export class ContentService extends StorefrontService {
         and(
           eq(stores.slug, storeSlug),
           eq(stores.status, "active"),
+          previewUser ? undefined : isNotNull(stores.settingsPublishedAt),
           eq(contentPages.status, "published"),
           eq(contentPages.publishedSlug, pageSlug),
         ),

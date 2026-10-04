@@ -106,6 +106,7 @@ async function fixture(owner = a) {
   });
   await ops.savePageDraft(owner, product.id, defaultPageConfig(product, []));
   await ops.publishPage(owner, product.id);
+  await settings.publish(owner, store.id, 0);
   return { store, market, product, offer };
 }
 async function configure(
@@ -146,6 +147,67 @@ describe("Store draft publication and checkout boundaries", () => {
     expect(s.draft.theme.color).toBe("#147d64");
     expect(s.revision).toBe(0);
     expect(await settings.listMarkets(a, store.id)).toEqual([]);
+    expect(store.settingsPublishedAt).toBeNull();
+    await expect(content.getPublicStore(store.slug)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    expect((await content.getPublicStore(store.slug, a)).name).toBe(store.name);
+    await expect(settings.publish(a, store.id, 0)).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+    });
+    await expect(settings.setup(b, store.id)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    expect(await settings.setup(a, store.id)).toMatchObject({
+      market: false,
+      product: false,
+      pricing: false,
+      customized: false,
+      published: false,
+    });
+  });
+  it("first activation requires commerce readiness and preserves an unpublished Store", async () => {
+    const store = await settings.createStore(a, {
+      name: "Beauty Shop",
+      slug: `activation-${crypto.randomUUID()}`,
+    });
+    const market = await settings.addMarket(a, {
+      storeId: store.id,
+      countryCode: "KE",
+    });
+    const product = await settings.createProduct(a, {
+      storeId: store.id,
+      name: "Serum",
+      slug: "serum",
+      status: "draft",
+    });
+    await settings.createOffer(a, {
+      productId: product.id,
+      storeMarketId: market.id,
+      price: "3990",
+    });
+    await expect(settings.publish(a, store.id, 0)).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+    });
+    expect(
+      (await settings.getStore(a, store.id)).settingsPublishedAt,
+    ).toBeNull();
+    await expect(
+      ops.getPublicProduct(store.slug, product.slug, "KE"),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+  it("saving unchanged defaults completes customization without requiring cosmetics", async () => {
+    const f = await fixture();
+    const current = await settings.settings(a, f.store.id);
+    expect((await settings.setup(a, f.store.id)).customized).toBe(false);
+    await settings.saveDraft(a, f.store.id, current.draft, current.revision);
+    expect(await settings.setup(a, f.store.id)).toMatchObject({
+      market: true,
+      product: true,
+      pricing: true,
+      customized: true,
+      published: true,
+    });
   });
   it("Draft edits appear only in authenticated preview; publication updates one coherent snapshot", async () => {
     const f = await fixture();
