@@ -24,7 +24,7 @@ if (
   );
 url.pathname = "/postgres";
 const admin = createDatabase(url.toString());
-const suffix = `cp92_${Date.now()}`;
+const suffix = `cp93_${Date.now()}`;
 const folder = resolve("packages/db/drizzle");
 const previous = await mkdtemp(join(tmpdir(), "africacod-upgrade-"));
 const journal = JSON.parse(
@@ -58,19 +58,27 @@ try {
         );
       }
       await migrate(db, { migrationsFolder: folder });
+      // Verify the additive migration itself, before reseeding can repair metadata.
+      const [unclassified] = await db.execute<{ total: number }>(
+        sql`SELECT count(*)::int AS total FROM country_definitions WHERE continent IS NULL`,
+      );
+      if (unclassified.total !== 0)
+        throw new Error("Country continent migration backfill is incomplete.");
       await seedCountries(db);
       await seedCountries(db);
       const [counts] = await db.execute<{
         tables: number;
         countries: number;
+        african: number;
         stores: number;
         markets: number;
       }>(
-        sql`SELECT (SELECT count(*)::int FROM information_schema.tables WHERE table_schema='public') AS tables,(SELECT count(*)::int FROM country_definitions) AS countries,(SELECT count(*)::int FROM stores) AS stores,(SELECT count(*)::int FROM store_markets) AS markets`,
+        sql`SELECT (SELECT count(*)::int FROM information_schema.tables WHERE table_schema='public') AS tables,(SELECT count(*)::int FROM country_definitions) AS countries,(SELECT count(*)::int FROM country_definitions WHERE continent='AF' AND merchant_market_enabled) AS african,(SELECT count(*)::int FROM stores) AS stores,(SELECT count(*)::int FROM store_markets) AS markets`,
       );
       if (
         counts.tables !== 43 ||
         counts.countries !== 252 ||
+        counts.african !== 54 ||
         counts.stores !== (path === "upgrade" ? 1 : 0) ||
         counts.markets !== 0
       )
@@ -104,7 +112,7 @@ try {
           throw new Error("Existing Store publication was not preserved.");
       }
       console.info(
-        `${path}: 43 tables; 252 reference countries; no automatic markets; fixture preservation verified.`,
+        `${path}: 43 tables; 252 reference countries; 54 African picker countries; no automatic markets; fixture preservation verified.`,
       );
     } finally {
       await client.end();

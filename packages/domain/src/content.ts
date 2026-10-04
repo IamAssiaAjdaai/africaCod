@@ -453,7 +453,7 @@ export class ContentService extends StorefrontService {
     const selected =
       requestedMarket !== undefined
         ? store.markets.find((m) => m.token === requestedMarket)
-        : store.markets.length === 1
+        : previewUser || store.markets.length === 1
           ? store.markets[0]
           : undefined;
     const category = categorySlug

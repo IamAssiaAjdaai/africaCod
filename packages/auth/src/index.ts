@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { getDatabase } from "@africacod/db";
+import { getDatabase, ensureInitialWorkspace } from "@africacod/db";
 import * as schema from "@africacod/db/schema";
 import { getAuthEnvironment, logEvent } from "@africacod/shared";
 export function createAuth() {
@@ -11,6 +11,15 @@ export function createAuth() {
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
     database: drizzleAdapter(getDatabase(), { provider: "pg", schema }),
+    databaseHooks: {
+      user: {
+        create: {
+          after: async (user) => {
+            await ensureInitialWorkspace(getDatabase(), user.id);
+          },
+        },
+      },
+    },
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 10,

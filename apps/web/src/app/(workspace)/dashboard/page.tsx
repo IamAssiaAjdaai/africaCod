@@ -39,17 +39,25 @@ export default async function Dashboard({
     performance,
   ] = await Promise.all([
     ops.operationalMetrics(session.user.id),
-    ops.listOperationalOrders(session.user.id),
-    ops.listOperationalOrders(session.user.id, { status: "new" }),
-    ops.listOperationalOrders(session.user.id, { callbacks: "due" }),
-    ops.listOperationalOrders(session.user.id, {
-      status: "confirmed",
-      fulfillment: "ready",
-    }),
-    ops.listOperationalOrders(session.user.id, {
-      status: "confirmed",
-      fulfillment: "none",
-    }),
+    ops.listOperationalOrders(session.user.id, {}, 5),
+    ops.listOperationalOrders(session.user.id, { status: "new" }, 5),
+    ops.listOperationalOrders(session.user.id, { callbacks: "due" }, 5),
+    ops.listOperationalOrders(
+      session.user.id,
+      {
+        status: "confirmed",
+        fulfillment: "ready",
+      },
+      5,
+    ),
+    ops.listOperationalOrders(
+      session.user.id,
+      {
+        status: "confirmed",
+        fulfillment: "none",
+      },
+      5,
+    ),
     dashboard()
       .overview(session.user.id, {
         range: query.range ?? "7d",

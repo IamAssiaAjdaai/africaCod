@@ -419,3 +419,44 @@ describe.sequential(
     });
   },
 );
+
+it("initial workspace retries serialize, create Owner once and preserve existing memberships", async () => {
+  const existing = await service.organizationFor(a);
+  expect(await service.ensureInitialOrganization(a)).toEqual(existing);
+  const id = crypto.randomUUID();
+  await db
+    .insert(user)
+    .values({ id, name: "New merchant", email: `${id}@example.com` });
+  let workspaceId: string | undefined;
+  try {
+    const results = await Promise.all(
+      Array.from({ length: 4 }, () => service.ensureInitialOrganization(id)),
+    );
+    workspaceId = results[0].id;
+    expect(new Set(results.map((r) => r.id)).size).toBe(1);
+    expect(results.every((r) => r.role === "owner")).toBe(true);
+    expect(await service.listStores(id)).toEqual([]);
+    const rows = await db
+      .select()
+      .from(memberships)
+      .where(eq(memberships.userId, id));
+    expect(rows).toHaveLength(1);
+    expect(rows[0].role).toBe("owner");
+  } finally {
+    await db.delete(memberships).where(eq(memberships.userId, id));
+    if (workspaceId)
+      await db.delete(organizations).where(eq(organizations.id, workspaceId));
+    await db.delete(user).where(eq(user.id, id));
+  }
+});
+it("merchant catalog exposes Africa without deleting canonical countries or assigning Markets", async () => {
+  const african = await service.listMerchantCountries(a);
+  expect(african).toHaveLength(54);
+  for (const code of ["KE", "GH", "GN", "RW"])
+    expect(african.some((c) => c.code === code)).toBe(true);
+  expect(african.some((c) => c.code === "US")).toBe(false);
+  expect(await service.listCountries(a)).toHaveLength(252);
+  await expect(service.listMerchantCountries(null)).rejects.toMatchObject({
+    code: "UNAUTHENTICATED",
+  });
+});

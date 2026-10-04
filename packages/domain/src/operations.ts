@@ -589,7 +589,12 @@ export class OperationsService extends ContentService {
       callbackTiming: callbackTiming(callback),
     };
   }
-  async listOperationalOrders(userId: string | null, input: unknown = {}) {
+  async listOperationalOrders(
+    userId: string | null,
+    input: unknown = {},
+    pageSize = 20,
+  ) {
+    pageSize = z.number().int().min(1).max(20).parse(pageSize);
     const org = await this.tenant(userId),
       filter = operationalFiltersInput.parse(input);
     if (filter.storeId) await this.getStore(userId, filter.storeId);
@@ -633,7 +638,7 @@ export class OperationsService extends ContentService {
           )
         : undefined,
     );
-    const rows = await this.db
+    const rowsQuery = this.db
       .select({
         order: orders,
         storeName: stores.name,
@@ -676,9 +681,9 @@ export class OperationsService extends ContentService {
           : desc(orders.createdAt),
         desc(orders.id),
       )
-      .limit(20)
-      .offset((filter.page - 1) * 20);
-    const [total] = await this.db
+      .limit(pageSize)
+      .offset((filter.page - 1) * pageSize);
+    const totalQuery = this.db
       .select({ total: count() })
       .from(orders)
       .leftJoin(
@@ -696,7 +701,8 @@ export class OperationsService extends ContentService {
         ),
       )
       .where(conditions);
-    return { rows, total: total.total, page: filter.page, pageSize: 20 };
+    const [rows, [total]] = await Promise.all([rowsQuery, totalQuery]);
+    return { rows, total: total.total, page: filter.page, pageSize };
   }
   async operationalMetrics(userId: string | null) {
     const org = await this.tenant(userId);

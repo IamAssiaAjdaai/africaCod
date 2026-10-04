@@ -21,7 +21,7 @@ export function StoreShell({
   const market = query.get("market");
   const selected =
     store.markets.find((m) => m.token === market) ??
-    (market === null && store.markets.length === 1
+    (market === null && (previewBase || store.markets.length === 1)
       ? store.markets[0]
       : undefined);
   const consent = useTrackingConsent();
@@ -46,8 +46,8 @@ export function StoreShell({
         : path;
     return (
       target +
-      (market !== null
-        ? `${target.includes("?") ? "&" : "?"}market=${encodeURIComponent(market)}`
+      ((market ?? (previewBase ? selected?.token : undefined)) != null
+        ? `${target.includes("?") ? "&" : "?"}market=${encodeURIComponent(market ?? selected!.token)}`
         : "")
     );
   };
@@ -130,7 +130,7 @@ export function StoreShell({
             </a>
           )}
           <label>
-            Store market
+            {previewBase ? "Previewing:" : "Store market"}
             <select
               aria-label="Store market"
               value={selected?.token ?? ""}

@@ -25,7 +25,7 @@ export default async function StoreDetail({
     });
   const [markets, countries] = await Promise.all([
     service.listMarkets(session.user.id, store.id),
-    service.listCountries(session.user.id),
+    service.listMerchantCountries(session.user.id),
   ]);
   return (
     <>

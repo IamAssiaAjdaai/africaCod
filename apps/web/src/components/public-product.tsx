@@ -1,6 +1,5 @@
 "use client";
 import { Banknote, Truck, ShieldCheck, RotateCcw } from "lucide-react";
-import { defaultStoreSettings } from "@africacod/validation";
 import { type CSSProperties, useRef, useState, useEffect } from "react";
 import { type BrowserConnection } from "@africacod/domain/tracking-policy";
 import { useTrackingConsent } from "./tracking-consent";
@@ -19,7 +18,7 @@ export function PublicProductView({
   tracking?: BrowserConnection[];
 }) {
   const selected = product.selected;
-  const settings = product.settings ?? defaultStoreSettings();
+  const settings = product.settings;
   const pageSettings = settings.productPage;
   const dialog = useRef<HTMLDialogElement>(null);
   const errorNode = useRef<HTMLParagraphElement>(null);

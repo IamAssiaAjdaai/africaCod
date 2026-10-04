@@ -12,9 +12,6 @@ test("Storefront CMS navigation, branding, Apps discovery and COD remain market-
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page).toHaveURL(/\/onboarding/);
-  await page.getByLabel("Organization name").fill(`Catalog ${suffix}`);
-  await page.getByRole("button", { name: "Create organization" }).click();
   await expect(page).toHaveURL(/\/stores\/new$/);
   await page.goto("/stores/new");
   await page.getByLabel("Store name").fill("Glow Beauty");

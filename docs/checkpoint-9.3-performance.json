@@ -1,0 +1,882 @@
+{
+  "method": "Five Chrome browser warm full-document navigation samples per route; PostgreSQL statement markers count render/auth reads, not just Dashboard aggregation. Same isolated Store and Market with 30 seeded real Orders plus checkout probes. Optimized production artifact runs with local staging configuration and both test adapters disabled. Final production timing comparison disables query logging, matching the older production implementation. Zero query-marker entries in those runs mean instrumentation was disabled, not zero database reads. The small fixture grows through real probe checkouts between runs.",
+  "before": {
+    "development": [
+      {
+        "path": "/dashboard",
+        "coldMs": 15237,
+        "warmMs": [5713, 2352, 1582, 1588, 2372],
+        "queries": [36, 36, 36, 36, 36]
+      },
+      {
+        "path": "/stores/[storeId]/settings",
+        "coldMs": 8960,
+        "warmMs": [1854, 2549, 2012, 2614, 2434],
+        "queries": [50, 50, 50, 50, 50]
+      },
+      {
+        "path": "/products",
+        "coldMs": 11063,
+        "warmMs": [1559, 1651, 1208, 1454, 1346],
+        "queries": [19, 19, 19, 19, 19]
+      },
+      {
+        "path": "/orders",
+        "coldMs": 7065,
+        "warmMs": [1495, 1175, 1912, 1703, 1446],
+        "queries": [16, 16, 16, 16, 16]
+      },
+      {
+        "path": "/analytics",
+        "coldMs": 4124,
+        "warmMs": [1251, 1166, 816, 1234, 1209],
+        "queries": [14, 14, 14, 14, 14]
+      },
+      {
+        "path": "/s/profiling-store?market=KE",
+        "coldMs": 14752,
+        "warmMs": [4275, 1117, 2411, 926, 779],
+        "queries": [13, 13, 13, 13, 13]
+      },
+      {
+        "path": "/s/profiling-store/p/hair-serum?market=KE",
+        "coldMs": 23915,
+        "warmMs": [7837, 6586, 1199, 781, 1383],
+        "queries": [12, 12, 12, 12, 12]
+      }
+    ],
+    "production": [
+      {
+        "path": "/dashboard",
+        "coldMs": 2405,
+        "warmMs": [784, 778, 903, 737, 622],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "path": "/stores/[storeId]/settings",
+        "coldMs": 844,
+        "warmMs": [867, 748, 693, 685, 804],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "path": "/products",
+        "coldMs": 596,
+        "warmMs": [645, 596, 592, 538, 658],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "path": "/orders",
+        "coldMs": 797,
+        "warmMs": [866, 723, 981, 1045, 765],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "path": "/analytics",
+        "coldMs": 706,
+        "warmMs": [552, 680, 473, 503, 504],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "path": "/s/profiling-store?market=KE",
+        "coldMs": 794,
+        "warmMs": [671, 563, 605, 531, 596],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "path": "/s/profiling-store/p/hair-serum?market=KE",
+        "coldMs": 684,
+        "warmMs": [371, 599, 555, 412, 570],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "checkoutMs": [295, 134, 118, 140]
+      },
+      {
+        "saveDraftMs": 956
+      }
+    ],
+    "productionSoft": [
+      {
+        "checkoutMs": [298, 134, 100, 109]
+      },
+      {
+        "saveDraftMs": [1469, 1188, 597, 1089, 1082]
+      },
+      {
+        "softNavigation": [
+          {
+            "target": "/dashboard",
+            "samples": [
+              {
+                "ms": 1534,
+                "sameDocument": true
+              },
+              {
+                "ms": 399,
+                "sameDocument": true
+              },
+              {
+                "ms": 429,
+                "sameDocument": true
+              },
+              {
+                "ms": 434,
+                "sameDocument": true
+              },
+              {
+                "ms": 403,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/stores/[storeId]/settings",
+            "samples": [
+              {
+                "ms": 322,
+                "sameDocument": true
+              },
+              {
+                "ms": 316,
+                "sameDocument": true
+              },
+              {
+                "ms": 344,
+                "sameDocument": true
+              },
+              {
+                "ms": 334,
+                "sameDocument": true
+              },
+              {
+                "ms": 360,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/orders",
+            "samples": [
+              {
+                "ms": 373,
+                "sameDocument": true
+              },
+              {
+                "ms": 417,
+                "sameDocument": true
+              },
+              {
+                "ms": 489,
+                "sameDocument": true
+              },
+              {
+                "ms": 410,
+                "sameDocument": true
+              },
+              {
+                "ms": 379,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/s/profiling-store?market=KE",
+            "samples": [
+              {
+                "ms": 443,
+                "sameDocument": true
+              },
+              {
+                "ms": 844,
+                "sameDocument": true
+              },
+              {
+                "ms": 880,
+                "sameDocument": true
+              },
+              {
+                "ms": 959,
+                "sameDocument": true
+              },
+              {
+                "ms": 947,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/s/profiling-store/p/hair-serum?market=KE",
+            "samples": [
+              {
+                "ms": 455,
+                "sameDocument": true
+              },
+              {
+                "ms": 594,
+                "sameDocument": true
+              },
+              {
+                "ms": 506,
+                "sameDocument": true
+              },
+              {
+                "ms": 417,
+                "sameDocument": true
+              },
+              {
+                "ms": 392,
+                "sameDocument": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "productBundle": [
+      {
+        "jsBytes": 924961,
+        "path": "/s/profiling-store/p/hair-serum?market=KE",
+        "coldMs": 1692,
+        "warmMs": [843, 584, 257, 612, 572],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "checkoutMs": [218, 98, 102, 98]
+      },
+      {
+        "saveDraftMs": [954, 1072, 466, 1113, 470]
+      },
+      {
+        "softNavigation": []
+      }
+    ]
+  },
+  "after": {
+    "development": [
+      {
+        "path": "/dashboard",
+        "coldMs": 16463,
+        "warmMs": [2968, 1538, 1742, 1063, 972],
+        "queries": [25, 25, 25, 25, 25]
+      },
+      {
+        "path": "/stores/[storeId]/settings",
+        "coldMs": 7481,
+        "warmMs": [1248, 1600, 1088, 894, 1177],
+        "queries": [17, 17, 17, 17, 17]
+      },
+      {
+        "path": "/products",
+        "coldMs": 1394,
+        "warmMs": [927, 1527, 760, 667, 632],
+        "queries": [10, 10, 10, 10, 10]
+      },
+      {
+        "path": "/orders",
+        "coldMs": 1482,
+        "warmMs": [1261, 1591, 1675, 1553, 1565],
+        "queries": [9, 9, 9, 9, 9]
+      },
+      {
+        "path": "/analytics",
+        "coldMs": 3487,
+        "warmMs": [1638, 1702, 1618, 1682, 1856],
+        "queries": [8, 8, 8, 8, 8]
+      },
+      {
+        "path": "/s/profiling-store?market=KE",
+        "coldMs": 8698,
+        "warmMs": [1820, 2154, 1779, 1544, 1238],
+        "queries": [5, 5, 5, 5, 5]
+      },
+      {
+        "checkoutMs": [27668, 648, 244, 161]
+      },
+      {
+        "saveDraftMs": [8704, 1161, 1138, 1106, 1183]
+      },
+      {
+        "softNavigation": [
+          {
+            "target": "/dashboard",
+            "samples": [
+              {
+                "ms": 1661,
+                "sameDocument": true
+              },
+              {
+                "ms": 1390,
+                "sameDocument": true
+              },
+              {
+                "ms": 1010,
+                "sameDocument": true
+              },
+              {
+                "ms": 1025,
+                "sameDocument": true
+              },
+              {
+                "ms": 1089,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/stores/[storeId]/settings",
+            "samples": [
+              {
+                "ms": 1018,
+                "sameDocument": true
+              },
+              {
+                "ms": 732,
+                "sameDocument": true
+              },
+              {
+                "ms": 862,
+                "sameDocument": true
+              },
+              {
+                "ms": 859,
+                "sameDocument": true
+              },
+              {
+                "ms": 998,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/orders",
+            "samples": [
+              {
+                "ms": 1056,
+                "sameDocument": true
+              },
+              {
+                "ms": 461,
+                "sameDocument": true
+              },
+              {
+                "ms": 515,
+                "sameDocument": true
+              },
+              {
+                "ms": 460,
+                "sameDocument": true
+              },
+              {
+                "ms": 1187,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/s/profiling-store?market=KE",
+            "samples": [
+              {
+                "ms": 848,
+                "sameDocument": true
+              },
+              {
+                "ms": 1169,
+                "sameDocument": true
+              },
+              {
+                "ms": 597,
+                "sameDocument": true
+              },
+              {
+                "ms": 806,
+                "sameDocument": true
+              },
+              {
+                "ms": 1041,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/s/profiling-store/p/hair-serum?market=KE",
+            "samples": [
+              {
+                "ms": 850,
+                "sameDocument": true
+              },
+              {
+                "ms": 1266,
+                "sameDocument": true
+              },
+              {
+                "ms": 692,
+                "sameDocument": true
+              },
+              {
+                "ms": 1470,
+                "sameDocument": true
+              },
+              {
+                "ms": 1441,
+                "sameDocument": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "jsBytes": 0,
+        "path": "/s/profiling-store/p/hair-serum?market=KE",
+        "coldMs": 19475,
+        "warmMs": [2368, 1921, 1080, 1083, 1035],
+        "queries": [8, 8, 8, 8, 8]
+      }
+    ],
+    "developmentProbe": [
+      {
+        "jsBytes": 0,
+        "path": "/s/profiling-store/p/hair-serum?market=KE",
+        "coldMs": 19475,
+        "warmMs": [2368, 1921, 1080, 1083, 1035],
+        "queries": [8, 8, 8, 8, 8]
+      },
+      {
+        "checkoutMs": [6034, 772, 286, 125]
+      },
+      {
+        "saveDraftMs": [2049, 2084, 690, 1733, 1221]
+      },
+      {
+        "softNavigation": []
+      }
+    ],
+    "production": [
+      {
+        "jsBytes": 510475,
+        "path": "/dashboard",
+        "coldMs": 2458,
+        "warmMs": [764, 585, 814, 633, 569],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "jsBytes": 551738,
+        "path": "/stores/[storeId]/settings",
+        "coldMs": 650,
+        "warmMs": [570, 505, 713, 602, 617],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "jsBytes": 524541,
+        "path": "/products",
+        "coldMs": 650,
+        "warmMs": [267, 710, 498, 492, 522],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "jsBytes": 511150,
+        "path": "/orders",
+        "coldMs": 484,
+        "warmMs": [800, 567, 519, 706, 688],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "jsBytes": 509755,
+        "path": "/analytics",
+        "coldMs": 751,
+        "warmMs": [538, 485, 450, 449, 441],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "jsBytes": 486753,
+        "path": "/s/profiling-store?market=KE",
+        "coldMs": 475,
+        "warmMs": [757, 509, 574, 574, 565],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "jsBytes": 522995,
+        "path": "/s/profiling-store/p/hair-serum?market=KE",
+        "coldMs": 481,
+        "warmMs": [284, 575, 230, 262, 638],
+        "queries": [0, 0, 0, 0, 0]
+      },
+      {
+        "checkoutMs": [172, 104, 97, 77]
+      },
+      {
+        "saveDraftMs": [1949, 493, 593, 1155, 1249]
+      },
+      {
+        "softNavigation": [
+          {
+            "target": "/dashboard",
+            "samples": [
+              {
+                "ms": 467,
+                "sameDocument": true
+              },
+              {
+                "ms": 463,
+                "sameDocument": true
+              },
+              {
+                "ms": 402,
+                "sameDocument": true
+              },
+              {
+                "ms": 625,
+                "sameDocument": true
+              },
+              {
+                "ms": 441,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/stores/[storeId]/settings",
+            "samples": [
+              {
+                "ms": 343,
+                "sameDocument": true
+              },
+              {
+                "ms": 221,
+                "sameDocument": true
+              },
+              {
+                "ms": 366,
+                "sameDocument": true
+              },
+              {
+                "ms": 342,
+                "sameDocument": true
+              },
+              {
+                "ms": 308,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/orders",
+            "samples": [
+              {
+                "ms": 462,
+                "sameDocument": true
+              },
+              {
+                "ms": 403,
+                "sameDocument": true
+              },
+              {
+                "ms": 434,
+                "sameDocument": true
+              },
+              {
+                "ms": 368,
+                "sameDocument": true
+              },
+              {
+                "ms": 380,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/s/profiling-store?market=KE",
+            "samples": [
+              {
+                "ms": 968,
+                "sameDocument": true
+              },
+              {
+                "ms": 458,
+                "sameDocument": true
+              },
+              {
+                "ms": 863,
+                "sameDocument": true
+              },
+              {
+                "ms": 354,
+                "sameDocument": true
+              },
+              {
+                "ms": 868,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/s/profiling-store/p/hair-serum?market=KE",
+            "samples": [
+              {
+                "ms": 412,
+                "sameDocument": true
+              },
+              {
+                "ms": 369,
+                "sameDocument": true
+              },
+              {
+                "ms": 955,
+                "sameDocument": true
+              },
+              {
+                "ms": 872,
+                "sameDocument": true
+              },
+              {
+                "ms": 380,
+                "sameDocument": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "productionWithQueryLogging": [
+      {
+        "jsBytes": 510475,
+        "path": "/dashboard",
+        "coldMs": 1803,
+        "warmMs": [842, 807, 645, 572, 638],
+        "queries": [25, 25, 25, 25, 25]
+      },
+      {
+        "jsBytes": 551738,
+        "path": "/stores/[storeId]/settings",
+        "coldMs": 761,
+        "warmMs": [757, 2062, 2063, 1307, 772],
+        "queries": [21, 21, 21, 21, 21]
+      },
+      {
+        "jsBytes": 524541,
+        "path": "/products",
+        "coldMs": 752,
+        "warmMs": [417, 639, 757, 368, 847],
+        "queries": [10, 10, 10, 10, 10]
+      },
+      {
+        "jsBytes": 511150,
+        "path": "/orders",
+        "coldMs": 632,
+        "warmMs": [589, 560, 543, 680, 942],
+        "queries": [9, 9, 9, 9, 9]
+      },
+      {
+        "jsBytes": 509755,
+        "path": "/analytics",
+        "coldMs": 920,
+        "warmMs": [947, 574, 461, 408, 454],
+        "queries": [8, 8, 8, 8, 8]
+      },
+      {
+        "jsBytes": 486753,
+        "path": "/s/profiling-store?market=KE",
+        "coldMs": 354,
+        "warmMs": [608, 454, 565, 218, 770],
+        "queries": [42, 30, 31, 9, 37]
+      },
+      {
+        "jsBytes": 522995,
+        "path": "/s/profiling-store/p/hair-serum?market=KE",
+        "coldMs": 873,
+        "warmMs": [201, 622, 240, 553, 515],
+        "queries": [14, 46, 12, 38, 31]
+      },
+      {
+        "checkoutMs": [231, 171, 127, 135]
+      },
+      {
+        "saveDraftMs": [2646, 592, 598, 1202, 566]
+      },
+      {
+        "softNavigation": [
+          {
+            "target": "/dashboard",
+            "samples": [
+              {
+                "ms": 414,
+                "sameDocument": true
+              },
+              {
+                "ms": 1070,
+                "sameDocument": true
+              },
+              {
+                "ms": 1072,
+                "sameDocument": true
+              },
+              {
+                "ms": 995,
+                "sameDocument": true
+              },
+              {
+                "ms": 433,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/stores/[storeId]/settings",
+            "samples": [
+              {
+                "ms": 508,
+                "sameDocument": true
+              },
+              {
+                "ms": 341,
+                "sameDocument": true
+              },
+              {
+                "ms": 458,
+                "sameDocument": true
+              },
+              {
+                "ms": 274,
+                "sameDocument": true
+              },
+              {
+                "ms": 433,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/orders",
+            "samples": [
+              {
+                "ms": 622,
+                "sameDocument": true
+              },
+              {
+                "ms": 437,
+                "sameDocument": true
+              },
+              {
+                "ms": 400,
+                "sameDocument": true
+              },
+              {
+                "ms": 408,
+                "sameDocument": true
+              },
+              {
+                "ms": 427,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/s/profiling-store?market=KE",
+            "samples": [
+              {
+                "ms": 964,
+                "sameDocument": true
+              },
+              {
+                "ms": 984,
+                "sameDocument": true
+              },
+              {
+                "ms": 390,
+                "sameDocument": true
+              },
+              {
+                "ms": 863,
+                "sameDocument": true
+              },
+              {
+                "ms": 1136,
+                "sameDocument": true
+              }
+            ]
+          },
+          {
+            "target": "/s/profiling-store/p/hair-serum?market=KE",
+            "samples": [
+              {
+                "ms": 972,
+                "sameDocument": true
+              },
+              {
+                "ms": 963,
+                "sameDocument": true
+              },
+              {
+                "ms": 876,
+                "sameDocument": true
+              },
+              {
+                "ms": 899,
+                "sameDocument": true
+              },
+              {
+                "ms": 460,
+                "sameDocument": true
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "experiments": {
+    "webpack": [
+      {
+        "path": "/dashboard",
+        "coldMs": 10236,
+        "warmMs": [2799, 2646, 2941, 2332, 1979],
+        "queries": [25, 25, 25, 25, 25]
+      },
+      {
+        "path": "/stores/[storeId]/settings",
+        "coldMs": 25371,
+        "warmMs": [4619, 3989, 3177, 2741, 3295],
+        "queries": [17, 17, 17, 17, 17]
+      },
+      {
+        "path": "/products",
+        "coldMs": 8935,
+        "warmMs": [2395, 1574, 1999, 1687, 1770],
+        "queries": [10, 10, 10, 10, 10]
+      },
+      {
+        "path": "/orders",
+        "coldMs": 5389,
+        "warmMs": [3045, 2506, 3216, 2822, 2786],
+        "queries": [9, 9, 9, 9, 9]
+      },
+      {
+        "path": "/analytics",
+        "coldMs": 5115,
+        "warmMs": [3448, 2357, 2452, 2439, 2570],
+        "queries": [8, 8, 8, 8, 8]
+      },
+      {
+        "path": "/s/profiling-store?market=KE",
+        "coldMs": 55362,
+        "warmMs": [18992, 63751, 3623, 2071, 2093],
+        "queries": [5, 8, 5, 5, 5]
+      },
+      {
+        "path": "/s/profiling-store/p/hair-serum?market=KE",
+        "coldMs": 66876,
+        "warmMs": [18266, 3258, 2875, 2930, 2684],
+        "queries": [13, 19, 9, 17, 9]
+      },
+      {
+        "checkoutMs": [6351, 170, 159, 134]
+      },
+      {
+        "saveDraftMs": [3489, 590, 774, 538, 660]
+      },
+      {
+        "softNavigation": []
+      }
+    ],
+    "externalization": "180-second startup/auth timeout; discarded and not shipped. Port-conflicted bundle run discarded."
+  }
+}

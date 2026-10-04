@@ -899,3 +899,41 @@ describe("Dashboard grouped aggregation truth", () => {
     expect(data.byProduct).toEqual([]);
   });
 });
+
+it("Preview defaults to an active Market without changing public selection or analytics", async () => {
+  const f = await fixture();
+  const one = await content.browseStore(
+    f.store.slug,
+    undefined,
+    undefined,
+    1,
+    a,
+  );
+  expect(one.selected?.token).toBe("KE");
+  await settings.addMarket(a, { storeId: f.store.id, countryCode: "GH" });
+  const many = await content.browseStore(
+    f.store.slug,
+    undefined,
+    undefined,
+    1,
+    a,
+  );
+  expect(many.selected?.token).toBe("GH");
+  const switched = await content.browseStore(
+    f.store.slug,
+    "KE",
+    undefined,
+    1,
+    a,
+  );
+  expect(switched.selected?.token).toBe("KE");
+  expect((await content.browseStore(f.store.slug)).selected).toBeNull();
+  const events = await db
+    .select()
+    .from(schema.visitorEvents)
+    .where(eq(schema.visitorEvents.storeId, f.store.id));
+  expect(events).toEqual([]);
+  await expect(
+    content.browseStore(f.store.slug, undefined, undefined, 1, b),
+  ).rejects.toMatchObject({ code: "NOT_FOUND" });
+});

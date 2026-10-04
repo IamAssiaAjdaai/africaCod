@@ -32,6 +32,19 @@ export default async function PreviewLayout({
   const { session } = await requireOrganization();
   const store = await found(storeSettings().getStore(session.user.id, storeId));
   const draft = await found(site().getPublicStore(store.slug, session.user.id));
+  if (!draft.markets.length)
+    return (
+      <main className="public-storefront">
+        <h1>Preview unavailable</h1>
+        <p>Add a market to preview your Store.</p>
+        <Link
+          className="button button-green"
+          href={`/stores/${storeId}#store-markets`}
+        >
+          Add Market
+        </Link>
+      </main>
+    );
   return (
     <>
       <p className="preview-banner">

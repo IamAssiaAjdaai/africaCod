@@ -1,6 +1,7 @@
 import { enforceActionRateLimit } from "./rate-limit";
 import { runtimeEnvironment, logEvent } from "@africacod/shared";
 import "server-only";
+import { cache } from "react";
 import { VisitorService } from "@africacod/domain";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -20,10 +21,14 @@ import {
   AnalyticsService,
 } from "@africacod/domain";
 import { getDatabase } from "@africacod/db";
+// Request-scoped only: never cache a tenant across requests.
+const organizationFor = cache((userId: string) =>
+  new CommerceService(getDatabase()).organizationFor(userId),
+);
 export function commerce() {
-  return new CommerceService(getDatabase());
+  return new CommerceService(getDatabase(), organizationFor);
 }
-export async function readSession() {
+export const readSession = cache(async () => {
   const requestHeaders = await headers();
   try {
     return await getAuth().api.getSession({ headers: requestHeaders });
@@ -31,37 +36,40 @@ export async function readSession() {
     logEvent("error", "auth.session_unavailable");
     throw new Error("Authentication temporarily unavailable.");
   }
-}
+});
 export async function requireSession() {
   await enforceActionRateLimit();
   const session = await readSession();
   if (!session) redirect("/sign-in");
   return session;
 }
-export async function requireOrganization() {
+export const requireOrganization = cache(async () => {
   const session = await requireSession();
   const organization = await commerce().organizationFor(session.user.id);
   if (!organization) redirect("/onboarding");
   return { session, organization };
-}
+});
 
 export function catalog() {
-  return new CatalogService(getDatabase());
+  return new CatalogService(getDatabase(), organizationFor);
 }
 
 export function storefront() {
-  return new StorefrontService(getDatabase());
+  return new StorefrontService(getDatabase(), organizationFor);
 }
 
 export function site() {
-  return new ContentService(getDatabase());
+  const service = new ContentService(getDatabase(), organizationFor);
+  service.getPublicStore = (slug, previewUser) =>
+    readStoreProjection(slug, previewUser);
+  return service;
 }
 export function apps() {
   return new AppsService(getDatabase());
 }
 
 export function operations() {
-  return new OperationsService(getDatabase());
+  return new OperationsService(getDatabase(), organizationFor);
 }
 
 export function providerTestMode() {
@@ -86,11 +94,11 @@ export function tracking() {
   });
 }
 export function analytics() {
-  return new AnalyticsService(getDatabase());
+  return new AnalyticsService(getDatabase(), organizationFor);
 }
 
 export function visitors() {
-  return new VisitorService(getDatabase());
+  return new VisitorService(getDatabase(), organizationFor);
 }
 
 export function googleConfig() {
@@ -115,8 +123,18 @@ export function googleSheets() {
 }
 
 export function storeSettings() {
-  return new StoreSettingsService(getDatabase());
+  return new StoreSettingsService(getDatabase(), organizationFor);
 }
 export function dashboard() {
-  return new DashboardService(getDatabase());
+  return new DashboardService(getDatabase(), organizationFor);
 }
+
+const readStoreProjection = cache((slug: string, previewUser?: string) =>
+  new ContentService(getDatabase(), organizationFor).getPublicStore(
+    slug,
+    previewUser,
+  ),
+);
+export const storeSetup = cache((userId: string, storeId: string) =>
+  storeSettings().setup(userId, storeId),
+);

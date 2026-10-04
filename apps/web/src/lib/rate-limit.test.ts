@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("server-only", () => ({}));
 vi.mock("next/headers", () => ({ headers: mocks.headers }));
 vi.mock("@africacod/db", () => ({ getDatabase: () => ({}) }));
-vi.mock("@africacod/domain", () => ({
+vi.mock("@africacod/domain/abuse", () => ({
   AbuseService: class {
     consume = mocks.consume;
   },

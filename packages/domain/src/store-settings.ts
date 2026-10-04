@@ -157,25 +157,22 @@ export class StoreSettingsService extends CatalogService {
   }
   async setup(userId: string | null, storeId: string) {
     const store = await this.getStore(userId, storeId);
-    const [markets, products, offers] = await Promise.all([
-      this.listMarkets(userId, storeId),
-      this.listProducts(userId, storeId),
-      this.listOffers(userId),
-    ]);
-    const activeMarkets = markets.filter((m) => m.status === "active");
-    const activeProducts = products.filter((p) => p.status === "active");
-    const pricing = offers.some(
-      (o) =>
-        o.storeId === storeId &&
-        o.status === "active" &&
-        activeMarkets.some((m) => m.id === o.storeMarketId) &&
-        activeProducts.some((p) => p.id === o.productId),
-    );
+    const [state] = await this.db
+      .select({
+        market: sql<boolean>`exists(select 1 from store_markets m where m.store_id = ${store.id} and m.organization_id = ${store.organizationId} and m.status = 'active')`,
+        product: sql<boolean>`exists(select 1 from products p where p.store_id = ${store.id} and p.organization_id = ${store.organizationId})`,
+        activeProduct: sql<boolean>`exists(select 1 from products p where p.store_id = ${store.id} and p.organization_id = ${store.organizationId} and p.status = 'active')`,
+        pricing: sql<boolean>`exists(select 1 from product_market_offers o join products p on p.id = o.product_id and p.organization_id = o.organization_id join store_markets m on m.id = o.store_market_id and m.organization_id = o.organization_id where o.store_id = ${store.id} and o.organization_id = ${store.organizationId} and p.store_id = ${store.id} and m.store_id = ${store.id} and o.status = 'active' and p.status = 'active' and m.status = 'active')`,
+      })
+      .from(stores)
+      .where(
+        and(
+          eq(stores.id, store.id),
+          eq(stores.organizationId, store.organizationId),
+        ),
+      );
     return {
-      market: !!activeMarkets.length,
-      product: !!products.length,
-      activeProduct: !!activeProducts.length,
-      pricing,
+      ...state,
       customized: store.settingsRevision > 0,
       published: !!store.settingsPublishedAt,
     };

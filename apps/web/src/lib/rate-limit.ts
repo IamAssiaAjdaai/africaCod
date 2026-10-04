@@ -2,7 +2,7 @@ import "server-only";
 import { headers } from "next/headers";
 import { isIP } from "node:net";
 import { getDatabase } from "@africacod/db";
-import { AbuseService, abuseKey } from "@africacod/domain";
+import { AbuseService, abuseKey } from "@africacod/domain/abuse";
 import { runtimeEnvironment, logEvent } from "@africacod/shared";
 const budgets = {
   auth: 60,

@@ -6,12 +6,9 @@ async function register(page: Page, suffix: string) {
   await page.getByLabel("Email address").fill(`merchant-${suffix}@example.com`);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page).toHaveURL(/\/onboarding/);
-  await page.getByLabel("Organization name").fill(`Commerce ${suffix}`);
-  await page.getByRole("button", { name: "Create organization" }).click();
   await expect(page).toHaveURL(/\/stores\/new$/);
 }
-test("sign up → organization → zero-market store → searchable countries; preserves deactivated markets", async ({
+test("sign up → internal workspace → zero-market store → searchable countries; preserves deactivated markets", async ({
   page,
 }) => {
   const suffix = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;

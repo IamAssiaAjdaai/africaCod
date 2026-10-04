@@ -1,4 +1,5 @@
 import { countryCatalog } from "@africacod/markets";
+import { sql } from "drizzle-orm";
 import type { Database } from "./index";
 import { countryDefinitions } from "./schema";
 export async function seedCountries(db: Database) {
@@ -6,5 +7,11 @@ export async function seedCountries(db: Database) {
   await db
     .insert(countryDefinitions)
     .values(countryCatalog)
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: countryDefinitions.code,
+      set: {
+        continent: sql`excluded.continent`,
+        merchantMarketEnabled: sql`excluded.merchant_market_enabled`,
+      },
+    });
 }

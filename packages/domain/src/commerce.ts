@@ -2,6 +2,7 @@ import { isCatalogCountry, normalizeMarketName } from "@africacod/markets";
 import { and, asc, eq } from "drizzle-orm";
 import {
   type Database,
+  ensureInitialWorkspace,
   countryDefinitions,
   memberships,
   organizations,
@@ -42,9 +43,18 @@ function isUniqueViolation(error: unknown): boolean {
   return "cause" in error && isUniqueViolation(error.cause);
 }
 export class CommerceService {
-  constructor(protected readonly db: Database) {}
+  constructor(
+    protected readonly db: Database,
+    private readonly organizationResolver?: (
+      userId: string,
+    ) => Promise<{ id: string; name: string; role: "owner" | "admin" } | null>,
+  ) {}
+  async ensureInitialOrganization(userId: string | null) {
+    return ensureInitialWorkspace(this.db, requireUser(userId));
+  }
   async organizationFor(userId: string | null) {
     const id = requireUser(userId);
+    if (this.organizationResolver) return this.organizationResolver(id);
     const [row] = await this.db
       .select({
         id: organizations.id,
@@ -158,6 +168,19 @@ export class CommerceService {
     return this.db
       .select()
       .from(countryDefinitions)
+      .orderBy(asc(countryDefinitions.name));
+  }
+  async listMerchantCountries(userId: string | null) {
+    await this.tenant(userId);
+    return this.db
+      .select()
+      .from(countryDefinitions)
+      .where(
+        and(
+          eq(countryDefinitions.continent, "AF"),
+          eq(countryDefinitions.merchantMarketEnabled, true),
+        ),
+      )
       .orderBy(asc(countryDefinitions.name));
   }
   async addMarket(userId: string | null, input: unknown) {

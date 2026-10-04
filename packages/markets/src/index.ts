@@ -1,5 +1,7 @@
 import { getCountryDataList } from "countries-list";
 export type CountryDefinition = {
+  continent: string;
+  merchantMarketEnabled: boolean;
   code: string;
   name: string;
   currencyCode: string;
@@ -8,7 +10,10 @@ export type CountryDefinition = {
   callingCode: string | null;
 };
 // ISO 3166-1 alpha-2 / ISO 4217 / BCP 47. This is a platform catalog, never a store default.
-const legacyDefaults: CountryDefinition[] = [
+const legacyDefaults: Omit<
+  CountryDefinition,
+  "continent" | "merchantMarketEnabled"
+>[] = [
   {
     code: "KE",
     name: "Kenya",
@@ -93,6 +98,10 @@ const legacyDefaults: CountryDefinition[] = [
 
 // Include the standard ISO list plus explicitly identified supplemental territories.
 const referenceCountries = getCountryDataList();
+// countries-list 3.4.1 omits partOf for these French overseas departments.
+// Keep this reference-data correction here, never in a merchant component.
+// Source: https://www.insee.fr/en/metadonnees/definition/c2316
+const territoryParents: Record<string, string> = { RE: "FR", YT: "FR" };
 export const countryCatalog: CountryDefinition[] = referenceCountries.map(
   (country) => {
     const legacy = legacyDefaults.find((entry) => entry.code === country.iso2);
@@ -100,8 +109,14 @@ export const countryCatalog: CountryDefinition[] = referenceCountries.map(
     const defaultLocale = Intl.getCanonicalLocales(
       `${country.languages[0] ?? "en"}-${country.iso2}`,
     )[0];
-    return (
-      legacy ?? {
+    return {
+      continent: country.continent,
+      // Canonical region/territory metadata; Western Sahara is not a UN member state.
+      merchantMarketEnabled:
+        country.continent === "AF" &&
+        !(country.partOf ?? territoryParents[country.iso2]) &&
+        country.iso2 !== "EH",
+      ...(legacy ?? {
         code: country.iso2,
         name: country.name,
         currencyCode,
@@ -119,8 +134,8 @@ export const countryCatalog: CountryDefinition[] = referenceCountries.map(
             : country.phone[0]
               ? `+${country.phone[0]}`
               : null,
-      }
-    );
+      }),
+    };
   },
 );
 export function normalizeMarketName(name: string): string {

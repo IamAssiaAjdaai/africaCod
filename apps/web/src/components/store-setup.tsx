@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getAuthEnvironment } from "@africacod/shared";
-import { storeSettings } from "@/lib/server";
+import { storeSetup } from "@/lib/server";
 import { StoreUrl } from "./store-url";
 type Store = {
   id: string;
@@ -17,7 +17,7 @@ export async function StoreSetup({
   userId: string;
   settingsPage?: boolean;
 }) {
-  const state = await storeSettings().setup(userId, store.id);
+  const state = await storeSetup(userId, store.id);
   const base = `/stores/${store.id}`;
   const url = new URL(
     `/s/${store.slug}`,
@@ -53,8 +53,14 @@ export async function StoreSetup({
         {store.name} · {state.published ? "Published" : "Draft / Not Published"}
       </h2>
       <StoreUrl url={url} />
+      {!state.market && (
+        <p>
+          Add a market to preview your Store.{" "}
+          <Link href={`${base}#store-markets`}>Add Market</Link>
+        </p>
+      )}
       <div className="form-actions">
-        {!settingsPage && (
+        {!settingsPage && state.market && (
           <Link className="button button-outline" href={`${base}/preview`}>
             Preview Store
           </Link>

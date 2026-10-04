@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./tracking-policy": "./src/tracking/policy.ts"
+    "./tracking-policy": "./src/tracking/policy.ts",
+    "./abuse": "./src/abuse.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

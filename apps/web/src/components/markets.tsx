@@ -50,14 +50,17 @@ export function Markets({
   const available = countries.filter(
     (c) => !markets.some((m) => m.countryCode === c.code),
   );
-  const filtered = available.filter((country) =>
-    `${country.name} ${country.code}`
+  const normalizeSearch = (value: string) =>
+    value
       .normalize("NFKD")
       .replace(/\p{M}/gu, "")
       .toLowerCase()
-      .includes(
-        query.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim(),
-      ),
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim();
+  const filtered = available.filter((country) =>
+    normalizeSearch(`${country.name} ${country.code}`).includes(
+      normalizeSearch(query),
+    ),
   );
   return (
     <section className="panel markets-panel">
@@ -180,8 +183,8 @@ export function Markets({
         </div>
         <h2 id="market-dialog-title">Add a market</h2>
         <p className="muted">
-          Choose a country or territory for your store. Currency and locale
-          defaults are copied to its market settings.
+          Choose an African country for your store. Currency and locale defaults
+          are copied to its market settings.
         </p>
         <form action={action}>
           <input type="hidden" name="storeId" value={storeId} />

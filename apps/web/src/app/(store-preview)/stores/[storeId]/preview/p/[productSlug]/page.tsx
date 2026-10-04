@@ -1,4 +1,9 @@
-import { requireOrganization, storeSettings, storefront } from "@/lib/server";
+import {
+  requireOrganization,
+  storeSettings,
+  storefront,
+  site,
+} from "@/lib/server";
 import { found } from "@/lib/catalog-pages";
 import { marketParam } from "@/lib/store-pages";
 import { PublicProductView } from "@/components/public-product";
@@ -13,11 +18,13 @@ export default async function PreviewProduct({
   const query = await searchParams;
   const { session } = await requireOrganization();
   const store = await found(storeSettings().getStore(session.user.id, storeId));
+  const draft = await found(site().getPublicStore(store.slug, session.user.id));
+  const selectedMarket = marketParam(query.market) ?? draft.markets[0]?.token;
   const product = await found(
     storefront().getPublicProduct(
       store.slug,
       productSlug,
-      marketParam(query.market),
+      selectedMarket,
       session.user.id,
     ),
   );

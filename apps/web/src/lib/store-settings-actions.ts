@@ -29,7 +29,7 @@ export async function saveStoreSettings(
     revalidatePath(`/stores/${storeId}`);
     revalidatePath(`/stores/${storeId}/settings`);
     revalidatePath("/dashboard");
-    revalidatePath("/s", "layout");
+    if (publish) revalidatePath("/s", "layout");
     return {
       success: publish
         ? "Store settings published."

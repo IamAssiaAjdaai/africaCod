@@ -36,3 +36,15 @@ it("recognizes canonical country names, native names, aliases and ISO codes", ()
     expect(isCatalogCountry(name)).toBe(true);
   expect(isCatalogCountry("Special island region")).toBe(false);
 });
+
+it("keeps 252 reference countries while selecting 54 African sovereign markets", () => {
+  const african = countryCatalog.filter((c) => c.merchantMarketEnabled);
+  expect(african).toHaveLength(54);
+  expect(african.every((c) => c.continent === "AF")).toBe(true);
+  for (const code of ["KE", "GH", "GN", "RW", "AO", "CD", "ZA", "MA", "SS"])
+    expect(african.some((c) => c.code === code)).toBe(true);
+  for (const code of ["US", "FR", "RE", "YT", "SH", "EH"]) {
+    expect(countryCatalog.some((c) => c.code === code)).toBe(true);
+    expect(african.some((c) => c.code === code)).toBe(false);
+  }
+});

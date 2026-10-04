@@ -1,7 +1,12 @@
 import { StoreSetup } from "@/components/store-setup";
 import Link from "next/link";
 import { StoreSettingsEditor } from "@/components/store-settings-editor";
-import { requireOrganization, storeSettings, site } from "@/lib/server";
+import {
+  requireOrganization,
+  storeSettings,
+  storeSetup,
+  site,
+} from "@/lib/server";
 import { found } from "@/lib/catalog-pages";
 export default async function Settings({
   params,
@@ -16,12 +21,12 @@ export default async function Settings({
     await Promise.all([
       service.settings(session.user.id, storeId),
       service.listMarkets(session.user.id, storeId),
-      service.listCountries(session.user.id),
+      service.listMerchantCountries(session.user.id),
       service.listCategories(session.user.id, storeId),
       service.listProducts(session.user.id, storeId),
       site().listContentPages(session.user.id, storeId),
     ]);
-  const setup = await service.setup(session.user.id, storeId);
+  const setup = await storeSetup(session.user.id, storeId);
   return (
     <>
       <StoreSetup store={store} userId={session.user.id} settingsPage />

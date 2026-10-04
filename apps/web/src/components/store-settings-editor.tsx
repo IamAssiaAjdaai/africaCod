@@ -351,12 +351,14 @@ export function StoreSettingsEditor({
           >
             Save Draft
           </button>
-          <Link
-            className="button button-outline"
-            href={`/stores/${storeId}/preview`}
-          >
-            Preview Store
-          </Link>
+          {markets.some((m) => m.status === "active") && (
+            <Link
+              className="button button-outline"
+              href={`/stores/${storeId}/preview`}
+            >
+              Preview Store
+            </Link>
+          )}
           <button
             type="button"
             className="button button-green"

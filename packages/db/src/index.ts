@@ -5,6 +5,12 @@ import * as schema from "./schema";
 export function createDatabase(url: string) {
   const client = postgres(url, {
     max: 10,
+    debug:
+      process.env.DATABASE_QUERY_PROFILE === "1" &&
+      process.env.APP_ENV !== "production" &&
+      ["localhost", "127.0.0.1"].includes(new URL(url).hostname)
+        ? () => console.info("PROFILE_QUERY")
+        : undefined,
     prepare: false,
     connect_timeout: 5,
     idle_timeout: 20,
@@ -25,3 +31,5 @@ export function getDatabase(): Database {
 export * from "./schema";
 
 export { seedCountries } from "./catalog-seed";
+
+export { ensureInitialWorkspace } from "./workspace";

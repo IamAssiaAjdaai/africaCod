@@ -121,6 +121,10 @@ export const memberships = pgTable(
   ],
 );
 export const countryDefinitions = pgTable("country_definitions", {
+  continent: varchar("continent", { length: 2 }),
+  merchantMarketEnabled: boolean("merchant_market_enabled")
+    .default(false)
+    .notNull(),
   code: varchar("code", { length: 2 }).primaryKey(),
   name: text("name").notNull(),
   currencyCode: varchar("currency_code", { length: 3 }).notNull(),
