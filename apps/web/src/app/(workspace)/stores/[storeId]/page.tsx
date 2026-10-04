@@ -1,3 +1,4 @@
+import { StoreSetup } from "@/components/store-setup";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -28,6 +29,7 @@ export default async function StoreDetail({
   ]);
   return (
     <>
+      <StoreSetup store={store} userId={session.user.id} />
       <Link className="back-link" href="/stores">
         <ArrowLeft size={16} /> All stores
       </Link>

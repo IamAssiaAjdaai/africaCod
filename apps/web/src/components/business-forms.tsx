@@ -21,7 +21,7 @@ export function OrganizationForm() {
           Organization name
           <input
             name="name"
-            placeholder="e.g. Assia Commerce"
+            placeholder="e.g. Test Commerce"
             required
             minLength={2}
             maxLength={100}
@@ -45,7 +45,7 @@ export function OrganizationForm() {
     </>
   );
 }
-export function StoreForm() {
+export function StoreForm({ publicOrigin }: { publicOrigin: string }) {
   const [state, action, pending] = useActionState(createStoreAction, {});
   const [slug, setSlug] = useState("");
   const [edited, setEdited] = useState(false);
@@ -99,6 +99,9 @@ export function StoreForm() {
               hyphens.
             </small>
           </label>
+          <p className="store-url-preview">
+            Store URL: {publicOrigin}/s/{slug || "your-store"}
+          </p>
           {state.error && (
             <p role="alert" className="form-error">
               {state.error}

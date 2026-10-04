@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { Check, Globe2, MapPin, Plus, X } from "lucide-react";
 import { Badge } from "@africacod/ui";
@@ -150,7 +151,10 @@ export function Markets({
       )}
       {state.success && (
         <p role="status" className="success-note">
-          {state.success}
+          {state.success}{" "}
+          <Link href={`/products/new?storeId=${storeId}`}>
+            Create your first Product
+          </Link>
         </p>
       )}
       <dialog

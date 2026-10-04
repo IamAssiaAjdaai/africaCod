@@ -453,14 +453,14 @@ export async function OrdersView({
             </h3>
             <p>
               {mode === "orders"
-                ? "Publish a product to receive COD orders, or try different filters."
+                ? "Publish your Store and Product Page to receive COD orders, or try different filters."
                 : "Try another state or date range. New work will appear here when it is ready."}
             </p>
             <Link
               className="button button-outline"
-              href={mode === "orders" ? "/products" : "/orders"}
+              href={mode === "orders" ? "/stores" : "/orders"}
             >
-              {mode === "orders" ? "Manage products" : "View all orders"}
+              {mode === "orders" ? "View / Publish Store" : "View all orders"}
             </Link>
           </div>
         )}

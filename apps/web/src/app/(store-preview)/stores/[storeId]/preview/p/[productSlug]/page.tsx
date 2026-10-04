@@ -18,6 +18,7 @@ export default async function PreviewProduct({
       store.slug,
       productSlug,
       marketParam(query.market),
+      session.user.id,
     ),
   );
   return (

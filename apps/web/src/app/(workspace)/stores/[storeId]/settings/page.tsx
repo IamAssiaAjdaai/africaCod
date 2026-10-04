@@ -1,3 +1,4 @@
+import { StoreSetup } from "@/components/store-setup";
 import Link from "next/link";
 import { StoreSettingsEditor } from "@/components/store-settings-editor";
 import { requireOrganization, storeSettings, site } from "@/lib/server";
@@ -20,14 +21,17 @@ export default async function Settings({
       service.listProducts(session.user.id, storeId),
       site().listContentPages(session.user.id, storeId),
     ]);
+  const setup = await service.setup(session.user.id, storeId);
   return (
     <>
+      <StoreSetup store={store} userId={session.user.id} settingsPage />
       <Link className="back-link" href={`/stores/${storeId}`}>
         ← {store.name}
       </Link>
       <StoreSettingsEditor
         storeId={storeId}
         name={store.name}
+        readyToPublish={setup.pricing && store.status === "active"}
         initial={{
           ...settings,
           publishedAt: settings.publishedAt?.toISOString() ?? null,

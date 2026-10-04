@@ -3,10 +3,24 @@ import { Suspense } from "react";
 import { requireOrganization, storeSettings, site } from "@/lib/server";
 import { found } from "@/lib/catalog-pages";
 import { StoreShell } from "@/components/store-shell";
-export const metadata = {
-  robots: { index: false, follow: false },
-  title: "Private Store preview",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ storeId: string }>;
+}) {
+  const { storeId } = await params;
+  const { session } = await requireOrganization();
+  const store = await found(storeSettings().getStore(session.user.id, storeId));
+  return {
+    robots: { index: false, follow: false },
+    title: "Private Store preview",
+    icons: store.draftSettings.identity.favicon
+      ? {
+          icon: `/api/stores/${store.id}/assets/${store.draftSettings.identity.favicon}?w=320`,
+        }
+      : undefined,
+  };
+}
 export default async function PreviewLayout({
   params,
   children,

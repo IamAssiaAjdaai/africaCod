@@ -9,7 +9,9 @@ export default async function PreviewContent({
   const { storeId, pageSlug } = await params;
   const { session } = await requireOrganization();
   const store = await found(storeSettings().getStore(session.user.id, storeId));
-  const page = await found(site().getPublicContentPage(store.slug, pageSlug));
+  const page = await found(
+    site().getPublicContentPage(store.slug, pageSlug, session.user.id),
+  );
   return (
     <main className="store-browse">
       <h1>{page.title}</h1>

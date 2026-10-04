@@ -27,6 +27,8 @@ export async function saveStoreSettings(
       ? await service.publish(user.id, storeId, revision)
       : await service.saveDraft(user.id, storeId, input, revision);
     revalidatePath(`/stores/${storeId}`);
+    revalidatePath(`/stores/${storeId}/settings`);
+    revalidatePath("/dashboard");
     revalidatePath("/s", "layout");
     return {
       success: publish

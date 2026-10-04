@@ -34,6 +34,17 @@ export default async function ProductDetail({
         title={product.name}
         description="Product details and independent market offers."
       />
+      {!offers.some((o) => o.status === "active") && (
+        <section className="panel">
+          <h2>Next: configure Market pricing</h2>
+          <p>
+            Set your own price for an active Market below. Publish the Product
+            Page, then return to Store Settings to Preview and Publish your
+            Store.
+          </p>
+          <Link href={`/stores/${store.id}/settings`}>Store Settings</Link>
+        </section>
+      )}
       <ProductEditor
         storeId={product.storeId}
         product={product}
@@ -44,6 +55,14 @@ export default async function ProductDetail({
         offers={offers}
         published={page?.status === "published"}
       />
+      {!store.settingsPublishedAt && (
+        <p className="muted">
+          Your Store is Draft. Product Page publication prepares this Product;
+          publish the Store in{" "}
+          <Link href={`/stores/${store.id}/settings`}>Store Settings</Link>{" "}
+          before sharing its public URL.
+        </p>
+      )}
       <PageEditor
         productId={product.id}
         config={page?.draftConfig ?? defaultPageConfig(product, media)}

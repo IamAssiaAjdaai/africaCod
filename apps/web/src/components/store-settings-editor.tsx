@@ -118,9 +118,11 @@ export function StoreSettingsEditor({
   pages,
   markets,
   countries,
+  readyToPublish,
 }: {
   storeId: string;
   name: string;
+  readyToPublish: boolean;
   initial: {
     draft: StoreSettings;
     revision: number;
@@ -326,7 +328,12 @@ export function StoreSettingsEditor({
         <div>
           <h1>Store Settings</h1>
           <p>
-            {name} · {changes ? "Draft changes" : "Published"}
+            {name} ·{" "}
+            {!saved.publishedAt
+              ? "Draft / Not Published"
+              : changes
+                ? "Draft changes"
+                : "Published"}
           </p>
           <small>
             Last published:{" "}
@@ -353,7 +360,7 @@ export function StoreSettingsEditor({
           <button
             type="button"
             className="button button-green"
-            disabled={busy || dirty}
+            disabled={busy || dirty || !readyToPublish}
             onClick={() => save(true)}
           >
             Publish

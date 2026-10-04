@@ -25,7 +25,7 @@ export async function createOrganizationAction(
   } catch (error) {
     return errorState(error);
   }
-  redirect("/stores");
+  redirect("/stores/new");
 }
 export async function createStoreAction(
   _state: FormState,
@@ -57,7 +57,9 @@ export async function addMarketAction(
     revalidatePath(`/stores/${market.storeId}`);
     revalidatePath(`/stores/${market.storeId}/settings`);
     revalidatePath("/dashboard");
-    return { success: "Market added." };
+    return {
+      success: `${market.name} added. Currency: ${market.currency}. Create your first Product next.`,
+    };
   } catch (error) {
     return errorState(error);
   }

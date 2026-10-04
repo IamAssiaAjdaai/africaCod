@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { StoreSetup } from "@/components/store-setup";
 import { DomainError } from "@africacod/domain";
 import { ZodError } from "zod";
 import { DashboardOverview } from "@/components/dashboard-overview";
@@ -25,6 +27,7 @@ export default async function Dashboard({
   const { session } = await requireOrganization();
   const service = commerce();
   const stores = await service.listStores(session.user.id);
+  if (!stores.length) redirect("/stores/new");
   const ops = operations();
   const [
     metrics,
@@ -70,6 +73,11 @@ export default async function Dashboard({
   ]);
   return (
     <>
+      {stores
+        .filter((store) => !store.settingsPublishedAt)
+        .map((store) => (
+          <StoreSetup key={store.id} store={store} userId={session.user.id} />
+        ))}
       <PageHeading
         eyebrow="YOUR WORKSPACE AT A GLANCE"
         title={`Welcome, ${session.user.name.split(" ")[0]}.`}

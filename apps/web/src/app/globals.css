@@ -3626,3 +3626,17 @@ summary {
 .period-stat:last-child {
   grid-column: auto;
 }
+
+.store-url-preview {
+  overflow-wrap: anywhere;
+}
+.store-setup {
+  margin-bottom: 1.5rem;
+}
+.store-setup .form-actions {
+  flex-wrap: wrap;
+  margin-block: 1rem;
+}
+.store-setup li {
+  margin-block: 0.6rem;
+}
