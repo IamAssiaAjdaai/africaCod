@@ -14,7 +14,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "test:e2e": "playwright test",
+    "test:e2e": "tsx scripts/test-e2e.ts",
     "db:generate": "pnpm --filter @africacod/db generate",
     "db:migrate": "pnpm --filter @africacod/db migrate",
     "db:seed": "pnpm --filter @africacod/db seed"

@@ -17,14 +17,32 @@ test("Store settings Draft → private Preview → Publish → custom COD snapsh
   await expect(page).toHaveURL(/\/onboarding/);
   await page.getByLabel("Organization name").fill(`Catalog ${suffix}`);
   await page.getByRole("button", { name: "Create organization" }).click();
-  await expect(page).toHaveURL(/\/stores$/);
+  await expect(page).toHaveURL(/\/stores\/new$/);
   await page.goto("/stores/new");
+  await expect(
+    page.getByRole("heading", { name: "Create your first Store" }),
+  ).toBeVisible();
+  for (const width of [375, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+  }
   await page.getByLabel("Store name").fill("Glow Beauty");
   await page.getByLabel("Store address").fill(`catalog-${suffix}`);
   await page.getByRole("button", { name: "Create store", exact: true }).click();
   await expect(page).toHaveURL(/\/stores\/[0-9a-f-]+$/);
   const storeUrl = page.url();
   const storeId = storeUrl.split("/").at(-1)!;
+  await expect(
+    page.getByText("Draft / Not Published", { exact: false }).first(),
+  ).toBeVisible();
+  await expect(page.getByText("1 of 6 completed")).toBeVisible();
+  await expect(page.getByLabel("Store URL")).toHaveValue(
+    new RegExp(`/s/catalog-${suffix}$`),
+  );
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/sign-in$/);
   await page.getByLabel("Email address").fill(email);
@@ -244,6 +262,11 @@ test("Store settings Draft → private Preview → Publish → custom COD snapsh
   const customer = await customerContext.newPage();
   customer.setDefaultTimeout(20000);
   await customer.goto(`/s/${storeSlug}?market=KE`);
+  // Next can stream a notFound boundary after sending HTTP headers. Verify the actual access boundary.
+  await expect(
+    customer.getByRole("heading", { name: "We couldn’t find that page." }),
+  ).toBeVisible();
+  await expect(customer.locator(".storefront-shell")).toHaveCount(0);
   await expect(
     customer.getByText("Nairobi delivery information", { exact: true }),
   ).toHaveCount(0);
@@ -285,6 +308,11 @@ test("Store settings Draft → private Preview → Publish → custom COD snapsh
   await expect(page.getByRole("status")).toContainText(
     "Store settings published",
   );
+  const livePopup = page.waitForEvent("popup");
+  await page.getByRole("link", { name: "View Store", exact: true }).click();
+  const liveStore = await livePopup;
+  await expect(liveStore).toHaveURL(new RegExp(`/s/${storeSlug}`));
+  await liveStore.close();
   await customer.reload();
   await expect(
     customer.getByText("Nairobi delivery information", { exact: true }),

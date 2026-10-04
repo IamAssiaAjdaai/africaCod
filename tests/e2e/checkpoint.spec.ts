@@ -9,14 +9,16 @@ async function register(page: Page, suffix: string) {
   await expect(page).toHaveURL(/\/onboarding/);
   await page.getByLabel("Organization name").fill(`Commerce ${suffix}`);
   await page.getByRole("button", { name: "Create organization" }).click();
-  await expect(page).toHaveURL(/\/stores$/);
+  await expect(page).toHaveURL(/\/stores\/new$/);
 }
 test("sign up → organization → zero-market store → searchable countries; preserves deactivated markets", async ({
   page,
 }) => {
   const suffix = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
   await register(page, suffix);
-  await page.getByRole("link", { name: "Create your first store" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Create your first Store" }),
+  ).toBeVisible();
   await page.getByLabel("Store name").fill("Glow Beauty");
   await page.getByLabel("Store address").fill(`glow-${suffix}`);
   await page.getByRole("button", { name: "Create store", exact: true }).click();

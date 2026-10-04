@@ -45,7 +45,7 @@ test("ShipCOD test adapter hands off confirmed orders asynchronously, delivers o
   await expect(page).toHaveURL(/\/onboarding/);
   await page.getByLabel("Organization name").fill(`Catalog ${suffix}`);
   await page.getByRole("button", { name: "Create organization" }).click();
-  await expect(page).toHaveURL(/\/stores$/);
+  await expect(page).toHaveURL(/\/stores\/new$/);
   await page.goto("/stores/new");
   await page.getByLabel("Store name").fill("Glow Beauty");
   await page.getByLabel("Store address").fill(`catalog-${suffix}`);
@@ -193,6 +193,13 @@ test("ShipCOD test adapter hands off confirmed orders asynchronously, delivers o
   await expect(
     page.getByRole("status").filter({ hasText: "Storefront published." }),
   ).toBeVisible();
+  const productLocation = page.url();
+  await page.goto(`/stores/${storeId}/settings`);
+  await page.getByRole("button", { name: "Publish", exact: true }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Store settings published" }),
+  ).toBeVisible();
+  await page.goto(productLocation);
   const publicUrl = (await page
     .getByRole("link", { name: "Open public page" })
     .getAttribute("href"))!;

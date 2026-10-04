@@ -15,7 +15,7 @@ test("Glow Beauty catalog persists Beauty → Hair, image, variants, Kenya and G
   await expect(page).toHaveURL(/\/onboarding/);
   await page.getByLabel("Organization name").fill(`Catalog ${suffix}`);
   await page.getByRole("button", { name: "Create organization" }).click();
-  await expect(page).toHaveURL(/\/stores$/);
+  await expect(page).toHaveURL(/\/stores\/new$/);
   await page.goto("/stores/new");
   await page.getByLabel("Store name").fill("Glow Beauty");
   await page.getByLabel("Store address").fill(`catalog-${suffix}`);
@@ -183,7 +183,7 @@ test("Glow Beauty catalog persists Beauty → Hair, image, variants, Kenya and G
   await expect(other).toHaveURL(/\/onboarding/);
   await other.getByLabel("Organization name").fill(`Other ${suffix}`);
   await other.getByRole("button", { name: "Create organization" }).click();
-  await expect(other).toHaveURL(/\/stores$/);
+  await expect(other).toHaveURL(/\/stores\/new$/);
   for (const url of [categoryUrl, productUrl]) {
     await other.goto(url);
     await expect(
