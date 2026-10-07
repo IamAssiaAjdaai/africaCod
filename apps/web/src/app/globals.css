@@ -1348,9 +1348,6 @@ label small {
   overflow: auto;
 }
 @media (min-width: 1600px) {
-  .workspace-content {
-    padding-top: 45px;
-  }
   .landing-hero {
     padding-top: 100px;
     padding-bottom: 85px;
@@ -1360,18 +1357,6 @@ label small {
   }
 }
 @media (max-width: 1050px) {
-  .sidebar {
-    width: 210px;
-  }
-  .app-main {
-    margin-left: 210px;
-  }
-  .workspace-content {
-    padding: 30px 25px;
-  }
-  .topbar {
-    padding: 0 25px;
-  }
   .store-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1422,10 +1407,6 @@ label small {
   .auth-main {
     padding: 35px;
   }
-  .banner-art {
-    width: 200px;
-    margin: 0;
-  }
   .stats-grid {
     gap: 12px;
   }
@@ -1440,53 +1421,8 @@ label small {
   h1 {
     font-size: 26px;
   }
-  .sidebar {
-    transform: translateX(-100%);
-    width: 235px;
-    transition: transform 0.2s;
-  }
   .sidebar-open {
     transform: translateX(0);
-  }
-  .sidebar-backdrop {
-    position: fixed;
-    inset: 0;
-    border: 0;
-    background: #163e2850;
-    z-index: 19;
-  }
-  .mobile-menu,
-  .mobile-close {
-    display: flex;
-    border: 0;
-    background: transparent;
-    color: #7d9170;
-    padding: 0;
-  }
-  .sidebar-brand {
-    justify-content: space-between;
-  }
-  .app-main {
-    margin-left: 0;
-  }
-  .topbar {
-    height: 62px;
-    padding: 0 20px;
-  }
-  .workspace-status {
-    display: none;
-  }
-  .topbar-right .button {
-    font-size: 10px;
-  }
-  .workspace-content {
-    padding: 26px 20px;
-  }
-  .workspace-footer {
-    padding: 18px 20px;
-  }
-  .workspace-footer > span:last-child {
-    display: none;
   }
   .page-heading {
     align-items: flex-start;
@@ -1503,20 +1439,6 @@ label small {
   }
   .page-heading .muted {
     font-size: 11px;
-  }
-  .dashboard-banner {
-    padding: 27px;
-  }
-  .dashboard-banner h2 {
-    font-size: 31px;
-  }
-  .dashboard-banner p {
-    max-width: 220px;
-    line-height: 1.7;
-  }
-  .banner-art {
-    width: 125px;
-    transform: scale(0.8);
   }
   .stats-grid {
     grid-template-columns: 1fr 1fr;
@@ -2244,20 +2166,6 @@ textarea:focus-visible {
 .panel.catalog-form form > .form-row {
   margin-bottom: 18px;
 }
-.sidebar {
-  overflow-y: auto;
-}
-.sidebar > * {
-  flex-shrink: 0;
-}
-@media (max-height: 850px) {
-  .sidebar-grow {
-    display: none;
-  }
-  .sidebar-user {
-    margin-top: auto;
-  }
-}
 /* Public store theme and CMS */
 .storefront-shell {
   min-height: 100vh;
@@ -2475,12 +2383,6 @@ textarea:focus-visible {
   .apps-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .sidebar-link {
-    padding: 10px 11px;
-  }
-  .nav-caption {
-    padding-top: 18px;
-  }
 }
 @media (max-width: 600px) {
   .store-header,
@@ -2577,8 +2479,6 @@ textarea:focus-visible {
 }
 
 /* Checkpoint 8: shared operational presentation and contained responsive layouts. */
-.app-main,
-.workspace-content,
 .panel,
 .catalog-stack,
 .store-info-grid > div,
@@ -2684,15 +2584,6 @@ textarea:focus-visible {
   font-size: 13px;
   text-decoration: underline;
 }
-.sidebar-user {
-  align-items: flex-start;
-}
-.sidebar nav {
-  flex-shrink: 0;
-}
-.sidebar-link {
-  min-height: 42px;
-}
 .skip-link {
   position: fixed;
   left: 16px;
@@ -2716,13 +2607,6 @@ a.button,
 select,
 summary {
   touch-action: manipulation;
-}
-.mobile-menu,
-.mobile-close {
-  min-width: 36px;
-  min-height: 36px;
-  align-items: center;
-  justify-content: center;
 }
 .funnel-steps {
   list-style: none;
@@ -2872,21 +2756,9 @@ summary {
   font-size: 11px;
   font-weight: 600;
 }
-.nav-caption {
-  color: #536256;
-}
 .field-label,
-.dialog-header button,
-.sidebar-link {
+.dialog-header button {
   color: #536256;
-}
-@media (max-width: 760px) {
-  .sidebar {
-    visibility: hidden;
-  }
-  .sidebar.sidebar-open {
-    visibility: visible;
-  }
 }
 
 .consent-panel {

@@ -641,3 +641,10 @@
     z-index: 19;
   }
 }
+.app-shell .sidebar nav {
+  flex-shrink: 0;
+}
+.app-shell .skip-link {
+  background: var(--brand);
+  color: var(--surface);
+}

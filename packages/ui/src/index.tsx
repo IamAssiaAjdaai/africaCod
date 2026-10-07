@@ -31,11 +31,13 @@ export function PageHeading({
   title,
   description,
   action,
+  secondaryAction,
 }: {
   eyebrow?: string;
   title: string;
   description?: string;
   action?: ReactNode;
+  secondaryAction?: ReactNode;
 }) {
   return (
     <div className="page-heading">
@@ -44,7 +46,12 @@ export function PageHeading({
         <h1>{title}</h1>
         {description && <p className="muted">{description}</p>}
       </div>
-      {action}
+      {(action || secondaryAction) && (
+        <div className="page-heading-actions">
+          {secondaryAction}
+          {action}
+        </div>
+      )}
     </div>
   );
 }
