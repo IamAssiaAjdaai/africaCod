@@ -15,9 +15,9 @@ export default async function StoresPage() {
   return (
     <>
       <PageHeading
-        eyebrow="YOUR BRANDS, TOGETHER"
+        eyebrow="STOREFRONT"
         title="Stores"
-        description="One workspace. Every store you’re building."
+        description="Manage storefronts and markets."
         action={
           <Link className="button button-green" href="/stores/new">
             <Plus size={17} /> Create store

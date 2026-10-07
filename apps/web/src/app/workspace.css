@@ -133,6 +133,7 @@
   min-height: var(--control-min-height, 40px);
   height: var(--control-height, 40px);
   padding: var(--space-2) var(--space-3);
+  padding-left: var(--control-padding-left, var(--space-3));
   margin-top: var(--control-margin, 6px);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-control);
@@ -755,12 +756,16 @@
   min-width: 140px;
 }
 .app-shell .catalog-filters .search-field {
+  --control-padding-left: 36px;
+  --control-margin: 0px;
   flex: 2 1 220px;
 }
 .app-shell .catalog-filters .search-field input {
   padding-left: 36px;
 }
 .app-shell .catalog-filters .search-field svg {
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--foreground-muted);
 }
 .app-shell .catalog-filters .button {
@@ -1054,9 +1059,11 @@
     padding: var(--space-4);
   }
   .app-shell .dashboard-range {
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .app-shell .dashboard-range label:first-child {
+  .app-shell .dashboard-range label:first-child,
+  .app-shell .dashboard-range label:last-of-type {
     grid-column: 1 / -1;
   }
   .app-shell .dashboard-range .button {
@@ -1326,5 +1333,37 @@
   .auth-page .password-input button {
     min-width: 44px;
     min-height: 44px;
+  }
+}
+
+.app-shell
+  :is(
+    .section-meta,
+    .section-meta > span:first-child,
+    .store-card > p,
+    .store-card-bottom
+  ) {
+  color: var(--foreground-muted);
+  font-size: 12px;
+}
+.app-shell .store-card > p {
+  overflow-wrap: anywhere;
+}
+.app-shell .order-summary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-6);
+}
+.app-shell .order-summary > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.app-shell .operation-grid .operation-form {
+  min-width: 0;
+  border-radius: var(--radius-control);
+  padding: var(--space-4);
+}
+@media (max-width: 1024px) {
+  .app-shell :is(.order-summary, .operation-grid) {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

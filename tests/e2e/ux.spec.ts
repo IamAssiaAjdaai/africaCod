@@ -6,6 +6,7 @@ async function noOverflow(page: Page) {
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth + 1,
     ),
+    `Horizontal overflow at ${page.viewportSize()?.width}px on ${page.url()}`,
   ).toBe(true);
 }
 test("coherent merchant navigation and mobile customer checkout", async ({
@@ -181,6 +182,55 @@ test("coherent merchant navigation and mobile customer checkout", async ({
   const publicUrl = (await page
     .getByRole("link", { name: "Open public page" })
     .getAttribute("href"))!;
+
+  // Workspace CSS must not override merchant branding or light/dark/system themes.
+  await page.goto(`/stores/${storeId}/settings`);
+  await page.getByLabel("Brand Color HEX").fill("#265a8f");
+  await page
+    .getByRole("combobox", { name: "Theme Mode", exact: true })
+    .selectOption("dark");
+  await page.getByRole("button", { name: "Save Draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Draft saved");
+  await page.goto(`/stores/${storeId}/preview?market=KE`);
+  const storefront = page.locator(".storefront-shell");
+  await expect(storefront).toHaveClass(/theme-dark/);
+  await expect(storefront).toHaveCSS("background-color", "rgb(18, 35, 30)");
+  expect(
+    await storefront.evaluate((el) =>
+      getComputedStyle(el).getPropertyValue("--store-brand").trim(),
+    ),
+  ).toBe("#265a8f");
+  await expect(page.locator(".app-shell")).toHaveCount(0);
+  await page.screenshot({
+    path: "test-results/store-preview-dark.png",
+    fullPage: true,
+  });
+  await page.goto(publicUrl);
+  await expect(storefront).toHaveClass(/theme-light/);
+  expect(
+    await storefront.evaluate((el) =>
+      getComputedStyle(el).getPropertyValue("--store-brand").trim(),
+    ),
+  ).toBe("#147d64");
+  await page.goto(`/stores/${storeId}/settings`);
+  await page
+    .getByRole("combobox", { name: "Theme Mode", exact: true })
+    .selectOption("system");
+  await page.getByRole("button", { name: "Save Draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Draft saved");
+  await page.goto(`/stores/${storeId}/preview?market=KE`);
+  await expect(storefront).toHaveClass(/theme-system/);
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(storefront).toHaveCSS("background-color", "rgb(18, 35, 30)");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(storefront).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await page.goto(`/stores/${storeId}/settings`);
+  await page
+    .getByRole("combobox", { name: "Theme Mode", exact: true })
+    .selectOption("light");
+  await page.getByLabel("Brand Color HEX").fill("#147d64");
+  await page.getByRole("button", { name: "Save Draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Draft saved");
 
   const context = await browser.newContext({
     viewport: { width: 375, height: 812 },
@@ -380,6 +430,11 @@ test("coherent merchant navigation and mobile customer checkout", async ({
   for (const width of [375, 768, 1024, 1280, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await noOverflow(page);
+    if ([375, 768].includes(width))
+      await page.screenshot({
+        path: `test-results/workspace-order-detail-${width}.png`,
+        fullPage: true,
+      });
   }
   await page.screenshot({
     path: "test-results/checkpoint-8-order-detail.png",

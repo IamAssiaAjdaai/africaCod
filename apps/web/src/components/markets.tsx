@@ -98,7 +98,7 @@ export function Markets({
         </div>
       ) : (
         <>
-          <TableScroll label="Store Markets data table">
+          <TableScroll label="Configured markets data table">
             <table className="markets-table">
               <thead>
                 <tr>
