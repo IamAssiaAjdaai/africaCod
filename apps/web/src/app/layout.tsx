@@ -8,6 +8,7 @@ import "@fontsource/poppins/latin-600.css";
 import "@fontsource/roboto/latin-400.css";
 import "@fontsource/roboto/latin-600.css";
 import "./globals.css";
+import "./workspace.css";
 export const metadata: Metadata = {
   title: {
     default: "AfricaCod — Commerce across borders",
