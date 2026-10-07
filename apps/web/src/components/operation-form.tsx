@@ -7,12 +7,14 @@ export function OperationForm({
   label,
   children,
   anchor,
+  appearance = "primary",
 }: {
   orderId: string;
   intent: string;
   label: string;
   children?: React.ReactNode;
   anchor?: string;
+  appearance?: "primary" | "secondary";
 }) {
   const [state, action, pending] = useActionState(operationAction, {});
   const [initialKey] = useState(() => crypto.randomUUID());
@@ -31,7 +33,10 @@ export function OperationForm({
         value={state.requestKey ?? initialKey}
       />
       {children}
-      <button className="button button-green" disabled={pending}>
+      <button
+        className={`button ${intent === "cancel" ? "button-danger" : appearance === "secondary" ? "button-outline" : "button-green"}`}
+        disabled={pending}
+      >
         {pending ? "Recording…" : label}
       </button>
       {state.error && (

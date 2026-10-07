@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PageHeading, Badge } from "@africacod/ui";
+import { PageHeading, StatusBadge, TableScroll } from "@africacod/ui";
 import { formatMoney } from "@africacod/shared/money";
 import { operations, requireOrganization } from "@/lib/server";
 import {
@@ -64,7 +64,7 @@ export async function OrdersView({
   return (
     <>
       <PageHeading
-        eyebrow="COMMERCE"
+        eyebrow="OPERATIONS"
         title={
           mode === "orders"
             ? "Orders"
@@ -74,24 +74,48 @@ export async function OrdersView({
                 ? "Callbacks"
                 : "Fulfillment"
         }
-        description="Cash on delivery orders and their original commercial details."
+        description={
+          mode === "confirmation"
+            ? "Contact customers, record outcomes and schedule follow-ups."
+            : mode === "callbacks"
+              ? "Follow up on scheduled customer callbacks."
+              : mode === "fulfillment"
+                ? "Prepare confirmed orders and track shipment progress."
+                : "Review customer orders, confirmation and fulfillment."
+        }
       />
       {!parsed.success && (
         <p role="alert" className="form-error">
           Invalid filters. Showing all orders.
         </p>
       )}
-      <nav className="catalog-filters" aria-label="Order workflows">
-        <Link className="button button-outline" href="/orders">
+      <nav className="workflow-nav" aria-label="Order workflows">
+        <Link
+          className="button button-outline"
+          aria-current={mode === "orders" ? "page" : undefined}
+          href="/orders"
+        >
           All orders
         </Link>
-        <Link className="button button-outline" href="/orders/confirmation">
+        <Link
+          className="button button-outline"
+          aria-current={mode === "confirmation" ? "page" : undefined}
+          href="/orders/confirmation"
+        >
           Confirmation queue
         </Link>
-        <Link className="button button-outline" href="/orders/callbacks">
+        <Link
+          className="button button-outline"
+          aria-current={mode === "callbacks" ? "page" : undefined}
+          href="/orders/callbacks"
+        >
           Callbacks
         </Link>
-        <Link className="button button-outline" href="/fulfillment">
+        <Link
+          className="button button-outline"
+          aria-current={mode === "fulfillment" ? "page" : undefined}
+          href="/fulfillment"
+        >
           Fulfillment
         </Link>
       </nav>
@@ -277,7 +301,7 @@ export async function OrdersView({
           </Link>
         </form>
         {result.rows.length ? (
-          <div className="table-scroll">
+          <TableScroll label="Orders data table">
             <table className="markets-table orders-table">
               <thead>
                 <tr>
@@ -343,9 +367,9 @@ export async function OrdersView({
                       </td>
                       <td>{formatMoney(order.totalMinor, order.currency)}</td>
                       <td>
-                        <Badge active={order.status === "new"}>
+                        <StatusBadge status={order.status}>
                           {order.status}
-                        </Badge>
+                        </StatusBadge>
                       </td>
                       <td>
                         {confirmation.replaceAll("_", " ")}
@@ -382,6 +406,7 @@ export async function OrdersView({
                               orderId={order.id}
                               intent="attempt"
                               label="No answer"
+                              appearance="secondary"
                             >
                               <input
                                 type="hidden"
@@ -408,7 +433,7 @@ export async function OrdersView({
                             </Link>
                             <Link
                               href={`/orders/${order.id}#cancel-order`}
-                              className="button button-outline button-small"
+                              className="button button-danger button-small"
                             >
                               Cancel
                             </Link>
@@ -439,7 +464,7 @@ export async function OrdersView({
                 )}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         ) : (
           <div className="empty-state">
             <h3>
@@ -465,14 +490,24 @@ export async function OrdersView({
           </div>
         )}
         <div className="form-actions">
-          <span>
+          <span className="pagination-summary">
             {result.total} orders · Page {result.page}
           </span>
           {result.page > 1 && (
-            <Link href={pageUrl(result.page - 1)}>Previous</Link>
+            <Link
+              className="button button-outline button-small"
+              href={pageUrl(result.page - 1)}
+            >
+              Previous
+            </Link>
           )}
           {result.page * result.pageSize < result.total && (
-            <Link href={pageUrl(result.page + 1)}>Next</Link>
+            <Link
+              className="button button-outline button-small"
+              href={pageUrl(result.page + 1)}
+            >
+              Next
+            </Link>
           )}
         </div>
       </section>

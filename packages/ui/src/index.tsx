@@ -15,12 +15,16 @@ export function Brand({ dark = false }: { dark?: boolean }) {
 export function Badge({
   active = true,
   children,
+  tone,
 }: {
   active?: boolean;
+  tone?: "success" | "warning" | "danger" | "info" | "neutral";
   children: ReactNode;
 }) {
   return (
-    <span className={`badge ${active ? "badge-active" : "badge-inactive"}`}>
+    <span
+      className={`badge ${tone ? `badge-${tone}` : active ? "badge-active" : "badge-inactive"}`}
+    >
       <span />
       {children}
     </span>
@@ -61,5 +65,84 @@ export function ArrowLink({ children }: { children: ReactNode }) {
       {children}
       <ArrowUpRight size={16} />
     </span>
+  );
+}
+
+// Visual semantics only; these labels never decide commercial or shipment state.
+export function StatusBadge({
+  status,
+  children,
+}: {
+  status: string;
+  children?: ReactNode;
+}) {
+  const tone = [
+    "active",
+    "published",
+    "connected",
+    "confirmed",
+    "delivered",
+    "fulfilled",
+  ].includes(status)
+    ? "success"
+    : [
+          "failed",
+          "error",
+          "cancelled",
+          "delivery_failed",
+          "refused",
+          "returned",
+        ].includes(status)
+      ? "danger"
+      : [
+            "new",
+            "pending",
+            "processing",
+            "ready",
+            "uncontacted",
+            "attempted",
+            "callback_due",
+          ].includes(status)
+        ? "warning"
+        : ["shipped", "out_for_delivery"].includes(status)
+          ? "info"
+          : "neutral";
+  return <Badge tone={tone}>{children ?? status.replaceAll("_", " ")}</Badge>;
+}
+export function TableScroll({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="table-scroll" role="region" aria-label={label} tabIndex={0}>
+      {children}
+    </div>
+  );
+}
+export function EmptyState({
+  title,
+  description,
+  icon,
+  action,
+}: {
+  title: string;
+  description: ReactNode;
+  icon?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="empty-state">
+      {icon && (
+        <span className="empty-icon" aria-hidden="true">
+          {icon}
+        </span>
+      )}
+      <h2>{title}</h2>
+      <p>{description}</p>
+      {action}
+    </div>
   );
 }

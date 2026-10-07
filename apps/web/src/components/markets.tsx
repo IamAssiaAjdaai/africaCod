@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { Check, Globe2, MapPin, Plus, X } from "lucide-react";
-import { Badge } from "@africacod/ui";
+import { Badge, TableScroll } from "@africacod/ui";
 import { addMarketAction, setMarketStatusAction } from "@/lib/actions";
 type Market = {
   id: string;
@@ -98,7 +98,7 @@ export function Markets({
         </div>
       ) : (
         <>
-          <div className="table-scroll">
+          <TableScroll label="Store Markets data table">
             <table className="markets-table">
               <thead>
                 <tr>
@@ -145,7 +145,7 @@ export function Markets({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
           <div className="markets-footnote">
             <Check size={15} /> Deactivating a market keeps its settings for
             when you’re ready to return.

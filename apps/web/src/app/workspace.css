@@ -648,3 +648,671 @@
   background: var(--brand);
   color: var(--surface);
 }
+
+/* Shared operational surfaces: readable dense rows and keyboard scroll regions. */
+.app-shell .table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  border-radius: var(--radius-control);
+  overscroll-behavior-x: contain;
+}
+.app-shell .markets-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.app-shell .markets-table :is(th, td) {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  border-color: var(--border);
+}
+.app-shell .markets-table th {
+  background: var(--surface-subtle);
+  color: var(--foreground-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0;
+}
+.app-shell .markets-table td {
+  color: var(--foreground);
+  font-size: 13px;
+  vertical-align: middle;
+}
+.app-shell .markets-table th:first-child,
+.app-shell .markets-table td:first-child {
+  padding-left: var(--space-4);
+}
+.app-shell .markets-table th:last-child,
+.app-shell .markets-table td:last-child {
+  padding-right: var(--space-4);
+  text-align: left;
+}
+.app-shell .markets-table tbody tr:hover {
+  background: var(--surface-subtle);
+}
+.app-shell .markets-table tbody tr[aria-selected="true"] {
+  background: var(--brand-subtle);
+}
+.app-shell .markets-table .muted {
+  font-size: 12px;
+  margin-top: var(--space-1);
+}
+.app-shell .orders-table {
+  min-width: 1260px;
+}
+.app-shell .orders-table td {
+  vertical-align: top;
+}
+.app-shell .orders-table td:nth-child(5) {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.app-shell .orders-table td:first-child .text-link {
+  white-space: nowrap;
+}
+.app-shell .orders-table .operation-form {
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+  padding: 0;
+  border: 0;
+}
+.app-shell .orders-table .operation-form .button {
+  width: 100%;
+  min-height: 32px;
+  font-size: 12px;
+}
+.app-shell .orders-table td:last-child > .button {
+  margin-top: var(--space-2);
+}
+.app-shell .workflow-nav,
+.app-shell .queue-tabs,
+.app-shell .section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+.app-shell :is(.workflow-nav, .queue-tabs, .section-nav) a {
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--surface);
+  color: var(--foreground-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: var(--space-2) var(--space-3);
+}
+.app-shell :is(.workflow-nav, .queue-tabs, .section-nav) a:hover {
+  background: var(--surface-hover);
+}
+.app-shell
+  :is(.workflow-nav, .queue-tabs, .section-nav)
+  a[aria-current="page"] {
+  background: var(--brand-subtle);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.app-shell .catalog-filters {
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-4);
+  align-items: flex-end;
+}
+.app-shell .catalog-filters > label {
+  flex: 1 1 160px;
+  min-width: 140px;
+}
+.app-shell .catalog-filters .search-field {
+  flex: 2 1 220px;
+}
+.app-shell .catalog-filters .search-field input {
+  padding-left: 36px;
+}
+.app-shell .catalog-filters .search-field svg {
+  color: var(--foreground-muted);
+}
+.app-shell .catalog-filters .button {
+  min-height: 40px;
+}
+.app-shell .catalog-tabs {
+  gap: var(--space-5);
+}
+.app-shell .catalog-tabs a {
+  color: var(--foreground-muted);
+  font-size: 13px;
+}
+.app-shell .catalog-tabs a[aria-current="page"] {
+  color: var(--brand);
+  border-color: var(--brand);
+}
+.app-shell .pagination-summary {
+  margin-right: auto;
+  font-size: 12px;
+  color: var(--foreground-muted);
+}
+.app-shell .catalog-form fieldset {
+  border-color: var(--border);
+  border-radius: var(--radius-control);
+  padding: var(--space-4);
+}
+.app-shell .catalog-form legend {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 var(--space-2);
+}
+.app-shell .catalog-form {
+  gap: var(--space-5);
+}
+.app-shell :is(.product-thumb, .store-avatar, .info-icon) {
+  background: var(--surface-subtle);
+  color: var(--foreground-muted);
+  border-color: var(--border);
+  border-radius: var(--radius-control);
+}
+.app-shell .product-list-name strong {
+  font-size: 13px;
+}
+.app-shell .product-list-name small {
+  color: var(--foreground-muted);
+  font-size: 12px;
+}
+.app-shell .offer-tag {
+  border-color: var(--border);
+  background: var(--surface-subtle);
+  color: var(--foreground-secondary);
+  font-size: 12px;
+}
+.app-shell .catalog-slug {
+  font-size: 12px;
+  color: var(--foreground-muted);
+}
+.app-shell .preview-banner {
+  border-color: var(--border);
+  background: var(--surface-subtle);
+  color: var(--foreground-secondary);
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  padding: var(--space-3) var(--space-4);
+}
+@media (max-width: 760px) {
+  .app-shell .catalog-filters {
+    gap: var(--space-3);
+  }
+  .app-shell .catalog-filters > label {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+  .app-shell .catalog-filters :is(.button, .button-small) {
+    min-height: 44px;
+  }
+  .app-shell :is(.workflow-nav, .queue-tabs, .section-nav) a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .app-shell .orders-table .operation-form .button {
+    min-height: 44px;
+  }
+}
+
+/* Real-data overview: period KPIs first, operational queues second. */
+.app-shell {
+  --chart-visitors: var(--info);
+  --chart-orders: var(--warning);
+  --chart-deliveries: var(--brand);
+}
+.app-shell .dashboard-range {
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface);
+}
+.app-shell .dashboard-range label {
+  min-width: 0;
+  font-size: 12px;
+}
+.app-shell .stats-grid {
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.app-shell .stat-card {
+  padding: var(--space-5);
+  background: var(--surface);
+  border-color: var(--border);
+  border-radius: var(--radius-panel);
+}
+.app-shell .stat-card > span,
+.app-shell .stat-card dt {
+  color: var(--foreground-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+.app-shell .stat-card > strong,
+.app-shell .stat-card dd {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.7px;
+  color: var(--foreground);
+  margin: var(--space-3) 0 var(--space-2);
+  font-variant-numeric: tabular-nums;
+}
+.app-shell .stat-card svg {
+  color: var(--foreground-muted);
+  width: 18px;
+  height: 18px;
+}
+.app-shell .stat-card small {
+  font-size: 12px;
+  color: var(--foreground-muted);
+  line-height: 1.5;
+}
+.app-shell .operational-overview > .stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.app-shell .overview-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: var(--space-6);
+}
+.app-shell .overview-panels > .panel {
+  min-width: 0;
+}
+.app-shell .overview-panels .panel > .muted {
+  font-size: 12px;
+  margin-top: var(--space-2);
+}
+.app-shell .overview-chart {
+  width: 100%;
+  min-width: 0;
+  min-height: 180px;
+}
+.app-shell .chart-legend {
+  gap: var(--space-4);
+  font-size: 12px;
+  margin-top: var(--space-4);
+}
+.app-shell .chart-visitors {
+  color: var(--chart-visitors);
+}
+.app-shell .chart-orders {
+  color: var(--chart-orders);
+}
+.app-shell .chart-deliveries {
+  color: var(--chart-deliveries);
+}
+.app-shell .cod-funnel {
+  gap: 0;
+  grid-template-columns: 1fr;
+  margin: var(--space-4) 0;
+}
+.app-shell .cod-funnel li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  padding: var(--space-3) 0;
+}
+.app-shell .cod-funnel li:last-child {
+  border-bottom: 0;
+}
+.app-shell .cod-funnel li strong {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.app-shell .cod-funnel li small {
+  color: var(--foreground-muted);
+  font-size: 12px;
+}
+.app-shell .queue-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.app-shell .queue-metrics .stat-card {
+  padding: var(--space-4);
+}
+.app-shell .queue-metrics .stat-card strong {
+  margin: var(--space-2) 0 0;
+  font-size: 24px;
+}
+.app-shell .queue-metrics .stat-card > span {
+  font-size: 12px;
+}
+.app-shell .operational-revenue > p {
+  margin-top: var(--space-2);
+}
+.app-shell .dashboard-work-grid {
+  gap: var(--space-6);
+}
+.app-shell .work-list {
+  margin-bottom: 0;
+}
+.app-shell .work-list a {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-3) 0;
+}
+.app-shell .work-list small {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 12px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.app-shell .work-list span {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  font-size: 12px;
+}
+.app-shell .work-list :is(span, small) {
+  color: var(--foreground-muted);
+}
+.app-shell .dashboard-store-list > a {
+  padding: var(--space-3) 0;
+  gap: var(--space-3);
+}
+.app-shell .dashboard-store-list strong {
+  font-size: 13px;
+}
+.app-shell .dashboard-store-list small {
+  font-size: 12px;
+  color: var(--foreground-muted);
+}
+.app-shell .funnel-steps li {
+  padding: var(--space-4);
+  background: var(--surface-subtle);
+  border-color: var(--border);
+  border-radius: var(--radius-control);
+}
+.app-shell .funnel-steps strong {
+  color: var(--foreground);
+  font-size: 24px;
+}
+.app-shell .funnel-steps small {
+  color: var(--foreground-muted);
+  font-size: 12px;
+}
+.app-shell .analytics-filters {
+  margin-top: 0;
+  gap: var(--space-3);
+}
+.app-shell .analytics-table :is(th, td) {
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 1024px) {
+  .app-shell .overview-panels {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .app-shell .operational-overview > .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .app-shell .queue-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .app-shell .stats-grid .stat-card:last-child {
+    grid-column: auto;
+  }
+  .app-shell .stat-card {
+    padding: var(--space-4);
+  }
+  .app-shell .dashboard-range {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .app-shell .dashboard-range label:first-child {
+    grid-column: 1 / -1;
+  }
+  .app-shell .dashboard-range .button {
+    grid-column: 1 / -1;
+  }
+  .app-shell .dashboard-work-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .app-shell .work-list a {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app-shell .work-list small {
+    grid-column: 1;
+    grid-row: 3;
+  }
+}
+
+/* Store configuration and catalog forms share the same restrained grouping. */
+.app-shell .settings-toolbar {
+  margin: 0 0 var(--space-6);
+  gap: var(--space-6);
+}
+.app-shell .settings-toolbar p {
+  margin: var(--space-2) 0;
+  color: var(--foreground-secondary);
+}
+.app-shell .settings-toolbar small {
+  color: var(--foreground-muted);
+  font-size: 12px;
+}
+.app-shell .settings-tabs {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  padding: var(--space-1);
+  gap: var(--space-1);
+  margin: var(--space-6) 0;
+}
+.app-shell .settings-tabs button {
+  min-height: 40px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-control);
+  padding: var(--space-2) var(--space-4);
+  color: var(--foreground-secondary);
+}
+.app-shell .settings-tabs button[aria-selected="true"] {
+  background: var(--brand-subtle);
+  color: var(--brand);
+}
+.app-shell .settings-card {
+  --control-margin: 0px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.app-shell .settings-card label {
+  font-size: 13px;
+  gap: var(--space-2);
+}
+.app-shell :is(.settings-grid, .settings-media-grid) {
+  gap: var(--space-6);
+}
+.app-shell :is(.settings-media, .settings-entry) {
+  border-color: var(--border-strong);
+  border-radius: var(--radius-control);
+  padding: var(--space-4);
+  gap: var(--space-3);
+  background: var(--surface);
+}
+.app-shell .reorder-controls button {
+  min-width: 32px;
+  min-height: 32px;
+  border-color: var(--border-strong);
+  background: var(--surface);
+  color: var(--foreground-secondary);
+}
+.app-shell .settings-field-row {
+  border-color: var(--border);
+  padding: var(--space-3) 0;
+  gap: var(--space-4);
+}
+.app-shell .store-grid {
+  gap: var(--space-4);
+}
+.app-shell .store-card {
+  padding: var(--space-6);
+  background: var(--surface);
+  border-color: var(--border);
+  border-radius: var(--radius-panel);
+  box-shadow: none;
+}
+.app-shell .store-card:hover {
+  transform: none;
+  border-color: var(--border-strong);
+  box-shadow: none;
+}
+.app-shell .store-card h2 {
+  margin-top: var(--space-4);
+}
+.app-shell .store-card-bottom {
+  margin-top: var(--space-6);
+  border-color: var(--border);
+}
+.app-shell .store-setup {
+  margin-bottom: var(--space-6);
+}
+.app-shell .store-setup ol {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-6);
+  padding-left: var(--space-5);
+}
+.app-shell .store-setup li {
+  margin: 0;
+  padding: var(--space-1);
+  font-size: 13px;
+}
+.app-shell .store-setup p {
+  font-size: 13px;
+  color: var(--foreground-secondary);
+  margin: var(--space-3) 0;
+}
+.app-shell .settings-rows > div {
+  padding: var(--space-4) 0;
+  border-color: var(--border);
+  font-size: 14px;
+}
+.app-shell .settings-rows dd {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.app-shell :is(.settings-note, .integration-readiness) {
+  font-size: 12px;
+  color: var(--foreground-muted);
+}
+.app-shell .integration-guidance p {
+  font-size: 13px;
+  line-height: 1.6;
+  max-width: 90ch;
+}
+.app-shell .app-card .section-heading {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.app-shell .app-card p {
+  font-size: 13px;
+}
+.app-shell .apps-category > h2 {
+  margin: var(--space-6) 0 var(--space-4);
+}
+.app-shell .loading-bar,
+.app-shell .loading-cards span {
+  border-radius: var(--radius-control);
+  background: var(--surface-subtle);
+}
+
+/* Authentication retains its existing flow with a quieter visual treatment. */
+.auth-page .auth-story {
+  background: var(--surface-subtle);
+  color: var(--foreground);
+  padding: var(--space-10);
+  border-right: 1px solid var(--border);
+}
+.auth-page .auth-story h2 {
+  font-size: 24px;
+  margin-bottom: var(--space-4);
+}
+.auth-page .auth-story p:not(.eyebrow) {
+  color: var(--foreground-secondary);
+  font-size: 15px;
+  max-width: 32ch;
+  line-height: 1.6;
+}
+.auth-page .auth-story small {
+  color: var(--foreground-muted);
+}
+.auth-page .auth-content > .eyebrow {
+  color: var(--foreground-muted);
+  font-size: 12px;
+}
+.auth-page .auth-content h1 {
+  font-size: 26px;
+}
+.auth-page .auth-main {
+  background: var(--surface);
+}
+.auth-page .auth-footer {
+  color: var(--foreground-muted);
+}
+
+@media (max-width: 760px) {
+  .app-shell .sidebar-brand {
+    justify-content: space-between;
+  }
+  .app-shell .settings-toolbar {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .app-shell .settings-toolbar .form-actions {
+    justify-content: flex-start;
+  }
+  .app-shell :is(.settings-tabs button, .reorder-controls button) {
+    min-height: 44px;
+  }
+  .app-shell .reorder-controls button {
+    min-width: 44px;
+  }
+  .app-shell .store-setup ol {
+    grid-template-columns: 1fr;
+  }
+  .app-shell .store-card {
+    padding: var(--space-5);
+  }
+  .auth-page .auth-main {
+    padding: var(--space-6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.app-shell, .auth-page) *,
+  :is(.app-shell, .auth-page) *::before,
+  :is(.app-shell, .auth-page) *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.app-shell .info-panel {
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  padding: var(--space-6);
+  box-shadow: none;
+}
+.app-shell .info-panel h2 {
+  font-size: 18px;
+}
+.app-shell .info-panel p {
+  font-size: 13px;
+  color: var(--foreground-secondary);
+}
+.app-shell .info-icon {
+  background: transparent;
+  width: auto;
+  height: auto;
+  margin-bottom: var(--space-4);
+}
