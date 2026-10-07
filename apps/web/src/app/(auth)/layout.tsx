@@ -10,7 +10,7 @@ export default function AuthLayout({
     <main className="auth-page">
       <aside className="auth-story">
         <Link href="/">
-          <Brand dark />
+          <Brand />
         </Link>
         <div>
           <h2>Your commerce workspace</h2>

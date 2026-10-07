@@ -203,14 +203,17 @@ test("coherent merchant navigation and mobile customer checkout", async ({
     if (request.url().endsWith("/view") && request.method() === "POST")
       observationRequests.push({ type: "product_view" });
   });
-  for (const width of [375, 768, 1280]) {
+  for (const width of [375, 768, 1024, 1280, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const route of [
       "/",
       "/dashboard",
       "/products",
       "/categories",
+      "/stores",
       storeUrl,
+      `/stores/${storeId}/settings`,
+      `/stores/${storeId}/preview?market=KE`,
       productUrl,
       "/orders",
       "/orders/confirmation",
@@ -223,6 +226,27 @@ test("coherent merchant navigation and mobile customer checkout", async ({
       await page.goto(route);
       await expect(page.locator("h1").first()).toBeVisible();
       await noOverflow(page);
+      if (
+        [375, 1440].includes(width) &&
+        [
+          "/dashboard",
+          "/orders",
+          "/products",
+          "/stores",
+          "/analytics",
+          "/settings",
+          `/stores/${storeId}/settings`,
+        ].includes(route)
+      ) {
+        const name =
+          route.startsWith("/stores/") && route.includes("/settings")
+            ? "store-settings"
+            : route.slice(1);
+        await page.screenshot({
+          path: `test-results/workspace-${name}-${width}.png`,
+          fullPage: true,
+        });
+      }
       if (route === "/analytics" && width === 375) {
         const region = page.getByRole("region", { name: "Markets data table" });
         await region.focus();
@@ -250,10 +274,36 @@ test("coherent merchant navigation and mobile customer checkout", async ({
       await expect(
         page.getByRole("button", { name: "Close menu", exact: true }),
       ).toBeFocused();
+      await expect(
+        page.getByRole("dialog", { name: "Workspace navigation" }),
+      ).toBeVisible();
+      expect(
+        await page.locator("body").evaluate((el) => el.style.overflow),
+      ).toBe("hidden");
+      expect(
+        await page
+          .locator(".app-main")
+          .evaluate((el) => (el as HTMLElement).inert),
+      ).toBe(true);
+      await page.getByRole("button", { name: "Sign out", exact: true }).focus();
+      await page.keyboard.press("Tab");
+      await expect(page.locator(".sidebar-brand a")).toBeFocused();
+      await page.keyboard.press("Shift+Tab");
+      await expect(
+        page.getByRole("button", { name: "Sign out", exact: true }),
+      ).toBeFocused();
       await page.keyboard.press("Escape");
       await expect(
         page.getByRole("button", { name: "Open menu", exact: true }),
       ).toBeFocused();
+      expect(
+        await page
+          .locator(".app-main")
+          .evaluate((el) => (el as HTMLElement).inert),
+      ).toBe(false);
+      expect(
+        await page.locator("body").evaluate((el) => el.style.overflow),
+      ).not.toBe("hidden");
       await page
         .getByRole("button", { name: "Open menu", exact: true })
         .click();
@@ -327,7 +377,7 @@ test("coherent merchant navigation and mobile customer checkout", async ({
   await expect(
     page.getByRole("heading", { name: "Customer & delivery snapshot" }),
   ).toBeVisible();
-  for (const width of [375, 768, 1280]) {
+  for (const width of [375, 768, 1024, 1280, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await noOverflow(page);
   }

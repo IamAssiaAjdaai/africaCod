@@ -366,15 +366,6 @@
     min-height: 44px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  :is(.app-shell, .auth-page) *,
-  :is(.app-shell, .auth-page) *::before,
-  :is(.app-shell, .auth-page) *::after {
-    transition: none;
-    animation: none;
-  }
-}
-
 /* Navigation foundation: one compact shell, with a contained mobile drawer. */
 .app-shell {
   display: flex;
@@ -1315,4 +1306,25 @@
   width: auto;
   height: auto;
   margin-bottom: var(--space-4);
+}
+
+.auth-page .password-input button {
+  top: 6px;
+  right: 4px;
+  min-width: 40px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--foreground-muted);
+  border-radius: var(--radius-control);
+}
+@media (max-width: 760px) {
+  .app-shell .settings-toggle {
+    min-height: 44px;
+  }
+  .auth-page .password-input button {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
