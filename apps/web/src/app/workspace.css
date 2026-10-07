@@ -1367,3 +1367,28 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Long order references and grouped actions must wrap at sidebar-sized widths. */
+.app-shell .page-heading {
+  flex-wrap: wrap;
+}
+.app-shell .page-heading > div:first-child {
+  min-width: 0;
+  flex: 1 1 240px;
+}
+.app-shell .page-heading h1 {
+  overflow-wrap: anywhere;
+}
+.app-shell .page-heading-actions {
+  flex-shrink: 1;
+  max-width: 100%;
+}
+.app-shell .order-header-actions {
+  max-width: 100%;
+}
+@media (max-width: 760px) {
+  .app-shell .page-heading > div:first-child {
+    flex: 0 1 auto;
+    width: 100%;
+  }
+}
