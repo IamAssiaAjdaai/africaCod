@@ -13,7 +13,7 @@ export default async function NewStore() {
         <ArrowLeft size={16} /> All stores
       </Link>
       <PageHeading
-        eyebrow="A NEW CHAPTER"
+        eyebrow="STOREFRONT"
         title={first ? "Create your first Store" : "Create Store"}
         description="Start with your brand. Add your markets next."
       />

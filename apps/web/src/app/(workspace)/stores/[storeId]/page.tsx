@@ -29,20 +29,20 @@ export default async function StoreDetail({
   ]);
   return (
     <>
-      <StoreSetup store={store} userId={session.user.id} />
       <Link className="back-link" href="/stores">
         <ArrowLeft size={16} /> All stores
       </Link>
       <PageHeading
         eyebrow="YOUR STORE"
         title={store.name}
-        description="A home for your brand. A starting point for growth."
+        description="Manage store information, markets and storefront settings."
         action={
           <Badge active={store.status === "active"}>
             {store.status === "active" ? "Active store" : "Inactive store"}
           </Badge>
         }
       />
+      <StoreSetup store={store} userId={session.user.id} />
       <nav className="section-nav" aria-label="Store sections">
         <a href="#store-overview">Overview</a>
         <a href="#store-markets">Markets</a>
