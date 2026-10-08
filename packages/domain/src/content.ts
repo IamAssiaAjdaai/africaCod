@@ -563,7 +563,9 @@ export class ContentService extends StorefrontService {
                 slug: row.slug,
                 subtitle: row.config.subtitle,
                 imageUrl: row.config.media[0]
-                  ? `/s/${storeSlug}/p/${row.slug}/media/${row.config.media[0].id}`
+                  ? previewUser
+                    ? `/api/media/${row.config.media[0].id}`
+                    : `/s/${storeSlug}/p/${row.slug}/media/${row.config.media[0].id}`
                   : null,
                 imageAlt:
                   row.config.media[0]?.altText ?? row.config.productName,
