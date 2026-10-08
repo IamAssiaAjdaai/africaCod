@@ -688,10 +688,24 @@ describe.sequential("COD tracking, exports and analytics", () => {
     const secondWorker = new TrackingService(db, runtime);
     await Promise.all([service.runOne(orgA), secondWorker.runOne(orgA)]);
     await drain();
-    const exported = await db
+    // A worker may leave a retry scheduled for later; an empty ready queue
+    // does not mean that this order's Sheets export has completed.
+    const deadline = Date.now() + 5_000;
+    let exported = await db
       .select()
       .from(sheetsTestRows)
       .where(eq(sheetsTestRows.connectionId, connection.id));
+    while (
+      !exported.some((row) => row.orderNumber === o.orderNumber) &&
+      Date.now() < deadline
+    ) {
+      await service.runOne(orgA);
+      await new Promise<void>((resolve) => setTimeout(resolve, 25));
+      exported = await db
+        .select()
+        .from(sheetsTestRows)
+        .where(eq(sheetsTestRows.connectionId, connection.id));
+    }
     expect(
       exported.filter((row) => row.orderNumber === o.orderNumber),
     ).toHaveLength(1);
