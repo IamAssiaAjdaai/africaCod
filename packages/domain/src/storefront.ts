@@ -315,7 +315,9 @@ export class StorefrontService extends CatalogService {
       trustMessage: config.trustMessage,
       ctaLabel: config.ctaLabel,
       media: config.media.map((image) => ({
-        url: `/s/${storeSlug}/p/${productSlug}/media/${image.id}`,
+        url: previewUser
+          ? `/api/media/${image.id}`
+          : `/s/${storeSlug}/p/${productSlug}/media/${image.id}`,
         altText: image.altText ?? config.productName,
       })),
       variants,
