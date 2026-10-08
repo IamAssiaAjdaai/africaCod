@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight, Globe2, Plus, Store } from "lucide-react";
-import { Badge, PageHeading } from "@africacod/ui";
+import { StatusBadge, PageHeading } from "@africacod/ui";
 import { commerce, requireOrganization } from "@/lib/server";
 export default async function StoresPage() {
   const { session } = await requireOrganization();
@@ -15,9 +15,9 @@ export default async function StoresPage() {
   return (
     <>
       <PageHeading
-        eyebrow="YOUR BRANDS, TOGETHER"
+        eyebrow="STOREFRONT"
         title="Stores"
-        description="One workspace. Every store you’re building."
+        description="Manage storefronts and markets."
         action={
           <Link className="button button-green" href="/stores/new">
             <Plus size={17} /> Create store
@@ -28,7 +28,7 @@ export default async function StoresPage() {
         <span>
           {stores.length} {stores.length === 1 ? "store" : "stores"}
         </span>
-        <span>Room for your next idea.</span>
+        <span>Markets are configured per store.</span>
       </div>
       {rows.length ? (
         <section className="store-grid">
@@ -42,12 +42,12 @@ export default async function StoresPage() {
                 <span className="store-avatar">
                   <Store size={25} />
                 </span>
-                <Badge>
+                <StatusBadge status={store.status}>
                   {store.status === "active" ? "Active" : "Inactive"}
-                </Badge>
+                </StatusBadge>
               </div>
               <h2>{store.name}</h2>
-              <p>/{store.slug}</p>
+              <p>/s/{store.slug}</p>
               <div className="store-card-bottom">
                 <span>
                   <Globe2 size={16} />
@@ -67,8 +67,8 @@ export default async function StoresPage() {
             <span className="empty-icon">
               <Store size={30} />
             </span>
-            <p className="eyebrow">A FRESH START</p>
-            <h2>Make a home for your brand.</h2>
+            <p className="eyebrow">STOREFRONT</p>
+            <h2>No stores yet.</h2>
             <p>
               Your stores will live here. Create your first one,
               <br />

@@ -39,6 +39,7 @@ export function OrderOperations({
               orderId={order.id}
               intent="assign"
               label="Save assignment"
+              appearance="secondary"
             >
               <label>
                 Assigned agent
@@ -60,6 +61,7 @@ export function OrderOperations({
                 orderId={order.id}
                 intent="attempt"
                 label="No answer"
+                appearance="secondary"
               >
                 <input type="hidden" name="outcome" value="no_answer" />
                 <label>
@@ -72,6 +74,7 @@ export function OrderOperations({
                 intent="attempt"
                 anchor="callback"
                 label="Set callback"
+                appearance="secondary"
               >
                 <input type="hidden" name="outcome" value="callback" />
                 <label>
@@ -100,6 +103,7 @@ export function OrderOperations({
                 intent="attempt"
                 anchor="cancel-order"
                 label="Cancel order"
+                appearance="danger"
               >
                 <input type="hidden" name="outcome" value="cancelled" />
                 <label>

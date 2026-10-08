@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FolderTree, Plus, Search } from "lucide-react";
-import { PageHeading, Badge } from "@africacod/ui";
+import { PageHeading, Badge, TableScroll } from "@africacod/ui";
 import { catalog, requireOrganization } from "@/lib/server";
 import { found, scalar } from "@/lib/catalog-pages";
 import { StoreChoice } from "@/components/catalog-forms";
@@ -32,9 +32,9 @@ export default async function Categories({
   return (
     <>
       <PageHeading
-        eyebrow="COMMERCE"
+        eyebrow="CATALOG"
         title="Categories"
-        description="Give every product a place to belong."
+        description="Organize products with categories and subcategories."
         action={
           storeId ? (
             <Link
@@ -114,7 +114,7 @@ export default async function Categories({
               </button>
             </form>
             {filtered.length ? (
-              <div className="table-scroll">
+              <TableScroll label="Categories data table">
                 <table className="markets-table">
                   <thead>
                     <tr>
@@ -184,7 +184,7 @@ export default async function Categories({
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TableScroll>
             ) : (
               <div className="catalog-empty">
                 <FolderTree size={32} />
@@ -192,8 +192,8 @@ export default async function Categories({
                   {q
                     ? "No matches found"
                     : subcategories
-                      ? "A little more organization"
-                      : "Room for your first category"}
+                      ? "No subcategories yet"
+                      : "No categories yet"}
                 </h2>
                 <p className="muted">
                   {q

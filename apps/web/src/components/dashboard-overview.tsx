@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TableScroll } from "@africacod/ui";
 import { Users, ShoppingBag, Timer, PackageCheck } from "lucide-react";
 import type { DashboardService, DashboardGroup } from "@africacod/domain";
 import { formatMoney } from "@africacod/shared/money";
@@ -23,7 +24,7 @@ function Performance({
     <section className="panel">
       <h2>{title}</h2>
       {rows.length ? (
-        <div className="table-scroll">
+        <TableScroll label={`${title} data table`}>
           <table className="markets-table">
             <thead>
               <tr>
@@ -52,7 +53,7 @@ function Performance({
               ))}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
       ) : (
         <p className="muted">{empty}</p>
       )}
@@ -117,119 +118,127 @@ export function DashboardOverview({ data }: { data: Overview }) {
           </div>
         ))}
       </section>
-      <section className="panel">
-        <h2>Orders Overview</h2>
-        <p className="muted">
-          {data.range.from.toISOString().slice(0, 10)} —{" "}
-          {new Date(data.range.to.getTime() - 86400000)
-            .toISOString()
-            .slice(0, 10)}{" "}
-          · UTC · visitor observations retained for 30 days
-        </p>
-        <div className="chart-legend">
-          <span className="chart-visitors">Visitors</span>
-          <span className="chart-orders">Orders</span>
-          <span className="chart-deliveries">Deliveries</span>
-        </div>
-        <svg
-          viewBox="0 0 1000 260"
-          className="overview-chart"
-          role="img"
-          aria-label="Daily visitor, order and delivery counts. Exact values are in the table below."
-        >
-          <line x1="30" y1="230" x2="970" y2="230" stroke="#b9cec2" />
-          <text x="2" y="35">
-            {max}
-          </text>
-          <text x="5" y="230">
-            0
-          </text>
-          {(
-            [
-              ["visitors", "#326d9d"],
-              ["orders", "#a45b1d"],
-              ["deliveries", "#147d64"],
-            ] as const
-          ).map(([key, color]) => (
-            <g key={key}>
-              <polyline
-                fill="none"
-                stroke={color}
-                strokeWidth="3"
-                points={points(key)}
-              />
-              {data.series.length === 1 && (
-                <circle
-                  cx="30"
-                  cy={230 - (data.series[0][key] / max) * 200}
-                  r="4"
-                  fill={color}
-                />
-              )}
-            </g>
-          ))}
-        </svg>
-        {!data.series.some((d) => d.visitors || d.orders || d.deliveries) && (
-          <p className="muted">No visitor or Order data for this period.</p>
-        )}
-        <details>
-          <summary>View daily counts</summary>
-          <div className="table-scroll">
-            <table className="markets-table">
-              <thead>
-                <tr>
-                  <th>Date (UTC)</th>
-                  <th>Visitors</th>
-                  <th>Orders</th>
-                  <th>Deliveries</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.series.map((d) => (
-                  <tr key={d.day}>
-                    <th>{d.day}</th>
-                    <td>{d.visitors}</td>
-                    <td>{d.orders}</td>
-                    <td>{d.deliveries}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="overview-panels">
+        <section className="panel">
+          <h2>Orders Overview</h2>
+          <p className="muted">
+            {data.range.from.toISOString().slice(0, 10)} —{" "}
+            {new Date(data.range.to.getTime() - 86400000)
+              .toISOString()
+              .slice(0, 10)}{" "}
+            · UTC · visitor observations retained for 30 days
+          </p>
+          <div className="chart-legend">
+            <span className="chart-visitors">Visitors</span>
+            <span className="chart-orders">Orders</span>
+            <span className="chart-deliveries">Deliveries</span>
           </div>
-        </details>
-      </section>
-      <section className="panel">
-        <h2>COD Performance Funnel</h2>
-        <p className="muted">
-          Order creation cohort in this range, with current shipment outcomes.
-          Visitor conversion is directional: observations are not unique
-          customers.
-        </p>
-        <ol className="cod-funnel">
-          {funnel.map(([label, count], i) => (
-            <li key={label}>
-              <span>{label}</span>
-              <strong>{count}</strong>
-              <small>
-                {i && funnel[i - 1][1]
-                  ? `${((count / funnel[i - 1][1]) * 100).toFixed(1)}% of ${funnel[i - 1][0].toLowerCase()}`
-                  : "—"}
-              </small>
-            </li>
-          ))}
-        </ol>
-        <p>
-          Refused: <strong>{data.metrics.refused}</strong> · Returned:{" "}
-          <strong>{data.metrics.returned}</strong>
-        </p>
-        <p>
-          Delivered Revenue: <strong>{revenue(data.metrics.revenue)}</strong>
-        </p>
-        <p className="muted">
-          Historical order totals grouped by currency. Submitted COD value is
-          not Delivered Revenue; returns and refusals are excluded.
-        </p>
-      </section>
+          <svg
+            viewBox="0 0 1000 260"
+            className="overview-chart"
+            role="img"
+            aria-label="Daily visitor, order and delivery counts. Exact values are in the table below."
+          >
+            <line
+              x1="30"
+              y1="230"
+              x2="970"
+              y2="230"
+              stroke="var(--border-strong)"
+            />
+            <text x="2" y="35">
+              {max}
+            </text>
+            <text x="5" y="230">
+              0
+            </text>
+            {(
+              [
+                ["visitors", "var(--chart-visitors)"],
+                ["orders", "var(--chart-orders)"],
+                ["deliveries", "var(--chart-deliveries)"],
+              ] as const
+            ).map(([key, color]) => (
+              <g key={key}>
+                <polyline
+                  fill="none"
+                  stroke={color}
+                  strokeWidth="3"
+                  points={points(key)}
+                />
+                {data.series.length === 1 && (
+                  <circle
+                    cx="30"
+                    cy={230 - (data.series[0][key] / max) * 200}
+                    r="4"
+                    fill={color}
+                  />
+                )}
+              </g>
+            ))}
+          </svg>
+          {!data.series.some((d) => d.visitors || d.orders || d.deliveries) && (
+            <p className="muted">No visitor or Order data for this period.</p>
+          )}
+          <details>
+            <summary>View daily counts</summary>
+            <TableScroll label="Daily counts data table">
+              <table className="markets-table">
+                <thead>
+                  <tr>
+                    <th>Date (UTC)</th>
+                    <th>Visitors</th>
+                    <th>Orders</th>
+                    <th>Deliveries</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.series.map((d) => (
+                    <tr key={d.day}>
+                      <th>{d.day}</th>
+                      <td>{d.visitors}</td>
+                      <td>{d.orders}</td>
+                      <td>{d.deliveries}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableScroll>
+          </details>
+        </section>
+        <section className="panel">
+          <h2>COD Performance Funnel</h2>
+          <p className="muted">
+            Order creation cohort in this range, with current shipment outcomes.
+            Visitor conversion is directional: observations are not unique
+            customers.
+          </p>
+          <ol className="cod-funnel">
+            {funnel.map(([label, count], i) => (
+              <li key={label}>
+                <span>{label}</span>
+                <strong>{count}</strong>
+                <small>
+                  {i && funnel[i - 1][1]
+                    ? `${((count / funnel[i - 1][1]) * 100).toFixed(1)}% of ${funnel[i - 1][0].toLowerCase()}`
+                    : "—"}
+                </small>
+              </li>
+            ))}
+          </ol>
+          <p>
+            Refused: <strong>{data.metrics.refused}</strong> · Returned:{" "}
+            <strong>{data.metrics.returned}</strong>
+          </p>
+          <p>
+            Delivered Revenue: <strong>{revenue(data.metrics.revenue)}</strong>
+          </p>
+          <p className="muted">
+            Historical order totals grouped by currency. Submitted COD value is
+            not Delivered Revenue; returns and refusals are excluded.
+          </p>
+        </section>
+      </div>
       <Performance
         title="Performance by Product"
         rows={data.byProduct}

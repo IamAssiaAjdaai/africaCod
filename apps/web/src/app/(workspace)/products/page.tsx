@@ -1,7 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Package, Plus, Search } from "lucide-react";
-import { PageHeading, Badge } from "@africacod/ui";
+import {
+  PageHeading,
+  Badge,
+  TableScroll,
+  EmptyState,
+  StatusBadge,
+} from "@africacod/ui";
 import { formatMoney } from "@africacod/shared/money";
 import { catalog, requireOrganization } from "@/lib/server";
 import { found, scalar } from "@/lib/catalog-pages";
@@ -33,7 +39,7 @@ export default async function Products({
   return (
     <>
       <PageHeading
-        eyebrow="COMMERCE"
+        eyebrow="CATALOG"
         title="Products"
         description="One catalog. Independent offers for every market."
         action={
@@ -79,7 +85,7 @@ export default async function Products({
           </button>
         </form>
         {rows.length ? (
-          <div className="table-scroll">
+          <TableScroll label="Products data table">
             <table className="markets-table product-table">
               <thead>
                 <tr>
@@ -141,10 +147,10 @@ export default async function Products({
                         )?.name ?? "—"}
                       </td>
                       <td>
-                        <Badge active={product.status === "active"}>
+                        <StatusBadge status={product.status}>
                           {product.status[0].toUpperCase() +
                             product.status.slice(1)}
-                        </Badge>
+                        </StatusBadge>
                       </td>
                       <td>
                         {offers.length ? (
@@ -206,27 +212,29 @@ export default async function Products({
                 })}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         ) : (
-          <div className="catalog-empty">
-            <Package size={36} />
-            <h2>
-              {q || status || (storeId && data.products.length)
+          <EmptyState
+            icon={<Package size={22} />}
+            title={
+              q || status || (storeId && data.products.length)
                 ? "No products match"
-                : "Your next bestseller starts here"}
-            </h2>
-            <p className="muted">
-              {q || status
+                : "No products yet"
+            }
+            description={
+              q || status
                 ? "Try another search or filter."
-                : "Add product details, images and simple variants. Choose your market offers separately."}
-            </p>
-            <Link
-              className="button button-green"
-              href={stores.length ? newLink : "/stores/new"}
-            >
-              {stores.length ? "Add Product" : "Create store"}
-            </Link>
-          </div>
+                : "Add product details and images, then configure offers for each market."
+            }
+            action={
+              <Link
+                className="button button-green"
+                href={stores.length ? newLink : "/stores/new"}
+              >
+                {stores.length ? "Add Product" : "Create store"}
+              </Link>
+            }
+          />
         )}
       </section>
     </>

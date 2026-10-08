@@ -43,11 +43,11 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   return (
     <>
       <p className="eyebrow">WELCOME TO AFRICACOD</p>
-      <h1>{signingUp ? "Make room for growth." : "Welcome back."}</h1>
+      <h1>{signingUp ? "Create your account" : "Sign in"}</h1>
       <p className="muted">
         {signingUp
-          ? "Create your account. Your next market is waiting."
-          : "Your business, right where you left it."}
+          ? "Set up your account to manage stores and markets."
+          : "Access your stores and COD operations."}
       </p>
       <form onSubmit={submit} className="stack-form">
         {signingUp && (

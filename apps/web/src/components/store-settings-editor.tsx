@@ -290,7 +290,7 @@ export function StoreSettingsEditor({
           />
           <button
             type="button"
-            className="button button-outline"
+            className="button button-danger"
             onClick={() =>
               update("navigation", {
                 [kind]: draft.navigation[kind].filter((l) => l.id !== link.id),
@@ -472,7 +472,7 @@ export function StoreSettingsEditor({
                               src={`/api/stores/${storeId}/assets/${draft.identity[slot]}?w=320`}
                             />
                             <button
-                              className="button button-outline"
+                              className="button button-danger"
                               type="button"
                               onClick={() =>
                                 update("identity", { [slot]: null })
@@ -900,7 +900,7 @@ export function StoreSettingsEditor({
                         />
                         <button
                           type="button"
-                          className="button button-outline"
+                          className="button button-danger"
                           onClick={() =>
                             update("productPage", {
                               customFields:

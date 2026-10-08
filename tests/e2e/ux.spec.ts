@@ -6,6 +6,7 @@ async function noOverflow(page: Page) {
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth + 1,
     ),
+    `Horizontal overflow at ${page.viewportSize()?.width}px on ${page.url()}`,
   ).toBe(true);
 }
 test("coherent merchant navigation and mobile customer checkout", async ({
@@ -182,6 +183,55 @@ test("coherent merchant navigation and mobile customer checkout", async ({
     .getByRole("link", { name: "Open public page" })
     .getAttribute("href"))!;
 
+  // Workspace CSS must not override merchant branding or light/dark/system themes.
+  await page.goto(`/stores/${storeId}/settings`);
+  await page.getByLabel("Brand Color HEX").fill("#265a8f");
+  await page
+    .getByRole("combobox", { name: "Theme Mode", exact: true })
+    .selectOption("dark");
+  await page.getByRole("button", { name: "Save Draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Draft saved");
+  await page.goto(`/stores/${storeId}/preview?market=KE`);
+  const storefront = page.locator(".storefront-shell");
+  await expect(storefront).toHaveClass(/theme-dark/);
+  await expect(storefront).toHaveCSS("background-color", "rgb(18, 35, 30)");
+  expect(
+    await storefront.evaluate((el) =>
+      getComputedStyle(el).getPropertyValue("--store-brand").trim(),
+    ),
+  ).toBe("#265a8f");
+  await expect(page.locator(".app-shell")).toHaveCount(0);
+  await page.screenshot({
+    path: "test-results/store-preview-dark.png",
+    fullPage: true,
+  });
+  await page.goto(publicUrl);
+  await expect(storefront).toHaveClass(/theme-light/);
+  expect(
+    await storefront.evaluate((el) =>
+      getComputedStyle(el).getPropertyValue("--store-brand").trim(),
+    ),
+  ).toBe("#147d64");
+  await page.goto(`/stores/${storeId}/settings`);
+  await page
+    .getByRole("combobox", { name: "Theme Mode", exact: true })
+    .selectOption("system");
+  await page.getByRole("button", { name: "Save Draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Draft saved");
+  await page.goto(`/stores/${storeId}/preview?market=KE`);
+  await expect(storefront).toHaveClass(/theme-system/);
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(storefront).toHaveCSS("background-color", "rgb(18, 35, 30)");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(storefront).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await page.goto(`/stores/${storeId}/settings`);
+  await page
+    .getByRole("combobox", { name: "Theme Mode", exact: true })
+    .selectOption("light");
+  await page.getByLabel("Brand Color HEX").fill("#147d64");
+  await page.getByRole("button", { name: "Save Draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Draft saved");
+
   const context = await browser.newContext({
     viewport: { width: 375, height: 812 },
   });
@@ -203,14 +253,17 @@ test("coherent merchant navigation and mobile customer checkout", async ({
     if (request.url().endsWith("/view") && request.method() === "POST")
       observationRequests.push({ type: "product_view" });
   });
-  for (const width of [375, 768, 1280]) {
+  for (const width of [375, 768, 1024, 1280, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const route of [
       "/",
       "/dashboard",
       "/products",
       "/categories",
+      "/stores",
       storeUrl,
+      `/stores/${storeId}/settings`,
+      `/stores/${storeId}/preview?market=KE`,
       productUrl,
       "/orders",
       "/orders/confirmation",
@@ -223,6 +276,27 @@ test("coherent merchant navigation and mobile customer checkout", async ({
       await page.goto(route);
       await expect(page.locator("h1").first()).toBeVisible();
       await noOverflow(page);
+      if (
+        [375, 1440].includes(width) &&
+        [
+          "/dashboard",
+          "/orders",
+          "/products",
+          "/stores",
+          "/analytics",
+          "/settings",
+          `/stores/${storeId}/settings`,
+        ].includes(route)
+      ) {
+        const name =
+          route.startsWith("/stores/") && route.includes("/settings")
+            ? "store-settings"
+            : route.slice(1);
+        await page.screenshot({
+          path: `test-results/workspace-${name}-${width}.png`,
+          fullPage: true,
+        });
+      }
       if (route === "/analytics" && width === 375) {
         const region = page.getByRole("region", { name: "Markets data table" });
         await region.focus();
@@ -250,10 +324,36 @@ test("coherent merchant navigation and mobile customer checkout", async ({
       await expect(
         page.getByRole("button", { name: "Close menu", exact: true }),
       ).toBeFocused();
+      await expect(
+        page.getByRole("dialog", { name: "Workspace navigation" }),
+      ).toBeVisible();
+      expect(
+        await page.locator("body").evaluate((el) => el.style.overflow),
+      ).toBe("hidden");
+      expect(
+        await page
+          .locator(".app-main")
+          .evaluate((el) => (el as HTMLElement).inert),
+      ).toBe(true);
+      await page.getByRole("button", { name: "Sign out", exact: true }).focus();
+      await page.keyboard.press("Tab");
+      await expect(page.locator(".sidebar-brand a")).toBeFocused();
+      await page.keyboard.press("Shift+Tab");
+      await expect(
+        page.getByRole("button", { name: "Sign out", exact: true }),
+      ).toBeFocused();
       await page.keyboard.press("Escape");
       await expect(
         page.getByRole("button", { name: "Open menu", exact: true }),
       ).toBeFocused();
+      expect(
+        await page
+          .locator(".app-main")
+          .evaluate((el) => (el as HTMLElement).inert),
+      ).toBe(false);
+      expect(
+        await page.locator("body").evaluate((el) => el.style.overflow),
+      ).not.toBe("hidden");
       await page
         .getByRole("button", { name: "Open menu", exact: true })
         .click();
@@ -327,9 +427,14 @@ test("coherent merchant navigation and mobile customer checkout", async ({
   await expect(
     page.getByRole("heading", { name: "Customer & delivery snapshot" }),
   ).toBeVisible();
-  for (const width of [375, 768, 1280]) {
+  for (const width of [375, 768, 1024, 1280, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await noOverflow(page);
+    if ([375, 768].includes(width))
+      await page.screenshot({
+        path: `test-results/workspace-order-detail-${width}.png`,
+        fullPage: true,
+      });
   }
   await page.screenshot({
     path: "test-results/checkpoint-8-order-detail.png",

@@ -4,6 +4,8 @@ An Africa-first cash-on-delivery commerce workspace. Checkpoint 1 provides **Acc
 
 A store starts with **zero markets**. Platform country definitions are reference data for a comprehensive country/territory catalog; only an explicit **Add Market** action creates a store market. Live couriers, AI, inventory, payments, settlement reconciliation, profit analytics and agency workflows remain deferred. External integration readiness and remaining credential requirements are listed under Checkpoint 7.
 
+Workspace design decisions, responsive checks and scope boundaries are documented in [Workspace UI refinement](docs/workspace-ui-refinement.md).
+
 ## Local setup
 
 Requirements: Node.js 22+, pnpm 10.28.2, Docker with Compose. The Docker daemon must be running. Port 3000 is the web app; port 5433 is the local database.

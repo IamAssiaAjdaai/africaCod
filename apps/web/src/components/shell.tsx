@@ -3,33 +3,69 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  ArrowUpRight,
   ClipboardCheck,
   LayoutDashboard,
   LogOut,
   Menu,
-  Plus,
   Settings,
   Package,
+  ShoppingBag,
+  Truck,
+  FileText,
+  ChartNoAxesCombined,
+  Grid2X2,
   FolderTree,
   Store,
   X,
 } from "lucide-react";
 import { Brand } from "@africacod/ui";
 import { authClient } from "@africacod/auth/client";
-const navigation = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/products", label: "Products", icon: Package },
-  { href: "/categories", label: "Categories", icon: FolderTree },
-  { href: "/orders", label: "Orders", icon: Package },
-  { href: "/stores", label: "Stores", icon: Store },
-  { href: "/pages", label: "Pages", icon: FolderTree },
-  { href: "/orders/confirmation", label: "Confirmation", icon: ClipboardCheck },
-  { href: "/fulfillment", label: "Fulfillment", icon: Package },
-  { href: "/analytics", label: "Analytics", icon: LayoutDashboard },
-  { href: "/apps", label: "Apps", icon: Package },
-  { href: "/settings", label: "Settings", icon: Settings },
+const navigationGroups = [
+  {
+    label: "",
+    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+  },
+  {
+    label: "Operations",
+    items: [
+      { href: "/orders", label: "Orders", icon: ShoppingBag },
+      {
+        href: "/orders/confirmation",
+        label: "Confirmation",
+        icon: ClipboardCheck,
+      },
+      { href: "/fulfillment", label: "Fulfillment", icon: Truck },
+    ],
+  },
+  {
+    label: "Catalog",
+    items: [
+      { href: "/products", label: "Products", icon: Package },
+      { href: "/categories", label: "Categories", icon: FolderTree },
+    ],
+  },
+  {
+    label: "Storefront",
+    items: [
+      { href: "/stores", label: "Stores", icon: Store },
+      { href: "/pages", label: "Pages", icon: FileText },
+    ],
+  },
+  {
+    label: "Insights",
+    items: [
+      { href: "/analytics", label: "Analytics", icon: ChartNoAxesCombined },
+    ],
+  },
+  {
+    label: "Platform",
+    items: [
+      { href: "/apps", label: "Apps", icon: Grid2X2 },
+      { href: "/settings", label: "Settings", icon: Settings },
+    ],
+  },
 ];
+const navigation = navigationGroups.flatMap((group) => group.items);
 export function Shell({
   children,
   organization,
@@ -146,43 +182,31 @@ export function Shell({
           </span>
           <div>
             <strong>{organization.name}</strong>
-            <small>Organization workspace</small>
+            <small>
+              {organization.role[0].toUpperCase() + organization.role.slice(1)}{" "}
+              workspace
+            </small>
           </div>
         </div>
         <nav aria-label="Main navigation">
-          {navigation.map(({ href, label, icon: Icon }) => (
-            <div key={href}>
-              {href === "/products" && <p className="nav-caption">COMMERCE</p>}
-              {href === "/stores" && <p className="nav-caption">STORE</p>}
-              {href === "/orders/confirmation" && (
-                <p className="nav-caption">OPERATIONS</p>
-              )}
-              {href === "/apps" && <p className="nav-caption">PLATFORM</p>}
-              <Link
-                key={href}
-                href={href}
-                className={`sidebar-link ${activeHref === href ? "selected" : ""}`}
-                onClick={() => setOpen(false)}
-                aria-current={activeHref === href ? "page" : undefined}
-              >
-                <Icon size={19} />
-                {label}
-                {activeHref === href && <span className="nav-dot" />}
-              </Link>
+          {navigationGroups.map((group) => (
+            <div className="nav-group" key={group.label || "overview"}>
+              {group.label && <p className="nav-caption">{group.label}</p>}
+              {group.items.map(({ href, label, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`sidebar-link ${activeHref === href ? "selected" : ""}`}
+                  onClick={() => setOpen(false)}
+                  aria-current={activeHref === href ? "page" : undefined}
+                >
+                  <Icon size={18} aria-hidden="true" />
+                  {label}
+                </Link>
+              ))}
             </div>
           ))}
         </nav>
-        <div className="sidebar-grow">
-          <div className="grow-illustration">
-            <Store size={24} />
-            <ArrowUpRight size={16} />
-          </div>
-          <strong>Your next market awaits.</strong>
-          <p>Big ideas start with a first step.</p>
-          <Link href="/stores">
-            Explore your stores <ArrowRightIcon />
-          </Link>
-        </div>
         <div className="sidebar-user">
           <span className="user-avatar">
             {user.name.slice(0, 1).toUpperCase()}
@@ -235,31 +259,12 @@ export function Shell({
                 "Stores"}
             </strong>
           </div>
-          <div className="topbar-right">
-            <span className="workspace-status">
-              <span className="tiny-dot" /> Your workspace
-            </span>
-            <Link
-              className="button button-outline button-small"
-              href="/stores/new"
-            >
-              <Plus size={15} /> New store
-            </Link>
-          </div>
         </header>
         <main id="workspace-main" tabIndex={-1} className="workspace-content">
           {children}
         </main>
-        <footer className="workspace-footer">
-          <span>AfricaCod · Local roots. Limitless reach.</span>
-          <span>
-            Made for your next chapter <ArrowUpRight size={12} />
-          </span>
-        </footer>
+        <footer className="workspace-footer">AfricaCod</footer>
       </div>
     </div>
   );
-}
-function ArrowRightIcon() {
-  return <ArrowUpRight size={14} />;
 }

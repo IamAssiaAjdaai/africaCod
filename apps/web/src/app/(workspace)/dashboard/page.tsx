@@ -81,16 +81,22 @@ export default async function Dashboard({
   ]);
   return (
     <>
+      <PageHeading
+        title="Dashboard"
+        description="Orders, customer follow-ups and activity across your stores."
+        action={
+          metrics.new > 0 ? (
+            <Link href="/orders/confirmation" className="button button-green">
+              Review orders
+            </Link>
+          ) : undefined
+        }
+      />
       {stores
         .filter((store) => !store.settingsPublishedAt)
         .map((store) => (
           <StoreSetup key={store.id} store={store} userId={session.user.id} />
         ))}
-      <PageHeading
-        eyebrow="YOUR WORKSPACE AT A GLANCE"
-        title={`Welcome, ${session.user.name.split(" ")[0]}.`}
-        description="Today’s work across your stores: confirm orders, follow up and prepare fulfillment."
-      />
       <form method="get" className="dashboard-range panel">
         <label>
           Date range
@@ -130,7 +136,10 @@ export default async function Dashboard({
       ) : (
         <DashboardOverview data={performance} />
       )}
-      <h2>Operational queues · all time</h2>
+      <div className="section-heading">
+        <h2>Operational queues</h2>
+        <span className="muted">All time</span>
+      </div>
       <nav className="catalog-filters">
         <Link className="button button-outline" href="/orders/confirmation">
           Confirmation queue
@@ -142,7 +151,10 @@ export default async function Dashboard({
           Fulfillment queue
         </Link>
       </nav>
-      <section className="stats-grid">
+      <section
+        className="stats-grid queue-metrics"
+        aria-label="All-time operational counts"
+      >
         {[
           ["Orders", metrics.orders],
           ["New / awaiting confirmation", metrics.new],
@@ -170,7 +182,10 @@ export default async function Dashboard({
       <Link href="/analytics" className="button button-outline">
         View full Analytics
       </Link>
-      <section className="panel" data-testid="delivered-revenue">
+      <section
+        className="panel operational-revenue"
+        data-testid="delivered-revenue"
+      >
         <h2>Delivered Revenue</h2>
         {metrics.revenue.length ? (
           metrics.revenue.map((v) => (
@@ -247,7 +262,7 @@ export default async function Dashboard({
         <div className="section-heading">
           <div>
             <h2>Your stores</h2>
-            <p className="muted">Every brand has its own journey.</p>
+            <p className="muted">Storefronts and Market configuration.</p>
           </div>
           <Link className="text-link" href="/stores">
             View all <ArrowRight size={16} />

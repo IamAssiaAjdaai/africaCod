@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { PageHeading, Badge } from "@africacod/ui";
+import { FileText } from "lucide-react";
+import { PageHeading, Badge, TableScroll, EmptyState } from "@africacod/ui";
 import { site, requireOrganization } from "@/lib/server";
 import { found } from "@/lib/catalog-pages";
 export default async function Pages({
@@ -49,7 +50,7 @@ export default async function Pages({
           <button className="button button-outline">Filter pages</button>
         </form>
         {pages.length ? (
-          <div className="table-scroll">
+          <TableScroll label="Pages data table">
             <table className="markets-table">
               <thead>
                 <tr>
@@ -96,29 +97,29 @@ export default async function Pages({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         ) : (
-          <div className="empty-state">
-            <h3>No pages yet.</h3>
-            <p>
-              {stores.length
+          <EmptyState
+            icon={<FileText size={22} />}
+            title="No pages yet"
+            description={
+              stores.length
                 ? "Create an About, Contact, FAQ or another informational page."
-                : "Create a store before adding pages."}
-            </p>
-            {stores.length && (
+                : "Create a store before adding pages."
+            }
+            action={
               <Link
                 className="button button-green"
-                href={`/pages/new${storeId ? `?storeId=${storeId}` : ""}`}
+                href={
+                  stores.length
+                    ? `/pages/new${storeId ? `?storeId=${storeId}` : ""}`
+                    : "/stores/new"
+                }
               >
-                Add your first page
+                {stores.length ? "Add your first page" : "Create a store"}
               </Link>
-            )}
-            {!stores.length && (
-              <Link className="button button-green" href="/stores/new">
-                Create a store
-              </Link>
-            )}
-          </div>
+            }
+          />
         )}
       </section>
     </>

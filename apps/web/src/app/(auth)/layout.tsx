@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Globe2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Brand } from "@africacod/ui";
 export default function AuthLayout({
   children,
@@ -10,20 +10,11 @@ export default function AuthLayout({
     <main className="auth-page">
       <aside className="auth-story">
         <Link href="/">
-          <Brand dark />
+          <Brand />
         </Link>
         <div>
-          <p className="eyebrow">YOUR NEXT CHAPTER STARTS HERE</p>
-          <h1>
-            Local roots.
-            <br />
-            <em>Limitless reach.</em>
-          </h1>
-          <p>One home for your stores. A world of possibility across Africa.</p>
-          <div className="auth-globe">
-            <Globe2 size={150} strokeWidth={0.6} />
-            <span className="auth-orbit-dot" />
-          </div>
+          <h2>Your commerce workspace</h2>
+          <p>Manage stores, markets and COD operations in one place.</p>
         </div>
         <small>Made for the way Africa sells.</small>
       </aside>
@@ -32,7 +23,7 @@ export default function AuthLayout({
           <ArrowLeft size={16} /> Back to home
         </Link>
         <div className="auth-content">{children}</div>
-        <p className="auth-footer">A little ambition goes a long way.</p>
+        <p className="auth-footer">AfricaCod · Commerce across markets</p>
       </section>
     </main>
   );

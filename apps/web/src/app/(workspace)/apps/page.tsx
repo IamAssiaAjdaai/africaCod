@@ -1,4 +1,4 @@
-import { PageHeading } from "@africacod/ui";
+import { Badge, PageHeading } from "@africacod/ui";
 import Link from "next/link";
 import {
   apps,
@@ -104,7 +104,7 @@ export default async function Apps({
         </section>
       )}
       {stores.length > 0 && (
-        <form method="get" className="panel">
+        <form method="get" className="panel catalog-filters">
           <label>
             Store
             <select name="storeId" defaultValue={selectedStoreId}>
@@ -128,9 +128,15 @@ export default async function Apps({
                 <article className="panel app-card" key={app.id}>
                   <div className="section-heading">
                     <h3>{app.name}</h3>
-                    <span className="badge badge-inactive">
+                    <Badge
+                      tone={
+                        connectionStatus(app.id).startsWith("Connected")
+                          ? "success"
+                          : "neutral"
+                      }
+                    >
                       {connectionStatus(app.id)}
-                    </span>
+                    </Badge>
                   </div>
                   {["meta", "tiktok", "google-ads", "google-sheets"].includes(
                     app.id,
