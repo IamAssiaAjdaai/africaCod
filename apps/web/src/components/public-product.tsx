@@ -22,7 +22,7 @@ export function PublicProductView({
   const pageSettings = settings.productPage;
   const dialog = useRef<HTMLDialogElement>(null);
   const errorNode = useRef<HTMLParagraphElement>(null);
-  const buttonLabel = pageSettings.buttonLabel ?? product.ctaLabel;
+  const buttonLabel = "Order Now";
   const buttonStyle = {
     backgroundColor: pageSettings.buttonBackground ?? settings.theme.color,
     color: pageSettings.buttonColor ?? "#ffffff",
