@@ -164,15 +164,15 @@ export async function OrdersView({
         </>
       )}
       <section className="panel">
-        <form className="catalog-filters" method="get">
-          <label>
-            Search
-            <input
-              name="search"
-              defaultValue={filter.search}
-              placeholder="Reference, customer or phone"
-            />
-          </label>
+        <form
+          key={`${route}-${new URLSearchParams(
+            Object.entries(query).flatMap(([key, value]) =>
+              typeof value === "string" ? [[key, value]] : [],
+            ),
+          ).toString()}`}
+          className="catalog-filters"
+          method="get"
+        >
           <label>
             Store
             <select name="storeId" defaultValue={filter.storeId ?? ""}>
