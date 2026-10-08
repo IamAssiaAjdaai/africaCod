@@ -286,7 +286,7 @@ test("Store settings Draft → private Preview → Publish → custom COD snapsh
   );
   await page.goto(`/stores/${storeId}/preview/p/hair-growth-serum?market=KE`);
   await page
-    .getByRole("button", { name: "Order Now", exact: true })
+    .getByRole("button", { name: "Order Now" })
     .first()
     .click();
   await expect(
@@ -295,7 +295,7 @@ test("Store settings Draft → private Preview → Publish → custom COD snapsh
   await expect(
     page
       .getByRole("dialog")
-      .getByRole("button", { name: "Order Now", exact: true }),
+      .getByRole("button", { name: "Order Now" }),
   ).toBeDisabled();
   await page
     .getByRole("button", { name: "Close order form", exact: true })
@@ -356,7 +356,7 @@ test("Store settings Draft → private Preview → Publish → custom COD snapsh
       "KES 3,990.00",
     );
     await customer
-      .getByRole("button", { name: "Order Now", exact: true })
+      .getByRole("button", { name: "Order Now" })
       .first()
       .click();
     await expect(customer.getByRole("dialog")).toBeVisible();
@@ -396,7 +396,7 @@ test("Store settings Draft → private Preview → Publish → custom COD snapsh
   await customer.setViewportSize({ width: 375, height: 812 });
   await customer.goto(`${publicUrl}?market=KE`);
   await customer
-    .getByRole("button", { name: "Order Now", exact: true })
+    .getByRole("button", { name: "Order Now" })
     .first()
     .click();
   const form = customer.getByRole("dialog");
@@ -411,7 +411,7 @@ test("Store settings Draft → private Preview → Publish → custom COD snapsh
     .getByLabel("Delivery landmark", { exact: true })
     .fill("Blue gate near the library");
   await form
-    .getByRole("button", { name: "Order Now", exact: true })
+    .getByRole("button", { name: "Order Now" })
     .click();
   await expect(
     customer.getByRole("heading", {
