@@ -1,3 +1,4 @@
+import { DashboardDisclosure as WorkspaceDisclosure } from "@/components/dashboard-disclosure";
 import { StoreSetup } from "@/components/store-setup";
 import Link from "next/link";
 import { StoreSettingsEditor } from "@/components/store-settings-editor";
@@ -28,11 +29,17 @@ export default async function Settings({
     ]);
   const setup = await storeSetup(session.user.id, storeId);
   return (
-    <>
-      <StoreSetup store={store} userId={session.user.id} settingsPage />
+    <div className="store-settings-page">
       <Link className="back-link" href={`/stores/${storeId}`}>
         ← {store.name}
       </Link>
+      <WorkspaceDisclosure
+        title="Store readiness"
+        description={`${store.name} · setup checklist and store address`}
+        className="store-settings-setup"
+      >
+        <StoreSetup store={store} userId={session.user.id} settingsPage />
+      </WorkspaceDisclosure>
       <StoreSettingsEditor
         storeId={storeId}
         name={store.name}
@@ -51,6 +58,6 @@ export default async function Settings({
           .filter((p) => p.status === "published" && p.publishedContent)
           .map((p) => ({ id: p.id, name: p.publishedContent!.title }))}
       />
-    </>
+    </div>
   );
 }

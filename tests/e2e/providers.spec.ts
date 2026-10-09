@@ -358,6 +358,7 @@ test("ShipCOD test adapter hands off confirmed orders asynchronously, delivers o
     fullPage: true,
   });
   await page.goto("/dashboard");
+  await page.locator(".dashboard-operations > summary").click();
   await expect(
     page.getByTestId("delivered-revenue").getByText(/KES.*3,990/),
   ).toBeVisible();
