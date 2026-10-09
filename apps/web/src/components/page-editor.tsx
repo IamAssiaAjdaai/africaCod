@@ -29,7 +29,11 @@ export function PageEditor({
     setIds(next);
   }
   return (
-    <section id="product-storefront" className="panel catalog-form">
+    <section
+      id="product-storefront"
+      tabIndex={-1}
+      className="panel catalog-form"
+    >
       <div className="section-heading">
         <div>
           <h2>Product storefront</h2>

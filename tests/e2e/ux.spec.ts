@@ -185,6 +185,7 @@ test("coherent merchant navigation and mobile customer checkout", async ({
 
   // Workspace CSS must not override merchant branding or light/dark/system themes.
   await page.goto(`/stores/${storeId}/settings`);
+  await page.locator("#settings-theme > summary").click();
   await page.getByLabel("Brand Color HEX").fill("#265a8f");
   await page
     .getByRole("combobox", { name: "Theme Mode", exact: true })
@@ -213,6 +214,7 @@ test("coherent merchant navigation and mobile customer checkout", async ({
     ),
   ).toBe("#147d64");
   await page.goto(`/stores/${storeId}/settings`);
+  await page.locator("#settings-theme > summary").click();
   await page
     .getByRole("combobox", { name: "Theme Mode", exact: true })
     .selectOption("system");
@@ -225,6 +227,7 @@ test("coherent merchant navigation and mobile customer checkout", async ({
   await page.emulateMedia({ colorScheme: "light" });
   await expect(storefront).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await page.goto(`/stores/${storeId}/settings`);
+  await page.locator("#settings-theme > summary").click();
   await page
     .getByRole("combobox", { name: "Theme Mode", exact: true })
     .selectOption("light");

@@ -2026,3 +2026,583 @@
     width: 100%;
   }
 }
+
+/* Stores and products use the Phase 1 workspace tokens and shared controls. */
+.app-shell .navigation-feedback {
+  display: inline-flex;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+}
+.app-shell .navigation-spinner {
+  animation: navigation-spin 800ms linear infinite;
+}
+@keyframes navigation-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.app-shell .stores-page .section-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-4);
+  font-size: 13px;
+  color: var(--foreground-secondary);
+}
+.app-shell .stores-page .store-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+}
+.app-shell .stores-page .store-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.app-shell .stores-page .store-card-top {
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.app-shell .stores-page .store-card h2 {
+  margin-top: 0;
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+.app-shell .stores-page .store-card h2 a:hover {
+  color: var(--brand);
+}
+.app-shell .store-card-facts {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  margin: var(--space-5) 0;
+  font-size: 13px;
+  color: var(--foreground-secondary);
+}
+.app-shell .store-card-facts > span:first-child,
+.app-shell .stores-page .empty-stores-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.app-shell .store-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+.app-shell .store-card-actions .button {
+  flex: 1;
+  min-height: 44px;
+}
+.app-shell .store-card-actions .text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2);
+  font-size: 13px;
+}
+.app-shell .stores-page .empty-stores-footer {
+  margin-top: var(--space-5);
+  font-size: 13px;
+  color: var(--foreground-muted);
+}
+.app-shell .stores-page .empty-stores-footer svg,
+.app-shell .store-detail-page .store-avatar {
+  flex-shrink: 0;
+}
+.app-shell .store-detail-page .store-info {
+  margin-bottom: var(--space-5);
+}
+.app-shell .store-detail-page .store-identity p {
+  font-size: 13px;
+}
+.app-shell .store-detail-page .store-info-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+.app-shell .store-info-grid dt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  color: var(--foreground-muted);
+  font-size: 13px;
+}
+.app-shell .store-info-grid dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.app-shell .store-catalog-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+.app-shell .store-catalog-section p {
+  max-width: 62ch;
+  margin-top: var(--space-2);
+  font-size: 13px;
+}
+.app-shell .store-commerce-links {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-2);
+}
+.app-shell .store-secondary-grid,
+.app-shell .market-offer-grid,
+.app-shell .editor-assets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+  align-items: start;
+}
+.app-shell .store-secondary-grid {
+  margin-top: var(--space-5);
+}
+.app-shell .store-secondary-grid .muted {
+  margin: var(--space-3) 0 var(--space-4);
+  font-size: 13px;
+}
+.app-shell .store-settings-setup {
+  margin-bottom: var(--space-5);
+}
+.app-shell .store-settings-setup .store-setup {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+.app-shell .store-settings-page .settings-toolbar > div:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.app-shell
+  .store-settings-page
+  :is(.settings-toolbar small, .settings-readiness-help) {
+  font-size: 13px;
+}
+.app-shell .store-settings-page .settings-readiness-help {
+  margin-top: var(--space-2);
+}
+.app-shell .store-settings-page .settings-tabs {
+  padding: var(--space-2);
+}
+.app-shell .store-settings-page .settings-tabs button {
+  min-height: 44px;
+}
+.app-shell .store-settings-page .settings-card small,
+.app-shell :is(.store-detail-page, .store-settings-page) .markets-footnote {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--foreground-muted);
+}
+.app-shell .products-page .catalog-filters {
+  --control-margin: 0px;
+  --control-height: 44px;
+  --control-min-height: 44px;
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 2fr) minmax(140px, 1fr) minmax(130px, 1fr)
+    auto;
+  margin-top: 0;
+  gap: var(--space-4);
+}
+.app-shell .products-page .catalog-filters > label {
+  min-width: 0;
+  font-size: 13px;
+}
+.app-shell .products-page .search-field {
+  min-width: 0;
+  display: block;
+  flex: 0 0 auto;
+}
+.app-shell .products-page .catalog-filters :is(input, select) {
+  min-width: 0;
+  margin: 0;
+  min-height: 44px;
+}
+.app-shell .product-filter-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.app-shell .products-page .product-filter-actions :is(.button, .text-link) {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+}
+.app-shell .product-results {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-4);
+  font-size: 13px;
+}
+.app-shell .products-page .product-table {
+  min-width: 980px;
+}
+.app-shell .products-page .product-list-name {
+  min-width: 210px;
+  max-width: 280px;
+}
+.app-shell .products-page .product-list-name > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.app-shell .products-page .product-list-name strong {
+  font-size: 14px;
+}
+.app-shell .products-page .product-list-name small {
+  font-size: 13px;
+}
+.app-shell .products-page .offer-tag {
+  white-space: normal;
+  font-size: 13px;
+  min-width: 180px;
+}
+.app-shell .mobile-cell-label {
+  display: none;
+}
+.app-shell .product-editor {
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: var(--space-5);
+}
+.app-shell .product-editor .editor-wide {
+  grid-column: 1 / -1;
+}
+.app-shell .product-editor :is(.muted, label, .offer-card summary small) {
+  font-size: 13px;
+}
+.app-shell .product-editor .editor-help {
+  max-width: 85ch;
+  margin-bottom: var(--space-4);
+  line-height: 1.6;
+}
+.app-shell .product-editor .catalog-form fieldset {
+  padding: 0;
+  gap: var(--space-5);
+}
+.app-shell .product-editor .offer-card {
+  border-color: var(--border);
+  border-radius: var(--radius-control);
+  padding: var(--space-4);
+  background: var(--surface);
+}
+.app-shell .product-editor .offer-card summary {
+  min-height: 44px;
+  font-size: 14px;
+}
+.app-shell .product-editor .offer-card summary > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.app-shell .product-editor .offer-card summary svg {
+  flex-shrink: 0;
+  color: var(--foreground-muted);
+}
+.app-shell .product-editor .offer-card[open] summary svg {
+  transform: rotate(180deg);
+}
+.app-shell .product-editor .offer-card .form-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.app-shell .product-editor .editor-publication-status {
+  margin: var(--space-3) 0;
+}
+.app-shell .product-editor-page .product-next-step {
+  margin-bottom: var(--space-5);
+}
+.app-shell .product-next-step > p {
+  margin: var(--space-2) 0 var(--space-4);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.app-shell .product-editor-page > .muted {
+  margin: var(--space-5) 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1100px) {
+  .app-shell .products-page .catalog-filters {
+    grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
+  }
+  .app-shell .products-page .product-filter-actions {
+    grid-column: 1 / -1;
+  }
+  .app-shell .store-catalog-section {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media (max-width: 760px) {
+  .app-shell .store-detail-page .store-info-grid,
+  .app-shell .store-secondary-grid,
+  .app-shell .product-editor,
+  .app-shell .market-offer-grid,
+  .app-shell .editor-assets,
+  .app-shell .product-editor :is(.form-row, .offer-card .form-row) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app-shell .store-detail-page .store-info-grid > div:last-child {
+    grid-column: auto;
+  }
+  .app-shell .store-commerce-links {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .app-shell .store-commerce-links .button {
+    flex: 1;
+  }
+  .app-shell .products-page .catalog-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+  .app-shell .products-page .product-search {
+    grid-column: 1 / -1;
+  }
+  .app-shell .products-page .table-scroll {
+    overflow: visible;
+  }
+  .app-shell .products-page .product-table {
+    display: block;
+    min-width: 0;
+    width: 100%;
+  }
+  .app-shell .products-page .product-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .app-shell .products-page .product-table tbody {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .app-shell .products-page .product-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    padding: var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-panel);
+  }
+  .app-shell .products-page .product-table td {
+    display: block;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+    width: auto;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 13px;
+  }
+  .app-shell
+    .products-page
+    .product-table
+    :is(.product-identity-cell, .product-offers-cell, .product-actions-cell) {
+    grid-column: 1 / -1;
+  }
+  .app-shell .products-page .product-list-name {
+    min-width: 0;
+    max-width: none;
+    align-items: flex-start;
+  }
+  .app-shell .products-page .product-status-cell {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .app-shell .products-page .product-page-cell {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .app-shell .products-page .mobile-cell-label {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--foreground-muted);
+  }
+  .app-shell .products-page .offer-tag {
+    min-width: 0;
+  }
+  .app-shell .products-page .product-actions-cell .button {
+    width: 100%;
+    min-height: 44px;
+    justify-content: space-between;
+  }
+  .app-shell .product-editor :is(input, select, textarea) {
+    font-size: 16px;
+  }
+  .app-shell .product-editor .upload-label {
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+}
+
+/* Section links keep every independent editor form mounted. */
+.app-shell .product-section-navigation {
+  position: sticky;
+  top: var(--space-2);
+  z-index: 5;
+  min-width: 0;
+  margin-bottom: var(--space-5);
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+.app-shell .product-section-guidance {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  margin-bottom: var(--space-2);
+  color: var(--foreground-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.app-shell .product-section-guidance > span:first-child {
+  font-weight: 600;
+}
+.app-shell .product-section-navigation nav {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  padding: 2px;
+}
+.app-shell .product-section-navigation a {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 60px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  color: var(--foreground-secondary);
+}
+.app-shell .product-section-navigation a:hover {
+  background: var(--surface-hover);
+}
+.app-shell .product-section-navigation a[aria-current="location"] {
+  background: var(--brand-subtle);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.app-shell .product-section-navigation a:focus-visible {
+  outline-offset: -3px;
+}
+.app-shell .product-section-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.app-shell .product-section-label > span {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.app-shell .product-section-navigation a small {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.app-shell
+  .product-editor-page
+  :is(
+    #product-information,
+    #market-offers,
+    #product-media,
+    #product-variants,
+    #product-storefront
+  ) {
+  scroll-margin-top: calc(var(--product-nav-height, 120px) + 24px);
+}
+.app-shell .settings-groups {
+  display: grid;
+  gap: var(--space-3);
+}
+.app-shell .settings-group {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+}
+.app-shell .settings-group > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 76px;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-panel);
+  cursor: pointer;
+  list-style: none;
+}
+.app-shell .settings-group > summary::-webkit-details-marker {
+  display: none;
+}
+.app-shell .settings-group > summary:hover {
+  background: var(--surface-hover);
+}
+.app-shell .settings-group > summary > span {
+  min-width: 0;
+}
+.app-shell .settings-group > summary strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.app-shell .settings-group > summary small {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--foreground-muted);
+}
+.app-shell .settings-group > summary svg {
+  flex-shrink: 0;
+  color: var(--foreground-muted);
+}
+.app-shell .settings-group[open] > summary svg {
+  transform: rotate(180deg);
+}
+.app-shell .settings-group-body {
+  padding: var(--space-5);
+  margin: 0;
+  border-top: 1px solid var(--border);
+}
+.app-shell .settings-group-body > label:first-of-type {
+  margin-top: 0;
+}
+@media (max-width: 760px) {
+  .app-shell .product-section-navigation {
+    padding: var(--space-2);
+  }
+  .app-shell .product-section-navigation a {
+    flex: 0 0 auto;
+  }
+  .app-shell .settings-group > summary,
+  .app-shell .settings-group-body {
+    padding: var(--space-4);
+  }
+}
