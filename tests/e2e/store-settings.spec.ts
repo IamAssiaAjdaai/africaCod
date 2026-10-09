@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { captureDashboard } from "./dashboard-screenshot";
 const password = "Test-storefront-password-2026!";
 test("Store settings Draft → private Preview → Publish → custom COD snapshot and real dashboard", async ({
   page,
@@ -432,6 +433,21 @@ test("Store settings Draft → private Preview → Publish → custom COD snapsh
       .filter({ hasText: "Total Orders" })
       .locator("strong"),
   ).toHaveText("1");
+  await expect(page.locator(".chart-orders rect")).toHaveCount(1);
+  await expect(page.locator(".chart-orders rect")).toHaveAttribute(
+    "data-count",
+    "1",
+  );
+  await expect(page.locator(".chart-orders rect")).toHaveAttribute("x", "188");
+  for (const width of [375, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await captureDashboard(
+      page,
+      `test-results/dashboard-audit-single-day-${width}.png`,
+    );
+  }
+  await page.locator(".dashboard-funnel-panel > summary").click();
+  await page.locator(".dashboard-performance > summary").first().click();
   await expect(
     page.getByRole("heading", { name: "COD Performance Funnel", exact: true }),
   ).toBeVisible();
