@@ -30,6 +30,10 @@ Open http://localhost:3000. All environment readers—including Drizzle CLI and 
 
 If `pnpm` is not on your PATH, `corepack pnpm` is equivalent. In restricted environments where `corepack enable` cannot write global shims, after installing dependencies use `corepack enable --install-directory node_modules/.bin`; Turbo finds the local shim.
 
+**Local environment security:** The committed `.env.example` contains only non-sensitive examples. Its `DATABASE_URL` targets the disposable local Docker Compose database; never reuse local example credentials in a deployment. Set `BETTER_AUTH_SECRET` in your ignored root `.env`, generated with `openssl rand -base64 32`. If using encrypted provider or tracking integrations, generate independent base64 values for `PROVIDER_CREDENTIALS_KEY` and `INTEGRATION_CREDENTIALS_KEY` with the same command, plus an independent `RATE_LIMIT_KEY`. Leave optional keys unset when unused locally. For staging/production, provide secrets via the deployment secret manager.
+
+**Do not rotate encryption keys before migrating existing encrypted data.**
+
 ## Test the checkpoint manually
 
 1. Click **Get started**, enter your name, email, and a password of at least 10 characters, then **Create account**.

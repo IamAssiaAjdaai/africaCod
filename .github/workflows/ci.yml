@@ -29,6 +29,8 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - name: Reject populated example secrets
+        run: node scripts/check-env-example.mjs
       - run: pnpm install --frozen-lockfile
       - run: createdb -h localhost -U africacod africacod_test
       - run: pnpm db:migrate && pnpm db:seed
