@@ -11,6 +11,7 @@ import {
 import { formatMoney } from "@africacod/shared/money";
 import { catalog, requireOrganization } from "@/lib/server";
 import { found, scalar } from "@/lib/catalog-pages";
+import { NavigationFeedback } from "@/components/navigation-feedback";
 export default async function Products({
   searchParams,
 }: {
@@ -37,28 +38,35 @@ export default async function Products({
   );
   const newLink = `/products/new${storeId || stores[0] ? `?storeId=${storeId || stores[0].id}` : ""}`;
   return (
-    <>
+    <div className="products-page">
       <PageHeading
         eyebrow="CATALOG"
         title="Products"
-        description="One catalog. Independent offers for every market."
+        description="Manage each store’s catalog and its independent market offers."
         action={
           <Link className="button button-green" href={newLink}>
-            <Plus size={16} />
+            <Plus size={16} aria-hidden="true" />
             Add Product
           </Link>
         }
       />
       <section className="panel">
-        <form className="catalog-filters" method="get">
-          <label className="search-field">
-            <Search size={16} />
-            <input
-              name="q"
-              defaultValue={q}
-              aria-label="Search products"
-              placeholder="Search name or SKU"
-            />
+        <form
+          key={`${storeId}:${status}:${q}`}
+          className="catalog-filters"
+          method="get"
+          aria-label="Product filters"
+        >
+          <label className="product-search">
+            Search products
+            <span className="search-field">
+              <Search size={16} aria-hidden="true" />
+              <input
+                name="q"
+                defaultValue={q}
+                placeholder="Search name or SKU"
+              />
+            </span>
           </label>
           <label>
             Store
@@ -80,25 +88,55 @@ export default async function Products({
               <option value="archived">Archived</option>
             </select>
           </label>
-          <button className="button button-outline button-small">
-            Apply filters
-          </button>
+          <div className="product-filter-actions">
+            <button className="button button-outline button-small">
+              Apply filters
+            </button>
+            {(q || status || storeId) && (
+              <Link className="text-link" href="/products">
+                Clear filters
+              </Link>
+            )}
+          </div>
         </form>
+        <div className="product-results">
+          <p>
+            {rows.length} {rows.length === 1 ? "product" : "products"}
+          </p>
+          <p className="muted">
+            Product status, market offers and page publication are managed
+            separately.
+          </p>
+        </div>
         {rows.length ? (
           <TableScroll label="Products data table">
-            <table className="markets-table product-table">
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>SKU</th>
-                  <th>Category</th>
-                  <th>Status</th>
-                  <th>Configured market offers</th>
-                  <th>Product Page</th>
-                  <th>Actions</th>
+            <table className="markets-table product-table" role="table">
+              <thead role="rowgroup">
+                <tr role="row">
+                  <th scope="col" role="columnheader">
+                    Product
+                  </th>
+                  <th scope="col" role="columnheader">
+                    SKU
+                  </th>
+                  <th scope="col" role="columnheader">
+                    Category
+                  </th>
+                  <th scope="col" role="columnheader">
+                    Status
+                  </th>
+                  <th scope="col" role="columnheader">
+                    Configured market offers
+                  </th>
+                  <th scope="col" role="columnheader">
+                    Product Page
+                  </th>
+                  <th scope="col" role="columnheader">
+                    Actions
+                  </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody role="rowgroup">
                 {rows.map((product) => {
                   const image = data.media.find(
                     (row) => row.productId === product.id,
@@ -107,8 +145,8 @@ export default async function Products({
                     (row) => row.productId === product.id,
                   );
                   return (
-                    <tr key={product.id}>
-                      <td>
+                    <tr key={product.id} role="row">
+                      <td className="product-identity-cell" role="cell">
                         <Link
                           className="product-list-name"
                           href={`/products/${product.id}`}
@@ -123,7 +161,7 @@ export default async function Products({
                             />
                           ) : (
                             <span className="product-thumb">
-                              <Package size={22} />
+                              <Package size={22} aria-hidden="true" />
                             </span>
                           )}
                           <span>
@@ -138,21 +176,35 @@ export default async function Products({
                           </span>
                         </Link>
                       </td>
-                      <td>{product.sku ?? "—"}</td>
-                      <td>
+                      <td role="cell">
+                        <span className="mobile-cell-label" aria-hidden="true">
+                          SKU
+                        </span>
+                        {product.sku ?? "—"}
+                      </td>
+                      <td role="cell">
+                        <span className="mobile-cell-label" aria-hidden="true">
+                          Category
+                        </span>
                         {data.categories.find(
                           (row) =>
                             row.id ===
                             (product.subcategoryId ?? product.categoryId),
                         )?.name ?? "—"}
                       </td>
-                      <td>
+                      <td className="product-status-cell" role="cell">
+                        <span className="mobile-cell-label" aria-hidden="true">
+                          Product status
+                        </span>
                         <StatusBadge status={product.status}>
                           {product.status[0].toUpperCase() +
                             product.status.slice(1)}
                         </StatusBadge>
                       </td>
-                      <td>
+                      <td className="product-offers-cell" role="cell">
+                        <span className="mobile-cell-label" aria-hidden="true">
+                          Market offers
+                        </span>
                         {offers.length ? (
                           <div className="offer-tags">
                             {offers.map((offer) => (
@@ -182,7 +234,10 @@ export default async function Products({
                           <span className="muted">No offers yet</span>
                         )}
                       </td>
-                      <td>
+                      <td className="product-page-cell" role="cell">
+                        <span className="mobile-cell-label" aria-hidden="true">
+                          Product Page
+                        </span>
                         <Badge
                           active={data.pages.some(
                             (page) =>
@@ -199,12 +254,14 @@ export default async function Products({
                             : "Draft"}
                         </Badge>
                       </td>
-                      <td>
+                      <td className="product-actions-cell" role="cell">
                         <Link
                           className="button button-outline button-small"
                           href={`/products/${product.id}`}
+                          aria-label={`Edit ${product.name}`}
                         >
                           Edit
+                          <NavigationFeedback />
                         </Link>
                       </td>
                     </tr>
@@ -222,21 +279,28 @@ export default async function Products({
                 : "No products yet"
             }
             description={
-              q || status
-                ? "Try another search or filter."
+              q || status || (storeId && data.products.length)
+                ? "Try another store, search or status filter. Clear filters to see the full catalog."
                 : "Add product details and images, then configure offers for each market."
             }
             action={
-              <Link
-                className="button button-green"
-                href={stores.length ? newLink : "/stores/new"}
-              >
-                {stores.length ? "Add Product" : "Create store"}
-              </Link>
+              <div className="form-actions">
+                {q || status || (storeId && data.products.length) ? (
+                  <Link className="button button-outline" href="/products">
+                    Clear all filters
+                  </Link>
+                ) : null}
+                <Link
+                  className="button button-green"
+                  href={stores.length ? newLink : "/stores/new"}
+                >
+                  {stores.length ? "Add Product" : "Create store"}
+                </Link>
+              </div>
             }
           />
         )}
       </section>
-    </>
+    </div>
   );
 }

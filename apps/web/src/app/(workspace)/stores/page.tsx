@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowUpRight, Globe2, Plus, Store } from "lucide-react";
-import { StatusBadge, PageHeading } from "@africacod/ui";
+import { Globe2, Plus, Store } from "lucide-react";
+import { StatusBadge, PageHeading, EmptyState } from "@africacod/ui";
+import { NavigationFeedback } from "@/components/navigation-feedback";
 import { commerce, requireOrganization } from "@/lib/server";
 export default async function StoresPage() {
   const { session } = await requireOrganization();
@@ -13,14 +14,14 @@ export default async function StoresPage() {
     })),
   );
   return (
-    <>
+    <div className="stores-page">
       <PageHeading
-        eyebrow="STOREFRONT"
+        eyebrow="Organization storefronts"
         title="Stores"
-        description="Manage storefronts and markets."
+        description="Each store has its own storefront, catalog and delivery markets."
         action={
           <Link className="button button-green" href="/stores/new">
-            <Plus size={17} /> Create store
+            <Plus size={17} aria-hidden="true" /> Create store
           </Link>
         }
       />
@@ -28,62 +29,82 @@ export default async function StoresPage() {
         <span>
           {stores.length} {stores.length === 1 ? "store" : "stores"}
         </span>
-        <span>Markets are configured per store.</span>
+        <span>Store status and storefront publication are separate.</span>
       </div>
       {rows.length ? (
-        <section className="store-grid">
+        <section className="store-grid" aria-label="Your stores">
           {rows.map((store) => (
-            <Link
+            <article
               className="store-card"
-              href={`/stores/${store.id}`}
               key={store.id}
+              aria-labelledby={`store-${store.id}`}
             >
               <div className="store-card-top">
-                <span className="store-avatar">
-                  <Store size={25} />
+                <span className="store-avatar" aria-hidden="true">
+                  <Store size={24} />
                 </span>
                 <StatusBadge status={store.status}>
-                  {store.status === "active" ? "Active" : "Inactive"}
+                  {store.status === "active"
+                    ? "Active store"
+                    : "Inactive store"}
                 </StatusBadge>
               </div>
-              <h2>{store.name}</h2>
-              <p>/s/{store.slug}</p>
-              <div className="store-card-bottom">
+              <h2 id={`store-${store.id}`}>
+                <Link href={`/stores/${store.id}`}>{store.name}</Link>
+              </h2>
+              <div className="store-card-facts">
                 <span>
-                  <Globe2 size={16} />
+                  <Globe2 size={16} aria-hidden="true" />
                   {
                     store.markets.filter((m) => m.status === "active").length
                   }{" "}
-                  active markets
+                  active · {store.markets.length} total markets
                 </span>
-                <ArrowUpRight size={20} />
+                <StatusBadge
+                  status={store.settingsPublishedAt ? "published" : "draft"}
+                >
+                  {store.settingsPublishedAt
+                    ? "Published storefront"
+                    : "Draft storefront"}
+                </StatusBadge>
               </div>
-            </Link>
+              <div className="store-card-actions">
+                <Link
+                  className="button button-outline"
+                  href={`/stores/${store.id}`}
+                  aria-label={`Manage ${store.name}`}
+                >
+                  Manage store <NavigationFeedback />
+                </Link>
+                <Link
+                  className="text-link"
+                  href={`/stores/${store.id}/settings`}
+                  aria-label={`Settings for ${store.name}`}
+                >
+                  Settings <NavigationFeedback />
+                </Link>
+              </div>
+            </article>
           ))}
         </section>
       ) : (
         <section className="panel empty-stores">
-          <div className="empty-state">
-            <span className="empty-icon">
-              <Store size={30} />
-            </span>
-            <p className="eyebrow">STOREFRONT</p>
-            <h2>No stores yet.</h2>
-            <p>
-              Your stores will live here. Create your first one,
-              <br />
-              then choose the markets where you want to sell.
-            </p>
-            <Link className="button button-green" href="/stores/new">
-              <Plus size={17} /> Create your first store
-            </Link>
-          </div>
-          <div className="empty-stores-footer">
-            <Globe2 size={16} /> A store can reach many markets. You choose
-            which ones.
-          </div>
+          <EmptyState
+            icon={<Store size={28} />}
+            title="No stores yet."
+            description="Create a home for your brand, then choose the markets where you want to sell."
+            action={
+              <Link className="button button-green" href="/stores/new">
+                <Plus size={17} aria-hidden="true" /> Create your first store
+              </Link>
+            }
+          />
+          <p className="empty-stores-footer">
+            <Globe2 size={16} aria-hidden="true" /> A store can reach many
+            markets. You choose which ones.
+          </p>
         </section>
       )}
-    </>
+    </div>
   );
 }

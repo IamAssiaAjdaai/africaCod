@@ -175,6 +175,7 @@ test("Storefront CMS navigation, branding, Apps discovery and COD remain market-
   await page
     .getByLabel("Tagline", { exact: true })
     .fill("Everyday care, delivered to your door.");
+  await page.locator("#settings-hero > summary").click();
   await page.getByLabel("Show Hero Section", { exact: true }).check();
   await page
     .getByLabel("Hero Title", { exact: true })
@@ -182,6 +183,7 @@ test("Storefront CMS navigation, branding, Apps discovery and COD remain market-
   await page
     .getByLabel("Contact email", { exact: true })
     .fill("hello@glow.example");
+  await page.locator("#settings-branding > summary").click();
   await page
     .getByLabel("Light Mode logo", { exact: true })
     .setInputFiles({ name: "glow.png", mimeType: "image/png", buffer: bytes });

@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { captureDashboard } from "./dashboard-screenshot";
 const password = "Test-storefront-password-2026!";
 test("Store settings Draft → private Preview → Publish → custom COD snapshot and real dashboard", async ({
   page,
@@ -195,12 +196,15 @@ test("Store settings Draft → private Preview → Publish → custom COD snapsh
   await expect(page.getByRole("status")).toContainText("Page published");
   const settingsUrl = `/stores/${storeId}/settings`;
   await page.goto(settingsUrl);
+  await page.locator("#settings-theme > summary").click();
   await page.getByLabel("Brand Color HEX").fill("#265a8f");
   await page.getByRole("combobox", { name: /^Font/ }).selectOption("inter");
+  await page.locator("#settings-announcement > summary").click();
   await page.getByLabel("Enable Announcement", { exact: true }).check();
   await page
     .getByLabel("Announcement Text", { exact: true })
     .fill("Nairobi delivery information");
+  await page.locator("#settings-hero > summary").click();
   await page.getByLabel("Show Hero Section", { exact: true }).check();
   await page
     .getByLabel("Hero Title", { exact: true })
@@ -208,6 +212,7 @@ test("Store settings Draft → private Preview → Publish → custom COD snapsh
   await page
     .getByLabel("Hero Subtitle", { exact: true })
     .fill("Choose products available in your delivery market.");
+  await page.locator("#settings-featured > summary").click();
   await page.getByLabel("Show Featured Products", { exact: true }).check();
   await page
     .getByLabel("Featured Section Title", { exact: true })
@@ -300,6 +305,11 @@ test("Store settings Draft → private Preview → Publish → custom COD snapsh
   await expect(page.getByRole("status")).toContainText(
     "Store settings published",
   );
+  await page.locator(".store-settings-setup > summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("link", { name: "View Store", exact: true }),
+  ).toBeVisible();
   const livePopup = page.waitForEvent("popup");
   await page.getByRole("link", { name: "View Store", exact: true }).click();
   const liveStore = await livePopup;
@@ -432,6 +442,21 @@ test("Store settings Draft → private Preview → Publish → custom COD snapsh
       .filter({ hasText: "Total Orders" })
       .locator("strong"),
   ).toHaveText("1");
+  await expect(page.locator(".chart-orders rect")).toHaveCount(1);
+  await expect(page.locator(".chart-orders rect")).toHaveAttribute(
+    "data-count",
+    "1",
+  );
+  await expect(page.locator(".chart-orders rect")).toHaveAttribute("x", "188");
+  for (const width of [375, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await captureDashboard(
+      page,
+      `test-results/dashboard-audit-single-day-${width}.png`,
+    );
+  }
+  await page.locator(".dashboard-funnel-panel > summary").click();
+  await page.locator(".dashboard-performance > summary").first().click();
   await expect(
     page.getByRole("heading", { name: "COD Performance Funnel", exact: true }),
   ).toBeVisible();

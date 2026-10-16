@@ -156,6 +156,7 @@ test("new merchant is guided to first Store; Draft is private and second Store u
   }
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/dashboard$/);
+  await page.locator(".dashboard-store-setup > summary").click();
   await expect(
     page.getByRole("heading", { name: "Get your Store ready" }),
   ).toBeVisible();

@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ImagePlus,
-  Plus,
   ArrowUp,
   ArrowDown,
   Trash2,
   Package,
   Save,
+  ChevronDown,
 } from "lucide-react";
+import { StatusBadge } from "@africacod/ui";
 import { moneyInput, currencyDecimals } from "@africacod/shared/money";
 import type { FormState } from "@/lib/actions";
 import {
@@ -229,10 +230,17 @@ function ProductInformation({
   return (
     <form
       id="product-information"
+      tabIndex={-1}
       action={action}
       className="panel catalog-form"
+      aria-label="Product information"
+      aria-busy={pending}
     >
       <h2>Product information</h2>
+      <p className="muted editor-help">
+        These details are shared across this store’s markets. Configure prices
+        and offer status separately for each market below.
+      </p>
       <input type="hidden" name="storeId" value={storeId} />
       {product && <input type="hidden" name="productId" value={product.id} />}
       <fieldset disabled={pending}>
@@ -364,16 +372,101 @@ export function ProductEditor({
 }) {
   return (
     <div className="product-editor">
-      <div className="catalog-stack">
-        <ProductInformation
-          storeId={storeId}
-          product={product}
-          categories={categories}
-        />
+      <ProductInformation
+        storeId={storeId}
+        product={product}
+        categories={categories}
+      />
+      <aside className="catalog-stack">
+        <section className="panel catalog-form">
+          <h2>Product status</h2>
+          <label>
+            Product status
+            <select
+              form="product-information"
+              name="status"
+              defaultValue={product?.status ?? "draft"}
+            >
+              <option value="draft">Draft</option>
+              <option value="active">Active</option>
+              <option value="archived">Archived</option>
+            </select>
+          </label>
+          <p className="muted editor-help">
+            Save the product to apply this status. Product Page publication and
+            market offers are managed separately.
+          </p>
+        </section>
+        <section className="panel">
+          <h2>Product Page status</h2>
+          <p className="editor-publication-status">
+            <StatusBadge status={published ? "published" : "draft"}>
+              {published ? "Published" : "Draft"}
+            </StatusBadge>
+          </p>
+          <p className="muted">
+            Only published pages with an active market offer accept COD orders.
+          </p>
+          {product ? (
+            <a className="text-link" href="#product-storefront">
+              Edit storefront and publication →
+            </a>
+          ) : (
+            <p className="muted">
+              Create the product to configure its storefront.
+            </p>
+          )}
+        </section>
+      </aside>
+      <section
+        className="panel pricing-panel editor-wide"
+        id="market-offers"
+        tabIndex={-1}
+      >
+        <h2>Markets & pricing</h2>
+        <p className="muted editor-help">
+          Each market has its own currency, price, compare-at price, cost and
+          offer status. Save each offer independently of the product details.
+        </p>
+        {markets.length ? (
+          <div className="market-offer-grid">
+            {markets.map((market) =>
+              product ? (
+                <OfferForm
+                  key={market.id}
+                  productId={product.id}
+                  market={market}
+                  offer={offers.find(
+                    (offer) => offer.storeMarketId === market.id,
+                  )}
+                />
+              ) : (
+                <div key={market.id} className="offer-card">
+                  <h3>
+                    {market.countryName} — {market.currency}
+                  </h3>
+                  <p className="muted">
+                    Save the product to configure an offer.
+                  </p>
+                </div>
+              ),
+            )}
+          </div>
+        ) : (
+          <div className="catalog-empty compact">
+            <Package size={26} />
+            <p>No markets configured for this store.</p>
+            <Link className="button button-outline" href={`/stores/${storeId}`}>
+              Add a market
+            </Link>
+          </div>
+        )}
+      </section>
+      <div className="editor-assets editor-wide">
         {product ? (
           <>
             <MediaEditor productId={product.id} media={media} />
-            <section className="panel">
+            <section className="panel" id="product-variants" tabIndex={-1}>
               <div className="section-heading">
                 <div>
                   <h2>Variants</h2>
@@ -396,7 +489,7 @@ export function ProductEditor({
           </>
         ) : (
           <section className="panel catalog-placeholder">
-            <ImagePlus size={24} />
+            <ImagePlus size={24} aria-hidden="true" />
             <h2>Media & variants</h2>
             <p className="muted">
               Create your product first, then add images and simple variants.
@@ -404,86 +497,6 @@ export function ProductEditor({
           </section>
         )}
       </div>
-      <aside className="catalog-stack">
-        <section className="panel">
-          <h2>Product Page status</h2>
-          <p>
-            <strong>{published ? "Published" : "Draft"}</strong>
-          </p>
-          <p className="muted">
-            Only published pages with an active market offer accept COD orders.
-          </p>
-          {product ? (
-            <a className="text-link" href="#product-storefront">
-              Edit storefront and publication →
-            </a>
-          ) : (
-            <p className="muted">
-              Create the product to configure its storefront.
-            </p>
-          )}
-        </section>
-        <section className="panel catalog-form">
-          <h2>Status</h2>
-          <label>
-            Product status
-            <select
-              form="product-information"
-              name="status"
-              defaultValue={product?.status ?? "draft"}
-            >
-              <option value="draft">Draft</option>
-              <option value="active">Active</option>
-              <option value="archived">Archived</option>
-            </select>
-          </label>
-          <p className="muted">
-            Organize your catalog. Publish the product storefront below.
-          </p>
-        </section>
-        <section className="panel pricing-panel">
-          <h2>Markets & pricing</h2>
-          <p className="muted">
-            Set an independent offer for each store market.
-          </p>
-          {markets.length ? (
-            <div className="catalog-stack">
-              {markets.map((market) =>
-                product ? (
-                  <OfferForm
-                    key={market.id}
-                    productId={product.id}
-                    market={market}
-                    offer={offers.find(
-                      (offer) => offer.storeMarketId === market.id,
-                    )}
-                  />
-                ) : (
-                  <div key={market.id} className="offer-card">
-                    <h3>
-                      {market.countryName} — {market.currency}
-                    </h3>
-                    <p className="muted">
-                      Save the product to configure an offer.
-                    </p>
-                  </div>
-                ),
-              )}
-            </div>
-          ) : (
-            <div className="catalog-empty compact">
-              <Package size={26} />
-              <p>No markets configured for this store.</p>
-              <Link
-                className="button button-outline"
-                href={`/stores/${storeId}`}
-              >
-                Add a market
-              </Link>
-            </div>
-          )}
-        </section>
-      </aside>
     </div>
   );
 }
@@ -527,12 +540,13 @@ function OfferForm({
             {market.status === "inactive" ? " · Market inactive" : ""}
           </small>
         </span>
-        <Plus size={15} />
+        <ChevronDown size={16} aria-hidden="true" />
       </summary>
       <form
         action={action}
         aria-label={`${market.countryName} offer`}
         className="catalog-form"
+        aria-busy={pending}
       >
         <input type="hidden" name="productId" value={productId} />
         <input type="hidden" name="storeMarketId" value={market.id} />
@@ -614,6 +628,7 @@ function VariantForm({
       action={action}
       className="variant-form catalog-form"
       aria-label={variant ? `Variant ${variant.name}` : "Add variant"}
+      aria-busy={pending}
     >
       <input type="hidden" name="productId" value={productId} />
       {variant && <input type="hidden" name="variantId" value={variant.id} />}
@@ -675,7 +690,7 @@ function MediaEditor({
 }) {
   const [state, action, pending] = useActionState(uploadMediaAction, {});
   return (
-    <section className="panel">
+    <section className="panel" id="product-media" tabIndex={-1}>
       <h2>Product media</h2>
       <p className="muted">
         PNG, JPEG or WebP · Up to 10 MB each. First image is the list thumbnail.
@@ -691,7 +706,12 @@ function MediaEditor({
           />
         ))}
       </div>
-      <form action={action} className="media-upload catalog-form">
+      <form
+        action={action}
+        className="media-upload catalog-form"
+        aria-busy={pending}
+        aria-label="Product image upload"
+      >
         <input type="hidden" name="productId" value={productId} />
         <fieldset disabled={pending}>
           <label className="upload-label">

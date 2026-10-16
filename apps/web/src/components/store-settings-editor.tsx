@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { StoreSettings } from "@africacod/validation";
@@ -8,8 +9,42 @@ import {
   uploadStoreAsset,
 } from "@/lib/store-settings-actions";
 import { Markets } from "./markets";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 type Resource = { id: string; name: string };
+function AppearanceGroup({
+  id,
+  title,
+  description,
+  children,
+  defaultOpen = false,
+}: {
+  id: string;
+  title: string;
+  description: string;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  return (
+    <details
+      className="panel settings-group"
+      id={id}
+      open={defaultOpen}
+      aria-labelledby={`${id}-title`}
+    >
+      <summary>
+        <span>
+          <strong id={`${id}-title`}>{title}</strong>
+          <small>{description}</small>
+        </span>
+        <ChevronDown size={18} aria-hidden="true" />
+      </summary>
+      <div className="settings-card settings-group-body">
+        <h2 className="sr-only">{title}</h2>
+        {children}
+      </div>
+    </details>
+  );
+}
 const fieldNames = {
   name: "Full Name",
   phone: "Phone",
@@ -328,7 +363,7 @@ export function StoreSettingsEditor({
         <div>
           <h1>Store Settings</h1>
           <p>
-            {name} ·{" "}
+            Store: {name} ·{" "}
             {!saved.publishedAt
               ? "Draft / Not Published"
               : changes
@@ -373,6 +408,13 @@ export function StoreSettingsEditor({
         Save Draft before previewing or publishing. Published settings remain
         live until you publish again.
       </p>
+      {!readyToPublish && (
+        <p className="muted settings-readiness-help">
+          Open Store readiness above to review what this store needs before
+          publishing.
+        </p>
+      )}
+      {busy && <p role="status">Updating store settings…</p>}
       {error && (
         <p className="form-error" role="alert">
           {error}
@@ -425,15 +467,21 @@ export function StoreSettingsEditor({
         id="settings-panel"
         role="tabpanel"
         aria-labelledby={`tab-${tab.replaceAll(" ", "")}`}
+        tabIndex={0}
+        aria-busy={busy}
       >
         {tab === "Markets" ? (
           <Markets storeId={storeId} markets={markets} countries={countries} />
         ) : (
           <fieldset disabled={busy} className="settings-fieldset">
             {tab === "Appearance" && (
-              <>
-                <section className="panel settings-card">
-                  <h2>Store Identity</h2>
+              <div className="settings-groups">
+                <AppearanceGroup
+                  id="settings-identity"
+                  title="Store identity"
+                  description="Store name, tagline and contact details"
+                  defaultOpen
+                >
                   {text(
                     "Store Name",
                     draft.identity.name ?? name,
@@ -443,6 +491,18 @@ export function StoreSettingsEditor({
                   {text("Tagline", draft.identity.tagline, (v) =>
                     update("identity", { tagline: v || null }),
                   )}
+                  {text("Contact email", draft.identity.contactEmail, (v) =>
+                    update("identity", { contactEmail: v || null }),
+                  )}
+                  {text("Contact phone", draft.identity.contactPhone, (v) =>
+                    update("identity", { contactPhone: v || null }),
+                  )}
+                </AppearanceGroup>
+                <AppearanceGroup
+                  id="settings-branding"
+                  title="Branding & media"
+                  description="Logos, favicon and hero backgrounds"
+                >
                   <div className="settings-media-grid">
                     {(
                       [
@@ -489,15 +549,12 @@ export function StoreSettingsEditor({
                       </div>
                     ))}
                   </div>
-                  {text("Contact email", draft.identity.contactEmail, (v) =>
-                    update("identity", { contactEmail: v || null }),
-                  )}
-                  {text("Contact phone", draft.identity.contactPhone, (v) =>
-                    update("identity", { contactPhone: v || null }),
-                  )}
-                </section>
-                <section className="panel settings-card">
-                  <h2>Theme</h2>
+                </AppearanceGroup>
+                <AppearanceGroup
+                  id="settings-theme"
+                  title="Theme"
+                  description="Header style, display mode, brand color and font"
+                >
                   <div className="settings-grid">
                     <label>
                       Header Style
@@ -554,9 +611,12 @@ export function StoreSettingsEditor({
                       </select>
                     </label>
                   </div>
-                </section>
-                <section className="panel settings-card">
-                  <h2>Announcement Bar</h2>
+                </AppearanceGroup>
+                <AppearanceGroup
+                  id="settings-announcement"
+                  title="Announcement bar"
+                  description={`${draft.announcement.enabled ? "Enabled" : "Disabled"} · Message, link and colors`}
+                >
                   <Toggle
                     label="Enable Announcement"
                     value={draft.announcement.enabled}
@@ -585,117 +645,121 @@ export function StoreSettingsEditor({
                       change={(color) => update("announcement", { color })}
                     />
                   </div>
-                </section>
-                <div className="settings-grid">
-                  <section className="panel settings-card">
-                    <h2>Hero Section</h2>
-                    <Toggle
-                      label="Show Hero Section"
-                      value={draft.hero.enabled}
-                      change={(enabled) => update("hero", { enabled })}
+                </AppearanceGroup>
+                <AppearanceGroup
+                  id="settings-hero"
+                  title="Hero section"
+                  description={`${draft.hero.enabled ? "Enabled" : "Disabled"} · Heading, supporting text and action`}
+                >
+                  <Toggle
+                    label="Show Hero Section"
+                    value={draft.hero.enabled}
+                    change={(enabled) => update("hero", { enabled })}
+                  />
+                  {text(
+                    "Hero Title",
+                    draft.hero.title,
+                    (title) => update("hero", { title }),
+                    160,
+                  )}
+                  <label>
+                    Hero Subtitle
+                    <textarea
+                      maxLength={500}
+                      value={draft.hero.subtitle}
+                      onChange={(e) =>
+                        update("hero", { subtitle: e.target.value })
+                      }
                     />
-                    {text(
-                      "Hero Title",
-                      draft.hero.title,
-                      (title) => update("hero", { title }),
-                      160,
-                    )}
+                  </label>
+                  {text(
+                    "Hero CTA Label",
+                    draft.hero.ctaLabel,
+                    (ctaLabel) => update("hero", { ctaLabel }),
+                    60,
+                  )}
+                  {text(
+                    "Hero CTA URL",
+                    draft.hero.ctaUrl,
+                    (url) => update("hero", { ctaUrl: url || null }),
+                    2048,
+                  )}
+                </AppearanceGroup>
+                <AppearanceGroup
+                  id="settings-featured"
+                  title="Featured products"
+                  description={`${draft.featured.enabled ? "Enabled" : "Disabled"} · Section title and product selection`}
+                >
+                  <Toggle
+                    label="Show Featured Products"
+                    value={draft.featured.enabled}
+                    change={(enabled) => update("featured", { enabled })}
+                  />
+                  {text(
+                    "Featured Section Title",
+                    draft.featured.title,
+                    (title) => update("featured", { title }),
+                    100,
+                  )}
+                  <label>
+                    Selection mode
+                    <select
+                      value={draft.featured.mode}
+                      onChange={(e) =>
+                        update("featured", {
+                          mode: e.target
+                            .value as StoreSettings["featured"]["mode"],
+                        })
+                      }
+                    >
+                      <option value="all">All Products</option>
+                      <option value="category">Category</option>
+                      <option value="manual">Manual Products</option>
+                    </select>
+                  </label>
+                  {draft.featured.mode === "category" && (
                     <label>
-                      Hero Subtitle
-                      <textarea
-                        maxLength={500}
-                        value={draft.hero.subtitle}
-                        onChange={(e) =>
-                          update("hero", { subtitle: e.target.value })
-                        }
-                      />
-                    </label>
-                    {text(
-                      "Hero CTA Label",
-                      draft.hero.ctaLabel,
-                      (ctaLabel) => update("hero", { ctaLabel }),
-                      60,
-                    )}
-                    {text(
-                      "Hero CTA URL",
-                      draft.hero.ctaUrl,
-                      (url) => update("hero", { ctaUrl: url || null }),
-                      2048,
-                    )}
-                  </section>
-                  <section className="panel settings-card">
-                    <h2>Featured Products</h2>
-                    <Toggle
-                      label="Show Featured Products"
-                      value={draft.featured.enabled}
-                      change={(enabled) => update("featured", { enabled })}
-                    />
-                    {text(
-                      "Featured Section Title",
-                      draft.featured.title,
-                      (title) => update("featured", { title }),
-                      100,
-                    )}
-                    <label>
-                      Selection mode
+                      Featured Category
                       <select
-                        value={draft.featured.mode}
+                        value={draft.featured.categoryId ?? ""}
                         onChange={(e) =>
                           update("featured", {
-                            mode: e.target
-                              .value as StoreSettings["featured"]["mode"],
+                            categoryId: e.target.value || null,
                           })
                         }
                       >
-                        <option value="all">All Products</option>
-                        <option value="category">Category</option>
-                        <option value="manual">Manual Products</option>
+                        <option value="">Choose category</option>
+                        {categories.map((c) => (
+                          <option value={c.id} key={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
                       </select>
                     </label>
-                    {draft.featured.mode === "category" && (
-                      <label>
-                        Featured Category
-                        <select
-                          value={draft.featured.categoryId ?? ""}
-                          onChange={(e) =>
-                            update("featured", {
-                              categoryId: e.target.value || null,
-                            })
-                          }
-                        >
-                          <option value="">Choose category</option>
-                          {categories.map((c) => (
-                            <option value={c.id} key={c.id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
-                    {draft.featured.mode === "manual" &&
-                      products.map((p) => (
-                        <Toggle
-                          key={p.id}
-                          label={p.name}
-                          value={draft.featured.productIds.includes(p.id)}
-                          change={(checked) =>
-                            update("featured", {
-                              productIds: checked
-                                ? [...draft.featured.productIds, p.id]
-                                : draft.featured.productIds.filter(
-                                    (id) => id !== p.id,
-                                  ),
-                            })
-                          }
-                        />
-                      ))}
-                    <small>
-                      Only published active products with an active offer in the
-                      selected Market appear.
-                    </small>
-                  </section>
-                </div>
-              </>
+                  )}
+                  {draft.featured.mode === "manual" &&
+                    products.map((p) => (
+                      <Toggle
+                        key={p.id}
+                        label={p.name}
+                        value={draft.featured.productIds.includes(p.id)}
+                        change={(checked) =>
+                          update("featured", {
+                            productIds: checked
+                              ? [...draft.featured.productIds, p.id]
+                              : draft.featured.productIds.filter(
+                                  (id) => id !== p.id,
+                                ),
+                          })
+                        }
+                      />
+                    ))}
+                  <small>
+                    Only published active products with an active offer in the
+                    selected Market appear.
+                  </small>
+                </AppearanceGroup>
+              </div>
             )}
             {tab === "Product Page" && (
               <>

@@ -4,7 +4,7 @@ export function Brand({ dark = false }: { dark?: boolean }) {
   return (
     <span className={`brand ${dark ? "brand-dark" : ""}`}>
       <span className="brand-mark">
-        <Layers3 size={22} />
+        <Layers3 size={22} aria-hidden="true" />
       </span>
       <span>
         Africa<span className="brand-cod">Cod</span>

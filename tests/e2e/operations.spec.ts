@@ -1,4 +1,6 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { captureDashboard } from "./dashboard-screenshot";
 const password = "Test-storefront-password-2026!";
 test("Manual lifecycle keeps Order confirmed through delivered and refused/returned shipments", async ({
   page,
@@ -243,6 +245,60 @@ test("Manual lifecycle keeps Order confirmed through delivered and refused/retur
   await expect(page.getByRole("row").filter({ hasText: first })).toContainText(
     "overdue",
   );
+  // An empty analytics range must retain actionable all-time queues.
+  await page.goto("/dashboard?range=custom&from=2020-01-01&to=2020-01-01");
+  await expect(
+    page
+      .getByRole("region", { name: "Period metrics" })
+      .locator(".stat-card")
+      .filter({ hasText: "Total Orders" })
+      .locator("strong"),
+  ).toHaveText("0");
+  await expect(
+    page.getByRole("heading", { name: "No orders in this period" }),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId("metric-new-/-awaiting-confirmation").locator("strong"),
+  ).toHaveText("1");
+  await expect(
+    page.getByTestId("metric-callback-due").locator("strong"),
+  ).toHaveText("1");
+  await expect(
+    page.getByRole("link", { name: "Review orders", exact: true }),
+  ).toHaveAttribute("href", "/orders/confirmation");
+  await page.locator(".dashboard-order-previews > summary").focus();
+  await page.keyboard.press("Enter");
+  for (const title of [
+    "Confirmation Queue",
+    "Callbacks Due",
+    "Recent Orders",
+  ]) {
+    await expect(
+      page
+        .locator(".dashboard-queue")
+        .filter({
+          has: page.getByRole("heading", { name: title, exact: true }),
+        })
+        .getByRole("link", { name: first }),
+    ).toBeVisible();
+  }
+  await page.locator(".dashboard-order-previews > summary").focus();
+  await page.keyboard.press("Space");
+  for (const width of [375, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .include(".app-shell")
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+          .analyze()
+      ).violations,
+    ).toEqual([]);
+    await captureDashboard(
+      page,
+      `test-results/dashboard-audit-pending-empty-period-${width}.png`,
+    );
+  }
   await page.goto(firstUrl);
   await fulfill();
   await transition("Mark shipped", "shipped");
@@ -253,12 +309,123 @@ test("Manual lifecycle keeps Order confirmed through delivered and refused/retur
     fullPage: true,
   });
   await page.goto("/dashboard");
+  await page.locator(".dashboard-operations > summary").click();
   await expect(
     page.getByTestId("metric-delivered").locator("strong"),
   ).toHaveText("1");
   await expect(page.getByTestId("delivered-revenue")).toContainText(
     "KES 3,990.00",
   );
+  // The redesigned period cards and tables still reflect the real delivery.
+  const period = page.getByRole("region", { name: "Period metrics" });
+  await expect(
+    period
+      .locator(".stat-card")
+      .filter({ hasText: "Total Orders" })
+      .locator("strong"),
+  ).toHaveText("1");
+  await expect(
+    period
+      .locator(".stat-card")
+      .filter({ hasText: "Delivered" })
+      .locator("strong"),
+  ).toHaveText("1");
+  await page.locator(".dashboard-funnel-panel > summary").click();
+  await page.locator(".dashboard-performance > summary").first().click();
+  await expect(
+    page.locator(".dashboard-funnel-panel .funnel-revenue"),
+  ).toContainText("KES 3,990.00");
+  await expect(
+    page.locator(".dashboard-performance").first().getByRole("row").last(),
+  ).toContainText("100.0%");
+  await expect(page.locator('.chart-orders rect[data-count="1"]')).toHaveCount(
+    1,
+  );
+  await expect(
+    page.locator('.chart-deliveries rect[data-count="1"]'),
+  ).toHaveCount(1);
+  for (const summary of await page
+    .locator(".dashboard-disclosure > summary")
+    .all()) {
+    if ((await summary.locator("..").getAttribute("open")) !== null) {
+      await summary.click();
+    }
+  }
+  for (const width of [375, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+      `Populated Dashboard at ${width}px`,
+    ).toBe(true);
+    const result = await new AxeBuilder({ page })
+      .include(".app-shell")
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+      .analyze();
+    expect(result.violations).toEqual([]);
+    await captureDashboard(
+      page,
+      `test-results/dashboard-audit-populated-${width}.png`,
+    );
+    if (width === 375 || width === 1440) {
+      for (const summary of await page
+        .locator(".dashboard-disclosure > summary")
+        .all()) {
+        await summary.focus();
+        await page.keyboard.press("Enter");
+      }
+      expect(
+        (
+          await new AxeBuilder({ page })
+            .include(".app-shell")
+            .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+            .analyze()
+        ).violations,
+      ).toEqual([]);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth + 1,
+        ),
+      ).toBe(true);
+      if (width === 1440) {
+        const reference = await page
+          .locator(".dashboard-order-previews .work-list strong")
+          .first()
+          .evaluate((element) => ({
+            height: element.getBoundingClientRect().height,
+            line: parseFloat(getComputedStyle(element).lineHeight),
+          }));
+        expect(
+          reference.height,
+          "Readable desktop order reference",
+        ).toBeLessThanOrEqual(reference.line + 1);
+      }
+      await captureDashboard(
+        page,
+        `test-results/dashboard-audit-populated-expanded-${width}.png`,
+      );
+      for (const summary of await page
+        .locator(".dashboard-disclosure > summary")
+        .all()) {
+        await summary.focus();
+        await page.keyboard.press("Space");
+      }
+    }
+  }
+  const productTable = page.getByRole("region", {
+    name: "Performance by Product data table",
+  });
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.locator(".dashboard-performance > summary").first().click();
+  await productTable.focus();
+  await expect(productTable).toBeFocused();
+  const beforeScroll = await productTable.evaluate((el) => el.scrollLeft);
+  await page.keyboard.press("ArrowRight");
+  await expect
+    .poll(() => productTable.evaluate((el) => el.scrollLeft))
+    .toBeGreaterThan(beforeScroll);
+  await page.setViewportSize({ width: 1280, height: 720 });
   // The old delivered order retains its snapshot after current offer edits.
   await page.goto(productUrl);
   const kenyaOffer = page.getByRole("form", {
@@ -282,6 +449,7 @@ test("Manual lifecycle keeps Order confirmed through delivered and refused/retur
     "returned",
   );
   await page.goto("/dashboard");
+  await page.locator(".dashboard-operations > summary").click();
   await expect(
     page.getByTestId("metric-delivered").locator("strong"),
   ).toHaveText("1");

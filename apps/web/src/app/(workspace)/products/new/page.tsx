@@ -3,6 +3,7 @@ import { PageHeading } from "@africacod/ui";
 import { catalog, requireOrganization } from "@/lib/server";
 import { found, scalar } from "@/lib/catalog-pages";
 import { ProductEditor, StoreChoice } from "@/components/catalog-forms";
+import { ProductSectionNavigation } from "@/components/product-section-navigation";
 export default async function NewProduct({
   searchParams,
 }: {
@@ -29,22 +30,23 @@ export default async function NewProduct({
     service.listMarkets(session.user.id, storeId),
   ]);
   return (
-    <>
+    <div className="product-editor-page">
       <Link className="back-link" href={`/products?storeId=${storeId}`}>
         ← Products
       </Link>
       <PageHeading
         eyebrow="COMMERCE"
         title="Add Product"
-        description="Start with the details. Add commercial offers by market."
+        description="Choose a store and save the shared product details. Then add images and independent market offers."
       />
       <StoreChoice stores={stores} storeId={storeId} route="/products/new" />
+      <ProductSectionNavigation created={false} />
       <ProductEditor
         key={storeId}
         storeId={storeId}
         categories={categories}
         markets={markets}
       />
-    </>
+    </div>
   );
 }
